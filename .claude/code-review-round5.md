@@ -110,232 +110,107 @@
 
 ## 四、Client Agent 测试实施指导
 
-### 4.1 前提条件
+> **注意**：本节早期版本存在选择器猜测和笼统描述的问题，已基于源码全面修正。
+> 完整的测试用例定义请参考 → **`.claude/test-plan-v2.md` 中的 M5 模块（12 个测试用例）**。
+> 本节仅保留架构说明和实施要点，不再重复用例列表。
 
-```bash
-# 确保 Client Agent 已启动
-cd packages/client-agent
-pnpm start
-# 或后台运行
-pnpm start &
-```
+### 4.1 实际代码架构（测试必须基于真实实现）
 
-### 4.2 需要创建的测试文件
-
-**文件**：`e2e/scenario/agent-integration.spec.ts`
-
-**测试用例（至少 10 个）**：
-
-```
-1. Agent 配对入口可见性
-   - 登录后能找到 Agent 相关的 UI 入口（按钮/菜单/图标）
-   - expect(agentEntry).toBeVisible()
-
-2. 配对码显示
-   - 点击配对入口 → 显示 6 位配对码或设备列表
-   - expect(pairingCode).toHaveText(/\d{6}/) 或 expect(deviceList).toBeVisible()
-
-3. Agent 在线状态指示
-   - Client Agent 连接后，前端应显示"已连接"/"在线"状态
-   - expect(statusIndicator).toHaveClass(/online|connected/)
-
-4. 模式切换 UI
-   - 找到远程/本地模式切换控件
-   - 切换操作后 UI 反馈正确
-   - expect(modeLabel).toHaveText(/本地|Local/)
-
-5. 远程→本地切换上下文连贯
-   - 远程模式发："我叫测试员小王"
-   - 切到本地模式
-   - 发："你还记得我叫什么吗？"
-   - expect(aiResponse).toContain('小王')
-
-6. 本地工具执行 — 文件操作
-   - 本地模式下发："在桌面创建一个文件 test-agent.txt"
-   - 验证 AI 调用了 Client Agent 工具
-   - 验证执行结果在对话中显示
-
-7. 本地工具执行 — Shell 命令
-   - 本地模式下发："运行 ls 命令看看当前目录"
-   - 验证返回了目录列表
-
-8. Agent 断连感知
-   - 停止 Client Agent 进程
-   - 前端状态应变为"离线"
-   - expect(statusIndicator).toHaveClass(/offline|disconnected/)
-
-9. 断连后发消息的错误处理
-   - Agent 离线时发送需要本地工具的消息
-   - 应有友好错误提示，不是无限等待
-   - expect(errorMessage).toBeVisible()
-
-10. Agent 重连恢复
-    - 重新启动 Client Agent
-    - 状态应自动恢复为"在线"
-    - 再次发送本地工具命令应成功
-```
-
-### 4.3 实际代码架构（重要！测试必须基于真实实现）
-
-**模式切换不是一个简单的 toggle 按钮**，实际架构如下：
+**模式切换不是一个 toggle 按钮**，而是通过 `WorkspaceSelectModal` 弹窗实现。
 
 #### 关键组件和文件
 
 | 组件 | 文件路径 | 作用 |
 |------|---------|------|
-| WorkspaceSelectModal | `packages/web/src/components/agent/WorkspaceSelectModal.tsx` | 模式选择弹窗（Radio: 本地电脑 / 云端服务器） |
-| AgentStatusIndicator | `packages/web/src/components/agent/AgentStatusIndicator.tsx` | 显示当前模式和连接状态，含"切换"按钮 |
-| agent store | `packages/web/src/stores/agent.ts` | 状态管理：`currentDeviceId` / `workDir` / `devices` |
-| ChatInput | `packages/web/src/components/chat/ChatInput.tsx` | 发消息时带上 `deviceId` 和 `workDir` |
-| socket.ts | `packages/web/src/services/socket.ts` | `sendChatMessage()` 把 `deviceId` 发给 Server |
-| ChatGateway | `packages/server/src/gateway/chat.gateway.ts` | **路由决策**：有 `deviceId` → Client Agent，无 → Platform Agent |
-| AgentGateway | `packages/server/src/gateway/agent.gateway.ts` | Agent WebSocket 管理，`sendTaskToAgent()` |
-| AgentService | `packages/server/src/modules/agent/agent.service.ts` | 配对码生成/验证，5分钟有效 |
+| WorkspaceSelectModal | `packages/web/src/components/agent/WorkspaceSelectModal.tsx` | 模式选择弹窗，Radio 选项：「本地电脑」/「云端服务器」，本地模式需选择已配对设备 + 填工作目录 |
+| AgentStatusIndicator | `packages/web/src/components/agent/AgentStatusIndicator.tsx` | 显示当前模式、设备名、工作路径、连接状态，提供「切换」和「退出」按钮 |
+| AgentInstallGuide | `packages/web/src/components/agent/AgentInstallGuide.tsx` | 分步引导：功能说明 → 下载安装（按 OS）→ 输入 6 位配对码 → 确认绑定 |
+| agent store | `packages/web/src/stores/agent.ts` | Zustand 状态：`devices[]`、`currentDeviceId`、`workDir`、`isConnected`、`pairingCode`，持久化到 localStorage `lsc-ai-agent` |
+| ChatInput | `packages/web/src/components/chat/ChatInput.tsx` | 加号菜单中「选择工作目录」触发 WorkspaceSelectModal；发消息时带上 `deviceId` + `workDir` |
+| socket.ts | `packages/web/src/services/socket.ts` | `sendChatMessage()` 将 `deviceId` 和 `workDir` 放入 `chat:message` 事件发给 Server |
+| ChatGateway | `packages/server/src/gateway/chat.gateway.ts` | **路由决策**（第187-221行）：有 `deviceId` → `handleClientAgentMessage()`；无 → Platform Agent |
+| AgentGateway | `packages/server/src/gateway/agent.gateway.ts` | Agent WebSocket namespace `/agent`，管理 `onlineAgents` Map，`sendTaskToAgent()` 派发任务 |
+| AgentService | `packages/server/src/modules/agent/agent.service.ts` | `generateAgentPairingCode()`：6位码，5分钟有效；`confirmAgentPairing()`：验证码 + 创建 ClientAgent DB 记录 |
 
-#### 消息路由逻辑（ChatGateway.handleChatMessage，第187-221行）
-
-```
-if (deviceId) → handleClientAgentMessage() → 路由到 Client Agent
-else if (useNetwork) → handleNetworkMessage() → 多Agent协作
-else → Platform Agent（默认远程模式）
-```
-
-#### 配对流程（6位码）
+#### 用户操作流程（真实 UI 路径）
 
 ```
-1. Client Agent CLI: `lsc-agent pair`
-2. Agent → Server /agent NS: emit 'agent:request_pairing_code'
-3. Server 生成6位码（Math.random().toString().substring(2,8)），5分钟有效
-4. Server → Agent: emit 'agent:pairing_code'
-5. Agent 终端显示配对码（控制台 or GUI弹窗，见 client-agent/src/ui/pairing.ts）
-6. 用户在浏览器 AgentInstallGuide 中输入6位码
-7. Browser → POST /agents/confirm-pairing { code, userId }
-8. Server 验证 → 创建 ClientAgent DB记录 → emit 'agent:paired'（含LLM配置）
-9. Agent 收到配对确认，标记 isPaired
+1. 用户点击 ChatInput 左侧加号菜单 → 「选择工作目录」
+2. WorkspaceSelectModal 弹窗打开
+3. Radio 选择「本地电脑」或「云端服务器」
+4. 本地电脑：
+   a. 如果有已配对在线设备 → 设备列表显示（设备名、主机名、平台、状态 Tag、最后在线时间）
+   b. 如果无设备 → 显示「安装 Client Agent」按钮 → 打开 AgentInstallGuide
+   c. 选择设备 + 填写工作目录 → 确认
+5. 云端服务器：
+   a. 填写工作目录（默认 /workspace）→ 确认
+6. 确认后 → AgentStatusIndicator 出现在 ChatInput 上方
+   - 显示模式图标（桌面/云端）、设备名、路径、连接状态
+   - 提供「切换」按钮（重新打开 WorkspaceSelectModal）和「退出」按钮（clearWorkspace）
+7. 之后发送的每条消息自动携带 deviceId + workDir
 ```
 
-#### 上下文连贯性原理
+#### 配对流程（6 位码）
 
-Server 路由到 Client Agent 时（`handleClientAgentMessage` 第610行），会从 Mastra Memory 取出 `previousMessages`，打包进 `task.payload.history` 发给 Agent。所以理论上上下文应该连贯。
+```
+1. 用户在 AgentInstallGuide 第3步点击「生成配对码」
+   → Browser: POST /agents/pairing-code → Server 生成6位数字（Math.random().toString().substring(2,8)）
+2. 用户本地运行 Client Agent CLI: `lsc-agent pair -u http://server:3000`
+   → Agent 连接 /agent namespace → emit 'agent:request_pairing_code'
+   → Server 返回配对码 → Agent 终端显示（控制台 ASCII / Windows PowerShell / macOS osascript / Linux zenity）
+3. 用户在浏览器输入 Agent 显示的 6 位码 → 点击「确认绑定」
+   → Browser: POST /agents/confirm-pairing { code, userId }
+   → Server 验证码 → 创建 ClientAgent DB 记录 → AgentGateway.notifyAgentPaired()
+   → Agent 收到 'agent:paired' 事件（含 userId、token、llmConfig）
+4. 配对成功 → 刷新设备列表 → 新设备出现
+```
 
-### 4.4 Mock 方案（如果 Client Agent 无法真正启动）
+#### 消息路由和上下文连贯性
 
-用 Socket.IO client 模拟 Agent 连接到 `/agent` namespace：
+- ChatGateway 收到带 `deviceId` 的消息 → `handleClientAgentMessage()`
+- Server 从 Mastra Memory 取出 `previousMessages`（第610行），打包进 `task.payload.history`
+- 通过 `AgentGateway.sendTaskToAgent(deviceId, task)` 发给 Client Agent
+- Agent 收到 `agent:task` 事件 → TaskExecutor 执行 → 通过 `agent:stream`/`agent:tool_call`/`agent:task_result` 回传
+- AgentGateway 转发为 `chat:stream` 事件推送到浏览器
+- **因此**：同一 session 内远程→本地切换，上下文通过 server 端 Memory 传递，理论上连贯
 
+### 4.2 测试用例
+
+**详见 `.claude/test-plan-v2.md` M5 模块**，共 12 个测试用例，分三组：
+- M5-A（4个）：工作空间选择 UI — 弹窗打开、云端模式、本地模式无设备、退出工作空间
+- M5-B（3个）：Agent 配对流程 — 安装引导、配对码生成、设备列表
+- M5-C（5个）：本地模式核心功能 — 发消息、文件操作、Shell 命令、上下文连贯、离线感知
+
+### 4.3 实施要点
+
+**选择器确认**：写测试前必须读源码确认实际渲染的元素，不要猜：
+
+| 要找什么 | 读哪个文件 |
+|---------|-----------|
+| 加号菜单中的「选择工作目录」 | `ChatInput.tsx` — 找 Dropdown menu items |
+| 弹窗中的 Radio 选项 | `WorkspaceSelectModal.tsx` — 找 Radio.Group + Radio 的 value 和 label |
+| 设备列表项 | `WorkspaceSelectModal.tsx` 第217-267行 — 找设备卡片的 className 和结构 |
+| 安装引导步骤 | `AgentInstallGuide.tsx` — 找 Steps 组件和每步内容 |
+| 状态指示器 | `AgentStatusIndicator.tsx` — 找模式图标、文字、按钮 |
+
+**Agent 不可用时的处理**：
 ```typescript
-import { io } from 'socket.io-client';
+// ✅ 正确
+test.skip(!agentOnline, 'Client Agent 未运行，跳过本地模式测试');
 
-// 模拟 Agent 连接
-const agentSocket = io('http://localhost:3000/agent', {
-  transports: ['websocket', 'polling'],
-  auth: {
-    type: 'client-agent',
-    deviceId: 'test-device-001',
-    deviceName: 'Test Agent',
-    token: 'test-auth-token',
-  },
-});
-
-// 监听任务分发，返回模拟结果
-agentSocket.on('agent:task', (task) => {
-  // 模拟流式回复
-  agentSocket.emit('agent:stream', {
-    taskId: task.taskId,
-    chunk: '这是来自本地 Agent 的回复',
-    done: false,
-  });
-  agentSocket.emit('agent:task_result', {
-    taskId: task.taskId,
-    result: { success: true, message: '任务完成' },
-  });
-});
-
-test.afterAll(() => agentSocket.disconnect());
-```
-
-### 4.5 mode-switch.spec.ts 重写指导
-
-**必须基于真实组件编写，不要用假的 data-testid：**
-
-```typescript
-test('打开工作空间选择弹窗', async ({ page }) => {
-  // 找到 AgentStatusIndicator 上的"切换"按钮
-  const switchBtn = page.getByText('切换');
-  // 或者找触发 WorkspaceSelectModal 的入口
-  await switchBtn.click();
-
-  // 验证 WorkspaceSelectModal 打开
-  const modal = page.locator('.ant-modal'); // Ant Design 弹窗
-  await expect(modal).toBeVisible();
-
-  // 验证有两个 Radio 选项
-  await expect(page.getByText('本地电脑')).toBeVisible();
-  await expect(page.getByText('云端服务器')).toBeVisible();
-});
-
-test('选择本地模式需要已配对设备', async ({ page }) => {
-  // 打开弹窗
-  await page.getByText('切换').click();
-
-  // 选择"本地电脑"
-  await page.getByText('本地电脑').click();
-
-  // 应显示设备列表或"安装 Client Agent"按钮
-  const deviceList = page.locator('[class*="device"]');
-  const installBtn = page.getByText('安装 Client Agent');
-
-  const hasDevices = await deviceList.count() > 0;
-  const hasInstallBtn = await installBtn.isVisible().catch(() => false);
-
-  // 至少出现其中一个
-  expect(hasDevices || hasInstallBtn).toBeTruthy();
-});
-
-test('选择云端服务器（远程模式）', async ({ page }) => {
-  await page.getByText('切换').click();
-  await page.getByText('云端服务器').click();
-
-  // 确认选择后弹窗关闭
-  const confirmBtn = page.getByRole('button', { name: /确认|确定|OK/ });
-  if (await confirmBtn.isVisible()) {
-    await confirmBtn.click();
-  }
-
-  // 验证当前模式回到远程
-  // AgentStatusIndicator 应该不显示本地设备信息
-});
-```
-
-**核心原则**：
-- **必须基于真实组件**：WorkspaceSelectModal + AgentStatusIndicator，不要编造选择器
-- 功能不可用 → `test.skip()`，不是 `console.log()` 然后通过
-- 每个测试至少一个 `expect` 断言
-- 先读源码确认选择器，再写测试
-
----
-
-## 五、修复后的验收标准
-
-1. **零空壳测试**：grep 所有测试文件，不应有 `console.log` 作为唯一验证手段
-2. **Client Agent 测试覆盖**：agent-integration.spec.ts 至少 8 个测试，mode-switch.spec.ts 重写后至少 6 个有效测试
-3. **test.skip 正确使用**：Agent 不可用时用 test.skip，不是静默通过
-4. **headed 模式验证**：至少跑一次 `--headed --slow-mo=500` 观察 Agent 相关 UI
-
-```bash
-# 验收命令
-npx playwright test e2e/scenario/mode-switch.spec.ts --headed --slow-mo=500
-npx playwright test e2e/scenario/agent-integration.spec.ts --headed --slow-mo=500
+// ❌ 禁止
+if (!agentOnline) { console.log('skip'); return; }
 ```
 
 ---
 
-## 六、执行优先级
+## 五、后续行动
 
-1. **先修复空壳测试**（~1小时）— 把 console.log 改成 expect
-2. **启动 Client Agent**（确认已运行）
-3. **重写 mode-switch.spec.ts**（8 个真实测试）
-4. **创建 agent-integration.spec.ts**（10 个测试）
-5. **全量回归**：`npx playwright test` 确认不破坏已有测试
-6. **headed 模式复查**：关键场景用 --headed 跑一遍
-
-修复完成后，将测试结果截图和报告提交到 `.claude/dev-log.md`。
+> 本审查报告到此结束。第5轮测试的问题已识别清楚。
+> **下一步不是修补旧测试，而是按全新的 V2 测试方案重新编写。**
+>
+> 完整测试方案请参考 → **`.claude/test-plan-v2.md`**
+> - 7 个模块，73 个测试用例
+> - 基于平台实际实现的业务功能（非猜测）
+> - 每个用例标注了真实组件路径和选择器来源
+> - 包含执行策略、报告格式、验收标准
