@@ -175,73 +175,142 @@ pnpm start &
     - 再次发送本地工具命令应成功
 ```
 
-### 4.3 Mock 方案（如果 Client Agent 无法真正启动）
+### 4.3 实际代码架构（重要！测试必须基于真实实现）
 
-如果测试环境中无法运行 Client Agent CLI，可以用 Socket.IO client mock：
+**模式切换不是一个简单的 toggle 按钮**，实际架构如下：
+
+#### 关键组件和文件
+
+| 组件 | 文件路径 | 作用 |
+|------|---------|------|
+| WorkspaceSelectModal | `packages/web/src/components/agent/WorkspaceSelectModal.tsx` | 模式选择弹窗（Radio: 本地电脑 / 云端服务器） |
+| AgentStatusIndicator | `packages/web/src/components/agent/AgentStatusIndicator.tsx` | 显示当前模式和连接状态，含"切换"按钮 |
+| agent store | `packages/web/src/stores/agent.ts` | 状态管理：`currentDeviceId` / `workDir` / `devices` |
+| ChatInput | `packages/web/src/components/chat/ChatInput.tsx` | 发消息时带上 `deviceId` 和 `workDir` |
+| socket.ts | `packages/web/src/services/socket.ts` | `sendChatMessage()` 把 `deviceId` 发给 Server |
+| ChatGateway | `packages/server/src/gateway/chat.gateway.ts` | **路由决策**：有 `deviceId` → Client Agent，无 → Platform Agent |
+| AgentGateway | `packages/server/src/gateway/agent.gateway.ts` | Agent WebSocket 管理，`sendTaskToAgent()` |
+| AgentService | `packages/server/src/modules/agent/agent.service.ts` | 配对码生成/验证，5分钟有效 |
+
+#### 消息路由逻辑（ChatGateway.handleChatMessage，第187-221行）
+
+```
+if (deviceId) → handleClientAgentMessage() → 路由到 Client Agent
+else if (useNetwork) → handleNetworkMessage() → 多Agent协作
+else → Platform Agent（默认远程模式）
+```
+
+#### 配对流程（6位码）
+
+```
+1. Client Agent CLI: `lsc-agent pair`
+2. Agent → Server /agent NS: emit 'agent:request_pairing_code'
+3. Server 生成6位码（Math.random().toString().substring(2,8)），5分钟有效
+4. Server → Agent: emit 'agent:pairing_code'
+5. Agent 终端显示配对码（控制台 or GUI弹窗，见 client-agent/src/ui/pairing.ts）
+6. 用户在浏览器 AgentInstallGuide 中输入6位码
+7. Browser → POST /agents/confirm-pairing { code, userId }
+8. Server 验证 → 创建 ClientAgent DB记录 → emit 'agent:paired'（含LLM配置）
+9. Agent 收到配对确认，标记 isPaired
+```
+
+#### 上下文连贯性原理
+
+Server 路由到 Client Agent 时（`handleClientAgentMessage` 第610行），会从 Mastra Memory 取出 `previousMessages`，打包进 `task.payload.history` 发给 Agent。所以理论上上下文应该连贯。
+
+### 4.4 Mock 方案（如果 Client Agent 无法真正启动）
+
+用 Socket.IO client 模拟 Agent 连接到 `/agent` namespace：
 
 ```typescript
 import { io } from 'socket.io-client';
 
-// 在测试 setup 中模拟一个 Agent 连接
+// 模拟 Agent 连接
 const agentSocket = io('http://localhost:3000/agent', {
-  auth: { token: 'test-token' }
+  transports: ['websocket', 'polling'],
+  auth: {
+    type: 'client-agent',
+    deviceId: 'test-device-001',
+    deviceName: 'Test Agent',
+    token: 'test-auth-token',
+  },
 });
 
-// 监听工具调用请求，返回模拟结果
-agentSocket.on('tool:execute', (data, callback) => {
-  callback({ success: true, result: 'mock result' });
+// 监听任务分发，返回模拟结果
+agentSocket.on('agent:task', (task) => {
+  // 模拟流式回复
+  agentSocket.emit('agent:stream', {
+    taskId: task.taskId,
+    chunk: '这是来自本地 Agent 的回复',
+    done: false,
+  });
+  agentSocket.emit('agent:task_result', {
+    taskId: task.taskId,
+    result: { success: true, message: '任务完成' },
+  });
 });
 
-// 测试完成后断开
 test.afterAll(() => agentSocket.disconnect());
 ```
 
-### 4.4 mode-switch.spec.ts 重写指导
+### 4.5 mode-switch.spec.ts 重写指导
 
-当前文件 5/8 测试是空壳，需要重写：
+**必须基于真实组件编写，不要用假的 data-testid：**
 
 ```typescript
-// ❌ 当前代码 — 空壳
-test('远程到本地切换', async ({ page }) => {
-  const modeSwitch = page.locator('[data-testid="mode-switch"]');
-  if (await modeSwitch.isVisible()) {
-    console.log('Mode switch found');
-  } else {
-    console.log('Mode switch not available');
-  }
-  // 测试结束，什么都没验证
+test('打开工作空间选择弹窗', async ({ page }) => {
+  // 找到 AgentStatusIndicator 上的"切换"按钮
+  const switchBtn = page.getByText('切换');
+  // 或者找触发 WorkspaceSelectModal 的入口
+  await switchBtn.click();
+
+  // 验证 WorkspaceSelectModal 打开
+  const modal = page.locator('.ant-modal'); // Ant Design 弹窗
+  await expect(modal).toBeVisible();
+
+  // 验证有两个 Radio 选项
+  await expect(page.getByText('本地电脑')).toBeVisible();
+  await expect(page.getByText('云端服务器')).toBeVisible();
 });
 
-// ✅ 应该这样写
-test('远程到本地切换', async ({ page }) => {
-  // 1. 确认当前是远程模式
-  const modeIndicator = page.locator('[data-testid="mode-indicator"]');
-  await expect(modeIndicator).toContainText(/远程|Remote|Platform/);
+test('选择本地模式需要已配对设备', async ({ page }) => {
+  // 打开弹窗
+  await page.getByText('切换').click();
 
-  // 2. 找到切换控件
-  const modeSwitch = page.locator('[data-testid="mode-switch"]');
-  await expect(modeSwitch).toBeVisible();
+  // 选择"本地电脑"
+  await page.getByText('本地电脑').click();
 
-  // 3. 如果 Agent 未连接，标记跳过（不是静默通过）
-  const agentStatus = page.locator('[data-testid="agent-status"]');
-  const isOnline = await agentStatus.textContent();
-  if (!isOnline?.includes('在线') && !isOnline?.includes('online')) {
-    test.skip(true, 'Client Agent 未连接，无法测试模式切换');
-    return;
+  // 应显示设备列表或"安装 Client Agent"按钮
+  const deviceList = page.locator('[class*="device"]');
+  const installBtn = page.getByText('安装 Client Agent');
+
+  const hasDevices = await deviceList.count() > 0;
+  const hasInstallBtn = await installBtn.isVisible().catch(() => false);
+
+  // 至少出现其中一个
+  expect(hasDevices || hasInstallBtn).toBeTruthy();
+});
+
+test('选择云端服务器（远程模式）', async ({ page }) => {
+  await page.getByText('切换').click();
+  await page.getByText('云端服务器').click();
+
+  // 确认选择后弹窗关闭
+  const confirmBtn = page.getByRole('button', { name: /确认|确定|OK/ });
+  if (await confirmBtn.isVisible()) {
+    await confirmBtn.click();
   }
 
-  // 4. 执行切换
-  await modeSwitch.click();
-
-  // 5. 验证切换成功
-  await expect(modeIndicator).toContainText(/本地|Local|Agent/);
+  // 验证当前模式回到远程
+  // AgentStatusIndicator 应该不显示本地设备信息
 });
 ```
 
 **核心原则**：
+- **必须基于真实组件**：WorkspaceSelectModal + AgentStatusIndicator，不要编造选择器
 - 功能不可用 → `test.skip()`，不是 `console.log()` 然后通过
-- 每个测试必须至少有一个 `expect` 断言
-- 如果依赖 Agent 但 Agent 未启动，明确跳过并说明原因
+- 每个测试至少一个 `expect` 断言
+- 先读源码确认选择器，再写测试
 
 ---
 
