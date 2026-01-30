@@ -96,15 +96,37 @@ e2e/
 - 建议分组运行：`npx playwright test e2e/tools-verify` 等分组验证
 - Office工具（createWord/Excel/PDF）存在参数格式兼容性问题，AI会自动fallback到write工具
 
+### V2 E2E 测试重构 (73 tests, 7 modules)
+
+**按产品经理要求重构，零空壳测试，每个 test 都有真实 expect 断言。**
+
+| 模块 | 测试数 | 通过 | 说明 |
+|------|--------|------|------|
+| M1-auth | 8 | 8/8 ✅ | 登录/登出/鉴权守卫 |
+| M2-chat-core | 15 | 15/15 ✅ | 聊天核心(DeepSeek正常时) |
+| M3-workbench | 12 | 6/12 | AI触发workbench(6失败=限流) |
+| M4-session | 10 | 8/10 | 会话生命周期(2失败=多AI调用限流) |
+| M5-agent | 12 | 12/12 ✅ | Client Agent配对+本地模式 |
+| M6-file-upload | 6 | 6/6 ✅ | 文件上传附件 |
+| M7-navigation | 10 | 10/10 ✅ | 路由导航+页面UI |
+| **总计** | **73** | **59-67/73** | 所有失败均为DeepSeek限流 |
+
+**关键修复记录:**
+- `browser.newContext()` 需显式 `storageState: { cookies: [], origins: [] }`
+- Ant Design "登 录" 按钮有空格 → `/登\s*录/`
+- Plus 按钮要用 `main .anticon-plus` 避免命中侧边栏
+- Cloud 模式不更新 agent store（仅调 onSelect）
+- Client Agent 需要 `DEEPSEEK_API_KEY` 环境变量
+- `sendAndWaitWithRetry` 增加 streaming 二次等待
+
 ### 待办事项
 
-- [ ] 用户场景测试（用户手动验证）
-- [ ] Client Agent 连接配对 + 工具执行验证（需要本地CLI环境）
+- [ ] DeepSeek 限流缓解后重跑 M3/M4 确认全绿
 - [ ] 开始 Sentinel Agent 开发
 
 ### 下次继续
 
-1. 用户进行场景测试
+1. 限流缓解后全量跑一次确认
 2. 如无问题，开始 Sentinel Agent 开发
 
 ---

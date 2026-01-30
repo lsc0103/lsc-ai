@@ -51,14 +51,13 @@ export async function sendAndWaitWithRetry(
 
     try {
       // Wait for stop button to appear then disappear
-      await page.locator(SEL.chat.stopButton).waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
+      await page.locator(SEL.chat.stopButton).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
       await page.locator(SEL.chat.stopButton).waitFor({ state: 'hidden', timeout });
     } catch {
-      // Timeout — try again if retries remain
-      if (attempt < retries) continue;
+      // Timeout — but still check if response arrived
     }
 
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
 
     // Check if we got a response
     const assistantBubbles = page.locator('main .message-bubble.assistant');
@@ -67,6 +66,24 @@ export async function sendAndWaitWithRetry(
       const text = (await assistantBubbles.last().textContent()) || '';
       if (text.length > 0) {
         return { hasResponse: true, responseText: text };
+      }
+    }
+
+    // If stop button is still visible, AI is still working — wait more
+    const stillStreaming = await page.locator(SEL.chat.stopButton).isVisible().catch(() => false);
+    if (stillStreaming) {
+      try {
+        await page.locator(SEL.chat.stopButton).waitFor({ state: 'hidden', timeout: 60000 });
+        await page.waitForTimeout(2000);
+        const retryCount = await assistantBubbles.count();
+        if (retryCount > 0) {
+          const text = (await assistantBubbles.last().textContent()) || '';
+          if (text.length > 0) {
+            return { hasResponse: true, responseText: text };
+          }
+        }
+      } catch {
+        // Still streaming after extra wait
       }
     }
 

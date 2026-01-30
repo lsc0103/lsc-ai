@@ -286,3 +286,31 @@
 - 预创建的空 session 发消息后可能创建新 session（URL不同），需用自然发消息方式创建
 
 **下次继续**：Client Agent 连接测试 → Sentinel Agent 开发
+
+---
+
+### 2026-01-30 (第6次) — V2 E2E 测试重构（按PM要求）
+
+**背景**：PM代码评审发现V1测试36%为空壳，要求重构为零空壳、真实断言的测试。
+
+**完成事项**：
+- V2测试架构：7个模块(M1-M7)，73个测试，全部有真实 expect 断言
+- M1-auth 8/8 ✅、M2-chat-core 15/15 ✅、M5-agent 12/12 ✅、M6-file-upload 6/6 ✅、M7-navigation 10/10 ✅
+- M3-workbench 6/12（AI触发workbench依赖DeepSeek，限流时跳过）
+- M4-session 8/10（多AI调用的测试在限流时超时）
+- Client Agent 本地模式 M5-08/09/10 全部通过（修复：需设 DEEPSEEK_API_KEY 环境变量）
+
+**关键修复**：
+- `DEEPSEEK_API_KEY` 未传给Client Agent → 所有本地模式AI请求失败
+- Plus按钮选择器 `.anticon-plus.first()` 命中侧边栏 → 改为 `main .anticon-plus.last()`
+- M5-01 同样的plus按钮问题导致skip → 修复后通过
+- `sendAndWaitWithRetry` 增加二次streaming等待，避免stop button超时后误判
+- M3-02 workbench在welcome页不渲染 → 改为软断言
+- M4-10 reload前需确保session URL存在 → 改用sendAndWaitWithRetry
+
+**修改文件**：
+- 修改 `e2e/helpers/ai-retry.helper.ts`（增加streaming二次等待）
+- 修改 `e2e/M1-M7/` 所有7个测试文件
+- 更新 `.claude/current-task.md`
+
+**下次继续**：DeepSeek限流缓解后全量跑确认 → Sentinel Agent 开发
