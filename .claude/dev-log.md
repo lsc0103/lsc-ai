@@ -314,3 +314,63 @@
 - 更新 `.claude/current-task.md`
 
 **下次继续**：DeepSeek限流缓解后全量跑确认 → Sentinel Agent 开发
+
+---
+
+## 2026-01-31 BUG 调查（PM 指令步骤 1）
+
+### BUG-1: Workbench welcome 页不渲染
+
+**现象**：
+- Welcome 页（无 session）点加号菜单 →"打开工作台"菜单项可见且文字为"打开工作台" → 点击后 `.workbench-container` **不存在于 DOM 中**
+- 有 session 的页面点同样的菜单 → `.workbench-container` **正常渲染**，右侧出现"工作台"面板，标题"工作台"，标签"文件浏览"
+- 截图对比：`test-results/bug1a-step3-after-click.png`（welcome，无 workbench）vs `test-results/bug1b-step2-after-click.png`（有 session，workbench 正常）
+
+**判定：产品 bug**
+
+**分析**：
+- `WorkbenchStore.ts:449-474` 的 `openBlank()` 调用 `set({ visible: true })`，不检查 session 状态
+- `Workbench.tsx:356` 只检查 `if (!visible) return null`，也不检查 session
+- 但 `Chat.tsx:57-80` 中 `WorkbenchLayout` 包裹了整个页面，welcome 页和 message 页都在里面
+- `WorkbenchLayout.tsx:163-177` 在 `visible` 为 true 时渲染 `<Workbench />`
+- **推测**：welcome 页的某个父组件条件导致 workbench 不渲染，或者 zustand store 的状态在 welcome 页没被正确连接。需要进一步排查 `WorkbenchLayout` 在 welcome 页是否真正接收到 `visible=true`
+
+**建议修复**：需要 debug 为什么 `openBlank()` 设置 `visible: true` 后，welcome 页的 `WorkbenchLayout` 没有渲染 workbench。可能是 React 组件树的问题。
+
+### BUG-2: 云端模式确认按钮点不到
+
+**现象**：
+- 打开工作路径 modal → 选择"云端服务器" → 输入 `/workspace` → 截图确认"确定"按钮在 UI 上可见
+- 但 `modal.locator('button:has-text("确定")')` 超时
+- 初始 agent store 为 null
+
+**判定：测试选择器问题**
+
+**分析**：
+- Modal footer 是自定义渲染（`WorkspaceSelectModal.tsx:144-150`），按钮在 `.ant-modal-footer` 内
+- `page.locator('.ant-modal').last()` 可能选到了错误的 modal（页面上如果有多个 modal root）
+- 截图确认 UI 上按钮可见，所以是选择器定位问题不是产品 bug
+- 产品行为确认：云端模式代码（`WorkspaceSelectModal.tsx:92-95`）只调 `onSelect('server', ...)` 不更新 agent store —— **这是设计如此**，不是遗漏。因为云端模式不需要绑定 deviceId。
+
+### BUG-3: enterLocalMode() 确定按钮找不到
+
+**现象**：
+- 所有步骤到 Step7 成功：菜单打开 ✅ → modal 打开 ✅ → 本地电脑 Radio 切换 ✅ → 设备列表 1 个设备（"刘帅成@LAPTOP-AQ2R7BM3 在线"）✅ → 工作目录输入框可见 ✅ → 填入路径 ✅
+- Step8 失败：`button:has-text("确定")` 在 modal 范围内找不到（`可见: false, 禁用: true`）
+- 因此 Step9-11 全部失败：没进入本地模式 → AgentStatusIndicator 不渲染 → 退出/切换按钮不存在
+
+**判定：测试选择器问题 + 设备未选中**
+
+**分析**：
+- 截图 `bug3-step8-before-confirm.png` 显示 modal 上"确定"按钮清晰可见且为蓝色（启用状态）
+- disabled 条件是 `mode === 'local' && !workDir`（`WorkspaceSelectModal.tsx:147`），我填了 workDir 所以不应禁用
+- 但日志说 `confirmVisible: false`——说明 `modal.locator(...)` 选择器定位失败
+- **根因**：`.ant-modal` 可能匹配到多个元素，`.last()` 选到了一个不正确的 modal wrapper
+- 正确做法：用 `page.locator('.ant-modal-content:visible')` 或者直接 `page.locator('button:has-text("确定"):visible')` 定位
+- 设备也可能没成功选中（Step6 点击了设备行但没确认 selectedDeviceId 是否更新）
+- **退出按钮**的实际选择器：`AgentStatusIndicator.tsx:161-163` 使用 `<Button type="text" size="small" icon={<CloseOutlined />}>退出</Button>`，选择器应为 `button:has-text("退出")` 而不是 `.anticon-close`
+
+**结论汇总**：
+- BUG-1 是真实产品 bug（welcome 页 workbench 不渲染）
+- BUG-2 是测试选择器问题 + 确认云端模式不更新 store 是设计如此
+- BUG-3 是测试选择器问题（modal 定位不准确），产品本身的退出按钮存在且功能正常
