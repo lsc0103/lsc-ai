@@ -195,29 +195,27 @@ test('M2-09 AI 工具调用展示', async ({ page }) => {
   await page.goto('/chat');
   await page.waitForLoadState('networkidle');
 
+  // 使用会触发工具调用的 prompt（"你好"不会触发工具）
   const { hasResponse } = await sendAndWaitWithRetry(
     page,
-    '你好，请简单介绍一下自己',
+    '帮我搜索 Playwright 是什么',
     { timeout: 90000, retries: 2 },
   );
   expect(hasResponse).toBe(true);
 
-  // ToolSteps area
+  // ToolSteps area — 工具调用应显示在 assistant bubble 中
   const toolSteps = page.locator('main .message-bubble.assistant .bg-cream-50');
   const toolStepsCount = await toolSteps.count();
 
-  // Tool steps may or may not appear depending on AI decision
-  // For platform agent (remote mode), tools like webSearch may be called
-  // but it's not guaranteed. Verify the response structure is valid.
   if (toolStepsCount > 0) {
+    // 有工具调用展示 — 验证状态图标
     await expect(toolSteps.first()).toBeVisible();
     const statusIcons = page.locator('main .message-bubble.assistant .anticon-check-circle, main .message-bubble.assistant .anticon-loading');
     expect(await statusIcons.count()).toBeGreaterThan(0);
+  } else {
+    // AI 未使用工具 — 跳过而非静默通过
+    test.skip(true, 'AI 未触发工具调用，可能 webSearch 工具未启用或 AI 选择直接回答');
   }
-  // Either way, AI responded — response has valid content
-  const lastBubble = page.locator('main .message-bubble.assistant').last();
-  const text = await lastBubble.textContent();
-  expect(text!.length).toBeGreaterThan(0);
 });
 
 test('M2-10 停止生成按钮', async ({ page }) => {

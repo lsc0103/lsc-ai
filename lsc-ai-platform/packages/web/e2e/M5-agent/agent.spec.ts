@@ -20,58 +20,55 @@ async function isAgentOnline(api: any): Promise<boolean> {
 
 // Helper: open workspace modal and select local mode with device
 async function enterLocalMode(page: any, workDir = 'D:\\u3d-projects\\lscmade7') {
-  // Click plus menu
-  // ChatInput plus button (inside main, not sidebar)
+  // Step 1: 点加号菜单 (ChatInput 里的, 不是侧边栏的)
   const plusBtn = page.locator('main .anticon-plus').last();
   await plusBtn.click();
   await page.waitForTimeout(500);
 
-  // Click "选择工作路径"
-  const workdirItem = page.locator('.ant-dropdown-menu-item:has-text("选择工作路径"), .ant-dropdown-menu-item:has-text("工作路径"), .ant-dropdown-menu-item:has-text("工作目录")').first();
+  // Step 2: 点"选择工作路径"
+  const workdirItem = page.locator('.ant-dropdown-menu-item:has-text("选择工作路径")').first();
   if (!await workdirItem.isVisible().catch(() => false)) {
-    // try "选择工作目录"
-    const altItem = page.locator('text=选择工作路径').first();
-    if (await altItem.isVisible().catch(() => false)) {
-      await altItem.click();
-    } else {
-      return false;
-    }
-  } else {
-    await workdirItem.click();
+    return false;
   }
+  await workdirItem.click();
   await page.waitForTimeout(500);
 
-  // Modal should open
-  const modal = page.locator('.ant-modal').last();
-  await modal.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-
-  // Select "本地电脑" radio
-  const localRadio = modal.locator('text=本地电脑').first();
-  if (await localRadio.isVisible().catch(() => false)) {
-    await localRadio.click();
-    await page.waitForTimeout(1000);
+  // Step 3: Modal 打开 — 用 :visible 定位而非 .last()
+  const modalContent = page.locator('.ant-modal-content:visible');
+  await modalContent.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  if (!await modalContent.isVisible().catch(() => false)) {
+    return false;
   }
 
-  // Select device (first online device)
-  const deviceItems = modal.locator('.ant-list-item, .ant-radio-wrapper, [class*="device"]');
+  // Step 4: 选择"本地电脑" Radio
+  const localRadio = modalContent.locator('text=本地电脑').first();
+  await localRadio.click();
+  await page.waitForTimeout(1500);
+
+  // Step 5: 选设备 (第一个在线设备)
+  // WorkspaceSelectModal 的设备列表: .ant-list .ant-list-item
+  const deviceItems = modalContent.locator('.ant-list-item');
   const deviceCount = await deviceItems.count();
   if (deviceCount > 0) {
     await deviceItems.first().click();
     await page.waitForTimeout(500);
+  } else {
+    return false;
   }
 
-  // Input work dir
-  const dirInput = modal.locator('input[placeholder*="工作目录"], input[placeholder*="路径"], input[type="text"]').first();
+  // Step 6: 输入工作目录
+  // WorkspaceSelectModal 的输入框 placeholder: "例如：D:\projects\my-app 或 /home/user/projects"
+  const dirInput = modalContent.locator('input[type="text"]').last();
   if (await dirInput.isVisible().catch(() => false)) {
+    await dirInput.clear();
     await dirInput.fill(workDir);
+    await page.waitForTimeout(300);
   }
 
-  // Click confirm
-  const confirmBtn = modal.locator('.ant-modal-footer .ant-btn-primary, button:has-text("确定"), button:has-text("确认")').first();
-  if (await confirmBtn.isVisible().catch(() => false)) {
-    await confirmBtn.click();
-    await page.waitForTimeout(1000);
-  }
+  // Step 7: 点确定
+  const confirmBtn = page.locator('.ant-modal-content:visible button:has-text("确定")').first();
+  await confirmBtn.click();
+  await page.waitForTimeout(1500);
 
   return true;
 }
@@ -146,20 +143,14 @@ test('M5-02 选择云端服务器模式', async ({ page, api }) => {
     await dirInput.fill('/workspace');
   }
 
-  // Confirm
-  const confirmBtn = modal.locator('.ant-modal-footer .ant-btn-primary, button:has-text("确定")').first();
+  // Confirm — 用 visible 过滤避免选到错误 modal
+  const confirmBtn = page.locator('.ant-modal-content:visible button:has-text("确定")').first();
+  await expect(confirmBtn).toBeVisible({ timeout: 3000 });
   await confirmBtn.click();
   await page.waitForTimeout(1000);
 
-  // Modal should close
+  // Modal should close — 云端模式不更新 agent store（设计如此，见 BUG-2 调查）
   await expect(modal).toBeHidden({ timeout: 5000 });
-
-  // Cloud mode: the onSelect callback fires but doesn't update agent store
-  // Verify the success message appeared
-  const successMsg = page.locator('.ant-message-success');
-  const hasMsg = await successMsg.isVisible().catch(() => false);
-  // The modal closed successfully — that confirms cloud mode was selected
-  expect(true).toBe(true);
 });
 
 test('M5-03 本地电脑模式显示设备列表', async ({ page, api }) => {
@@ -216,28 +207,24 @@ test('M5-04 退出工作空间', async ({ page, api }) => {
     return;
   }
 
-  // AgentStatusIndicator should be visible
+  // AgentStatusIndicator should be visible — 从代码看显示"本地模式"文字
+  await page.waitForTimeout(1000);
+  const indicator = page.locator('text=本地模式');
+  await expect(indicator).toBeVisible({ timeout: 5000 });
+
+  // Click exit button — AgentStatusIndicator.tsx:161-163: <Button>退出</Button>
+  const exitBtn = page.locator('button:has-text("退出")').first();
+  await expect(exitBtn).toBeVisible({ timeout: 3000 });
+  await exitBtn.click();
   await page.waitForTimeout(1000);
 
-  // Click exit button on indicator
-  const exitBtn = page.locator('.anticon-close, button:has-text("退出")').first();
-  if (await exitBtn.isVisible().catch(() => false)) {
-    await exitBtn.click();
-    await page.waitForTimeout(1000);
-
-    // Agent store should be cleared
-    const agentState = await page.evaluate(() => {
-      const data = localStorage.getItem('lsc-ai-agent');
-      return data ? JSON.parse(data) : null;
-    });
-    if (agentState?.state) {
-      expect(agentState.state.currentDeviceId).toBeFalsy();
-    }
-  } else {
-    // Indicator might use SwapOutlined for switch
-    const swapBtn = page.locator('.anticon-swap');
-    expect(await swapBtn.isVisible().catch(() => false) || true).toBe(true);
-  }
+  // Agent store should be cleared
+  const agentState = await page.evaluate(() => {
+    const data = localStorage.getItem('lsc-ai-agent');
+    return data ? JSON.parse(data) : null;
+  });
+  // currentDeviceId should be cleared after exit
+  expect(agentState?.state?.currentDeviceId).toBeFalsy();
 });
 
 // ============================================================================
@@ -497,7 +484,11 @@ test('M5-12 Agent 离线状态感知', async ({ page, api }) => {
   await modal.locator('text=本地电脑').click();
   await page.waitForTimeout(1000);
 
-  // Should show online status in modal text
+  // 验证在线状态
   const modalText = await modal.textContent();
   expect(modalText).toContain('在线');
+
+  // 离线感知测试：无法在自动化中停止 Client Agent 进程
+  // 完整离线测试需要：停止 Agent → 刷新设备列表 → 检查状态变为离线
+  test.skip(true, '在线状态已验证。离线感知需手动停止 Client Agent 进程，无法在 E2E 自动化中完成');
 });
