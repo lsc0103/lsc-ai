@@ -7,6 +7,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
+// 模块级工具实例缓存，避免每次调用都 dynamic import + new
+const _cache: Record<string, any> = {};
+
 // ============================================================================
 // 文件读取工具
 // ============================================================================
@@ -24,10 +27,11 @@ export const readFileTool = createTool({
   }),
   execute: async ({ file_path, offset = 0, limit }) => {
     try {
-      // 复用 @lsc-ai/core 的 ReadTool 实现
-      const { ReadTool } = await import('./mastra/read.js');
-      const readTool = new ReadTool();
-      const result = await readTool.execute({ file_path, offset, limit });
+      if (!_cache.read) {
+        const { ReadTool } = await import('./mastra/read.js');
+        _cache.read = new ReadTool();
+      }
+      const result = await _cache.read.execute({ file_path, offset, limit });
       return result;
     } catch (error) {
       throw new Error(`读取文件失败: ${(error as Error).message}`);
@@ -48,9 +52,11 @@ export const writeFileTool = createTool({
   }),
   execute: async ({ file_path, content }) => {
     try {
-      const { WriteTool } = await import('./mastra/write.js');
-      const writeTool = new WriteTool();
-      const result = await writeTool.execute({ file_path, content });
+      if (!_cache.write) {
+        const { WriteTool } = await import('./mastra/write.js');
+        _cache.write = new WriteTool();
+      }
+      const result = await _cache.write.execute({ file_path, content });
       return result;
     } catch (error) {
       throw new Error(`写入文件失败: ${(error as Error).message}`);
@@ -73,9 +79,11 @@ export const editFileTool = createTool({
   }),
   execute: async ({ file_path, old_string, new_string, replace_all = false }) => {
     try {
-      const { EditTool } = await import('./mastra/edit.js');
-      const editTool = new EditTool();
-      const result = await editTool.execute({ file_path, old_string, new_string, replace_all });
+      if (!_cache.edit) {
+        const { EditTool } = await import('./mastra/edit.js');
+        _cache.edit = new EditTool();
+      }
+      const result = await _cache.edit.execute({ file_path, old_string, new_string, replace_all });
       return result;
     } catch (error) {
       throw new Error(`编辑文件失败: ${(error as Error).message}`);
@@ -97,9 +105,11 @@ export const bashTool = createTool({
   }),
   execute: async ({ command, timeout, description }) => {
     try {
-      const { BashTool } = await import('./mastra/bash.js');
-      const bashTool = new BashTool();
-      const result = await bashTool.execute({ command, timeout, description });
+      if (!_cache.bash) {
+        const { BashTool } = await import('./mastra/bash.js');
+        _cache.bash = new BashTool();
+      }
+      const result = await _cache.bash.execute({ command, timeout, description });
       return result;
     } catch (error) {
       throw new Error(`执行命令失败: ${(error as Error).message}`);
@@ -120,9 +130,11 @@ export const globTool = createTool({
   }),
   execute: async ({ pattern, path: searchPath }) => {
     try {
-      const { GlobTool } = await import('./mastra/glob.js');
-      const globTool = new GlobTool();
-      const result = await globTool.execute({ pattern, path: searchPath });
+      if (!_cache.glob) {
+        const { GlobTool } = await import('./mastra/glob.js');
+        _cache.glob = new GlobTool();
+      }
+      const result = await _cache.glob.execute({ pattern, path: searchPath });
       return result;
     } catch (error) {
       throw new Error(`文件搜索失败: ${(error as Error).message}`);
@@ -146,9 +158,11 @@ export const grepTool = createTool({
   }),
   execute: async (input) => {
     try {
-      const { GrepTool } = await import('./mastra/grep.js');
-      const grepTool = new GrepTool();
-      const result = await grepTool.execute(input);
+      if (!_cache.grep) {
+        const { GrepTool } = await import('./mastra/grep.js');
+        _cache.grep = new GrepTool();
+      }
+      const result = await _cache.grep.execute(input);
       return result;
     } catch (error) {
       throw new Error(`内容搜索失败: ${(error as Error).message}`);
@@ -168,9 +182,11 @@ export const gitStatusTool = createTool({
   }),
   execute: async ({ path: repoPath }) => {
     try {
-      const { GitStatusTool } = await import('./mastra/git.js');
-      const tool = new GitStatusTool();
-      const result = await tool.execute({ path: repoPath });
+      if (!_cache.gitStatus) {
+        const { GitStatusTool } = await import('./mastra/git.js');
+        _cache.gitStatus = new GitStatusTool();
+      }
+      const result = await _cache.gitStatus.execute({ path: repoPath });
       return result;
     } catch (error) {
       throw new Error(`Git 状态查询失败: ${(error as Error).message}`);
@@ -187,9 +203,11 @@ export const gitDiffTool = createTool({
   }),
   execute: async ({ path: repoPath, staged }) => {
     try {
-      const { GitDiffTool } = await import('./mastra/git.js');
-      const tool = new GitDiffTool();
-      const result = await tool.execute({ path: repoPath, staged });
+      if (!_cache.gitDiff) {
+        const { GitDiffTool } = await import('./mastra/git.js');
+        _cache.gitDiff = new GitDiffTool();
+      }
+      const result = await _cache.gitDiff.execute({ path: repoPath, staged });
       return result;
     } catch (error) {
       throw new Error(`Git 差异查询失败: ${(error as Error).message}`);
@@ -209,9 +227,11 @@ export const mkdirTool = createTool({
   }),
   execute: async ({ path: dirPath }) => {
     try {
-      const { MkdirTool } = await import('./mastra/fileOps.js');
-      const tool = new MkdirTool();
-      const result = await tool.execute({ path: dirPath });
+      if (!_cache.mkdir) {
+        const { MkdirTool } = await import('./mastra/fileOps.js');
+        _cache.mkdir = new MkdirTool();
+      }
+      const result = await _cache.mkdir.execute({ path: dirPath });
       return result;
     } catch (error) {
       throw new Error(`创建目录失败: ${(error as Error).message}`);
@@ -228,9 +248,11 @@ export const copyTool = createTool({
   }),
   execute: async ({ source, destination }) => {
     try {
-      const { CopyTool } = await import('./mastra/fileOps.js');
-      const tool = new CopyTool();
-      const result = await tool.execute({ source, destination });
+      if (!_cache.cp) {
+        const { CopyTool } = await import('./mastra/fileOps.js');
+        _cache.cp = new CopyTool();
+      }
+      const result = await _cache.cp.execute({ source, destination });
       return result;
     } catch (error) {
       throw new Error(`复制失败: ${(error as Error).message}`);
@@ -247,9 +269,11 @@ export const moveTool = createTool({
   }),
   execute: async ({ source, destination }) => {
     try {
-      const { MoveTool } = await import('./mastra/fileOps.js');
-      const tool = new MoveTool();
-      const result = await tool.execute({ source, destination });
+      if (!_cache.mv) {
+        const { MoveTool } = await import('./mastra/fileOps.js');
+        _cache.mv = new MoveTool();
+      }
+      const result = await _cache.mv.execute({ source, destination });
       return result;
     } catch (error) {
       throw new Error(`移动失败: ${(error as Error).message}`);
@@ -266,9 +290,11 @@ export const removeTool = createTool({
   }),
   execute: async ({ path: targetPath, recursive }) => {
     try {
-      const { RemoveTool } = await import('./mastra/fileOps.js');
-      const tool = new RemoveTool();
-      const result = await tool.execute({ path: targetPath, recursive });
+      if (!_cache.rm) {
+        const { RemoveTool } = await import('./mastra/fileOps.js');
+        _cache.rm = new RemoveTool();
+      }
+      const result = await _cache.rm.execute({ path: targetPath, recursive });
       return result;
     } catch (error) {
       throw new Error(`删除失败: ${(error as Error).message}`);
@@ -285,9 +311,11 @@ export const listTool = createTool({
   }),
   execute: async ({ path: dirPath, recursive }) => {
     try {
-      const { ListTool } = await import('./mastra/fileOps.js');
-      const tool = new ListTool();
-      const result = await tool.execute({ path: dirPath, recursive });
+      if (!_cache.ls) {
+        const { ListTool } = await import('./mastra/fileOps.js');
+        _cache.ls = new ListTool();
+      }
+      const result = await _cache.ls.execute({ path: dirPath, recursive });
       return result;
     } catch (error) {
       throw new Error(`列出目录失败: ${(error as Error).message}`);

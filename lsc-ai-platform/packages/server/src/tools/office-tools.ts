@@ -7,6 +7,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
+// 模块级工具实例缓存
+const _cache: Record<string, any> = {};
+
 // ============================================================================
 // Office 文件读取工具
 // ============================================================================
@@ -25,9 +28,11 @@ export const readOfficeTool = createTool({
   }),
   execute: async ({ filePath }) => {
     try {
-      const { ReadOfficeTool } = await import('./mastra/office/reader.js');
-      const tool = new ReadOfficeTool();
-      const result = await tool.execute({ filePath });
+      if (!_cache.readOffice) {
+        const { ReadOfficeTool } = await import('./mastra/office/reader.js');
+        _cache.readOffice = new ReadOfficeTool();
+      }
+      const result = await _cache.readOffice.execute({ filePath });
       return result;
     } catch (error) {
       throw new Error(`读取 Office 文件失败: ${(error as Error).message}`);
@@ -56,9 +61,11 @@ export const createWordTool = createTool({
   }),
   execute: async ({ filePath, content, title }) => {
     try {
-      const { CreateWordTool } = await import('./mastra/office/word.js');
-      const tool = new CreateWordTool();
-      const result = await tool.execute({ filePath, content, title });
+      if (!_cache.createWord) {
+        const { CreateWordTool } = await import('./mastra/office/word.js');
+        _cache.createWord = new CreateWordTool();
+      }
+      const result = await _cache.createWord.execute({ filePath, content, title });
       return result;
     } catch (error) {
       throw new Error(`创建 Word 文档失败: ${(error as Error).message}`);
@@ -75,9 +82,11 @@ export const editWordTool = createTool({
   }),
   execute: async ({ filePath, content }) => {
     try {
-      const { EditWordTool } = await import('./mastra/office/wordEdit.js');
-      const tool = new EditWordTool();
-      const result = await tool.execute({ filePath, content });
+      if (!_cache.editWord) {
+        const { EditWordTool } = await import('./mastra/office/wordEdit.js');
+        _cache.editWord = new EditWordTool();
+      }
+      const result = await _cache.editWord.execute({ filePath, content });
       return result;
     } catch (error) {
       throw new Error(`编辑 Word 文档失败: ${(error as Error).message}`);
@@ -102,9 +111,11 @@ export const createExcelTool = createTool({
   }),
   execute: async ({ filePath, sheets }) => {
     try {
-      const { CreateExcelTool } = await import('./mastra/office/excel.js');
-      const tool = new CreateExcelTool();
-      const result = await tool.execute({ filePath, sheets });
+      if (!_cache.createExcel) {
+        const { CreateExcelTool } = await import('./mastra/office/excel.js');
+        _cache.createExcel = new CreateExcelTool();
+      }
+      const result = await _cache.createExcel.execute({ filePath, sheets });
       return result;
     } catch (error) {
       throw new Error(`创建 Excel 表格失败: ${(error as Error).message}`);
@@ -127,9 +138,11 @@ export const editExcelTool = createTool({
   }),
   execute: async ({ filePath, sheetName, operations }) => {
     try {
-      const { EditExcelTool } = await import('./mastra/office/excelEdit.js');
-      const tool = new EditExcelTool();
-      const result = await tool.execute({ filePath, sheetName, operations });
+      if (!_cache.editExcel) {
+        const { EditExcelTool } = await import('./mastra/office/excelEdit.js');
+        _cache.editExcel = new EditExcelTool();
+      }
+      const result = await _cache.editExcel.execute({ filePath, sheetName, operations });
       return result;
     } catch (error) {
       throw new Error(`编辑 Excel 表格失败: ${(error as Error).message}`);
@@ -151,9 +164,11 @@ export const createPDFTool = createTool({
   }),
   execute: async ({ filePath, content, title }) => {
     try {
-      const { CreatePDFTool } = await import('./mastra/office/pdf.js');
-      const tool = new CreatePDFTool();
-      const result = await tool.execute({ filePath, content, title });
+      if (!_cache.createPDF) {
+        const { CreatePDFTool } = await import('./mastra/office/pdf.js');
+        _cache.createPDF = new CreatePDFTool();
+      }
+      const result = await _cache.createPDF.execute({ filePath, content, title });
       return result;
     } catch (error) {
       throw new Error(`创建 PDF 文档失败: ${(error as Error).message}`);
@@ -175,9 +190,11 @@ export const createPPTTool = createTool({
   }),
   execute: async ({ filePath, outline, title }) => {
     try {
-      const { CreatePPTTool } = await import('./mastra/office/ppt.js');
-      const tool = new CreatePPTTool();
-      const result = await tool.execute({ filePath, outline, title });
+      if (!_cache.createPPT) {
+        const { CreatePPTTool } = await import('./mastra/office/ppt.js');
+        _cache.createPPT = new CreatePPTTool();
+      }
+      const result = await _cache.createPPT.execute({ filePath, outline, title });
       return result;
     } catch (error) {
       throw new Error(`创建 PPT 失败: ${(error as Error).message}`);
@@ -206,9 +223,11 @@ export const createChartTool = createTool({
   }),
   execute: async ({ type, data, outputPath, title }) => {
     try {
-      const { CreateChartTool } = await import('./mastra/office/chart.js');
-      const tool = new CreateChartTool();
-      const result = await tool.execute({ type, data, outputPath, title });
+      if (!_cache.createChart) {
+        const { CreateChartTool } = await import('./mastra/office/chart.js');
+        _cache.createChart = new CreateChartTool();
+      }
+      const result = await _cache.createChart.execute({ type, data, outputPath, title });
       return result;
     } catch (error) {
       throw new Error(`创建图表失败: ${(error as Error).message}`);

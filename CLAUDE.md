@@ -82,9 +82,9 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 ## 五、已知问题 (必须跟踪)
 
 ### P0 — 必须修复
-1. **Instructions 与工具不匹配** — `mastra-agent.service.ts` → `getPlatformInstructions()` 列出不存在的工具
-2. **TodoStore 每次新建实例** — `advanced-tools.ts:140-141`
-3. **工具包装三层嵌套** — core/office/advanced-tools 每次 dynamic import
+1. ✅ **Instructions 与工具不匹配** — 已添加 editWord/editExcel/sqlConfig/modificationHistory
+2. ✅ **TodoStore 每次新建实例** — 已改为模块级单例 `_todoStoreSingleton`
+3. ✅ **工具包装三层嵌套** — 已改为模块级 `_cache` 缓存（30个工具）
 
 ### P1 — 重要优化
 4. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）

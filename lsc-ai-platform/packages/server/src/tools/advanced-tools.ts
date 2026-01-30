@@ -7,6 +7,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
+// 模块级工具实例缓存
+const _cache: Record<string, any> = {};
+
 // ============================================================================
 // Web 工具
 // ============================================================================
@@ -20,9 +23,11 @@ export const webSearchTool = createTool({
   }),
   execute: async ({ query, num }) => {
     try {
-      const { WebSearchTool } = await import('./mastra/webSearch.js');
-      const tool = new WebSearchTool();
-      const result = await tool.execute({ query, num });
+      if (!_cache.webSearch) {
+        const { WebSearchTool } = await import('./mastra/webSearch.js');
+        _cache.webSearch = new WebSearchTool();
+      }
+      const result = await _cache.webSearch.execute({ query, num });
       return result;
     } catch (error) {
       throw new Error(`网页搜索失败: ${(error as Error).message}`);
@@ -39,9 +44,11 @@ export const webFetchTool = createTool({
   }),
   execute: async ({ url, selector }) => {
     try {
-      const { WebFetchTool } = await import('./mastra/webFetch.js');
-      const tool = new WebFetchTool();
-      const result = await tool.execute({ url, selector });
+      if (!_cache.webFetch) {
+        const { WebFetchTool } = await import('./mastra/webFetch.js');
+        _cache.webFetch = new WebFetchTool();
+      }
+      const result = await _cache.webFetch.execute({ url, selector });
       return result;
     } catch (error) {
       throw new Error(`网页抓取失败: ${(error as Error).message}`);
@@ -62,9 +69,11 @@ export const sqlTool = createTool({
   }),
   execute: async ({ query, database }) => {
     try {
-      const { SqlTool } = await import('./mastra/sql.js');
-      const tool = new SqlTool();
-      const result = await tool.execute({ query, database });
+      if (!_cache.sql) {
+        const { SqlTool } = await import('./mastra/sql.js');
+        _cache.sql = new SqlTool();
+      }
+      const result = await _cache.sql.execute({ query, database });
       return result;
     } catch (error) {
       throw new Error(`SQL 执行失败: ${(error as Error).message}`);
@@ -85,9 +94,11 @@ export const sqlConfigTool = createTool({
   }),
   execute: async (config) => {
     try {
-      const { SqlConfigTool } = await import('./mastra/sql.js');
-      const tool = new SqlConfigTool();
-      const result = await tool.execute(config);
+      if (!_cache.sqlConfig) {
+        const { SqlConfigTool } = await import('./mastra/sql.js');
+        _cache.sqlConfig = new SqlConfigTool();
+      }
+      const result = await _cache.sqlConfig.execute(config);
       return result;
     } catch (error) {
       throw new Error(`SQL 配置失败: ${(error as Error).message}`);
@@ -111,9 +122,11 @@ export const notebookEditTool = createTool({
   }),
   execute: async (params) => {
     try {
-      const { NotebookEditTool } = await import('./mastra/notebookEdit.js');
-      const tool = new NotebookEditTool();
-      const result = await tool.execute(params);
+      if (!_cache.notebookEdit) {
+        const { NotebookEditTool } = await import('./mastra/notebookEdit.js');
+        _cache.notebookEdit = new NotebookEditTool();
+      }
+      const result = await _cache.notebookEdit.execute(params);
       return result;
     } catch (error) {
       throw new Error(`Notebook 编辑失败: ${(error as Error).message}`);
@@ -124,6 +137,9 @@ export const notebookEditTool = createTool({
 // ============================================================================
 // Todo 任务管理工具
 // ============================================================================
+
+// 模块级 TodoStore 单例缓存
+let _todoStoreSingleton: any = null;
 
 export const todoWriteTool = createTool({
   id: 'todoWrite',
@@ -138,8 +154,10 @@ export const todoWriteTool = createTool({
   execute: async (params) => {
     try {
       const { TodoWriteTool, createTodoStore } = await import('./mastra/todoWrite.js');
-      const todoStore = createTodoStore();
-      const tool = new TodoWriteTool(todoStore);
+      if (!_todoStoreSingleton) {
+        _todoStoreSingleton = createTodoStore();
+      }
+      const tool = new TodoWriteTool(_todoStoreSingleton);
       const result = await tool.execute(params);
       return result;
     } catch (error) {
@@ -161,9 +179,11 @@ export const askUserTool = createTool({
   }),
   execute: async ({ question, options }) => {
     try {
-      const { AskUserTool } = await import('./mastra/askUser.js');
-      const tool = new AskUserTool();
-      const result = await tool.execute({ question, options });
+      if (!_cache.askUser) {
+        const { AskUserTool } = await import('./mastra/askUser.js');
+        _cache.askUser = new AskUserTool();
+      }
+      const result = await _cache.askUser.execute({ question, options });
       return result;
     } catch (error) {
       throw new Error(`询问用户失败: ${(error as Error).message}`);
@@ -183,9 +203,11 @@ export const undoTool = createTool({
   }),
   execute: async ({ steps = 1 }) => {
     try {
-      const { UndoTool } = await import('./mastra/undo.js');
-      const tool = new UndoTool();
-      const result = await tool.execute({ steps });
+      if (!_cache.undo) {
+        const { UndoTool } = await import('./mastra/undo.js');
+        _cache.undo = new UndoTool();
+      }
+      const result = await _cache.undo.execute({ steps });
       return result;
     } catch (error) {
       throw new Error(`撤销失败: ${(error as Error).message}`);
@@ -201,9 +223,11 @@ export const modificationHistoryTool = createTool({
   }),
   execute: async ({ file_path }) => {
     try {
-      const { ModificationHistoryTool } = await import('./mastra/undo.js');
-      const tool = new ModificationHistoryTool();
-      const result = await tool.execute({ file_path });
+      if (!_cache.modHistory) {
+        const { ModificationHistoryTool } = await import('./mastra/undo.js');
+        _cache.modHistory = new ModificationHistoryTool();
+      }
+      const result = await _cache.modHistory.execute({ file_path });
       return result;
     } catch (error) {
       throw new Error(`查看历史失败: ${(error as Error).message}`);
