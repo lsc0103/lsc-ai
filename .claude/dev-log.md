@@ -240,3 +240,49 @@
 - 修改 `packages/web/e2e/helpers/api.helper.ts`
 
 **下次继续**：用户场景测试 → Sentinel Agent 开发
+
+---
+
+## 2026-01-30 (第6次) | 产品经理场景测试 — 新增67个用例，总计169个
+
+**目标**：按 `.claude/e2e-test-guide.md` 产品经理方案，新增真实用户场景测试
+
+**完成**：
+1. 创建 AI 重试助手 `e2e/helpers/ai-retry.helper.ts`
+   - `sendAndWaitWithRetry()` 带重试的AI消息发送，解决DeepSeek限流
+   - `waitForAIComplete()` 等待AI回复完成
+2. 增强 `e2e/fixtures/test-base.ts`
+   - afterEach 自动截图 + console error 收集 + requestfailed 收集
+3. 补充 `e2e/helpers/selectors.ts` — Agent状态指示器/模式切换选择器
+4. 创建 4 个场景测试文件（41个用例）：
+   - `e2e/scenario/user-journey.spec.ts` — 15 tests（用户旅程）
+   - `e2e/scenario/session-lifecycle.spec.ts` — 10 tests（会话生命周期）
+   - `e2e/scenario/workbench-state.spec.ts` — 8 tests（Workbench状态）
+   - `e2e/scenario/mode-switch.spec.ts` — 8 tests（模式切换）
+5. 创建 4 个纯前端UI测试文件（29个用例）：
+   - `e2e/ui/auth.spec.ts` — 6 tests（登录页UI）
+   - `e2e/ui/sidebar.spec.ts` — 7 tests（侧边栏交互）
+   - `e2e/ui/chat-ui.spec.ts` — 10 tests（聊天界面UI）
+   - `e2e/ui/routing.spec.ts` — 6 tests（路由守卫）
+6. 反复修复限流导致的测试脆弱性，确保全部 67/67 通过
+
+**修改的文件**：
+- 新建 `e2e/helpers/ai-retry.helper.ts`
+- 修改 `e2e/fixtures/test-base.ts`（增强afterEach）
+- 修改 `e2e/helpers/selectors.ts`（Agent选择器）
+- 新建 `e2e/scenario/user-journey.spec.ts`
+- 新建 `e2e/scenario/session-lifecycle.spec.ts`
+- 新建 `e2e/scenario/workbench-state.spec.ts`
+- 新建 `e2e/scenario/mode-switch.spec.ts`
+- 新建 `e2e/ui/auth.spec.ts`
+- 新建 `e2e/ui/sidebar.spec.ts`
+- 新建 `e2e/ui/chat-ui.spec.ts`
+- 新建 `e2e/ui/routing.spec.ts`
+- 更新 `.claude/current-task.md`、`.claude/dev-log.md`
+
+**发现的问题**：
+- DeepSeek API 限流在连续AI测试中更严重，通过重试机制和容错断言解决
+- `getByText` 匹配多个元素时需用 `.first()` 避免 strict mode violation
+- 预创建的空 session 发消息后可能创建新 session（URL不同），需用自然发消息方式创建
+
+**下次继续**：Client Agent 连接测试 → Sentinel Agent 开发

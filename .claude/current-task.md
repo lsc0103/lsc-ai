@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase 5 — 闭环测试验证 ✅ 全部完成
-**状态**：E2E 全量测试 **102个测试用例**，分组验证全部通过 ✅
+**阶段**：Phase 5 — 闭环测试验证 + 产品经理场景测试 ✅ 全部完成
+**状态**：E2E 全量测试 **169个测试用例**（原102 + 新增67），分组验证全部通过 ✅
 
 ### 已完成事项
 
@@ -41,31 +41,54 @@
   - Markdown渲染/代码块/超长消息/空消息 ✅
   - Workbench面板触发/路由导航/Session CRUD/并发安全 ✅
 - [x] **已有测试回归** — 30/30 通过 ✅（API Health 8 + Auth 5 + Chat Core 6 + History 4 + Session 6 + Agent 2）
+- [x] **产品经理场景测试** — 67/67 通过 ✅
+  - 纯前端UI测试（29个）：登录页6 + 聊天UI10 + 路由6 + 侧边栏7
+  - 用户旅程测试（15个）：登录首页5 + 首次发消息5 + Workbench1 + 历史切换3 + auth setup
+  - 会话生命周期（10个）：CRUD 6 + 特殊场景3 + setup
+  - Workbench状态（8个）：持久化2 + 隔离1 + UI交互4 + setup
+  - 模式切换（8个）：UI基础4 + 状态指示器2 + 会话上下文2
+  - AI重试助手：sendAndWaitWithRetry 解决 DeepSeek 限流问题
+  - test-base增强：afterEach 自动截图 + console error收集 + request fail收集
 
 ### 测试文件清单
 
 ```
 e2e/
-├── api-health/api-health.spec.ts      # 8 tests — API健康+Session CRUD
-├── auth/auth.spec.ts                   # 5 tests — 登录/登出/鉴权
-├── chat-core/chat-core.spec.ts         # 6 tests — 聊天基础交互
-├── chat-history/chat-history.spec.ts   # 4 tests — 历史消息回归
-├── chat-realflow/chat-realflow.spec.ts # 8 tests — 真实AI对话+流式+持久化
+├── api-health/api-health.spec.ts           # 8 tests — API健康+Session CRUD
+├── auth/auth.spec.ts                        # 5 tests — 登录/登出/鉴权
+├── chat-core/chat-core.spec.ts              # 6 tests — 聊天基础交互
+├── chat-history/chat-history.spec.ts        # 4 tests — 历史消息回归
+├── chat-realflow/chat-realflow.spec.ts      # 8 tests — 真实AI对话+流式+持久化
 ├── session-management/session-management.spec.ts # 6 tests — 会话管理
-├── workbench/workbench.spec.ts         # 4 tests — Workbench基础
-├── workbench-real/workbench-real.spec.ts # 7 tests — Workbench真实渲染+UX
-├── agent/agent.spec.ts                 # 2 tests — Agent API
-├── tools-verify/tools-verify.spec.ts   # 26 tests — 34个工具完整验证
-├── memory-verify/memory-verify.spec.ts # 8 tests — Memory持久化验证
-├── frontend-full/frontend-full.spec.ts # 20 tests — 前端全功能
-└── helpers/                            # 测试辅助
-    ├── api.helper.ts
-    ├── socket.helper.ts
-    ├── selectors.ts
-    └── cleanup.ts
+├── workbench/workbench.spec.ts              # 4 tests — Workbench基础
+├── workbench-real/workbench-real.spec.ts    # 7 tests — Workbench真实渲染+UX
+├── agent/agent.spec.ts                      # 2 tests — Agent API
+├── tools-verify/tools-verify.spec.ts        # 26 tests — 34个工具完整验证
+├── memory-verify/memory-verify.spec.ts      # 8 tests — Memory持久化验证
+├── frontend-full/frontend-full.spec.ts      # 20 tests — 前端全功能
+├── ui/                                      # 纯前端测试（新增）
+│   ├── auth.spec.ts                         # 6 tests — 登录页UI细节
+│   ├── chat-ui.spec.ts                      # 10 tests — 聊天界面UI
+│   ├── sidebar.spec.ts                      # 7 tests — 侧边栏交互
+│   └── routing.spec.ts                      # 6 tests — 路由守卫
+├── scenario/                                # 真实场景测试（新增）
+│   ├── user-journey.spec.ts                 # 15 tests — 完整用户旅程
+│   ├── session-lifecycle.spec.ts            # 10 tests — 会话生命周期
+│   ├── workbench-state.spec.ts              # 8 tests — Workbench状态管理
+│   └── mode-switch.spec.ts                  # 8 tests — 模式切换
+├── helpers/
+│   ├── api.helper.ts
+│   ├── socket.helper.ts
+│   ├── chat.helper.ts
+│   ├── ai-retry.helper.ts                  # 新增：AI回复重试机制
+│   ├── selectors.ts                         # 增强：Agent/模式切换选择器
+│   └── cleanup.ts
+└── fixtures/
+    ├── auth.setup.ts
+    └── test-base.ts                         # 增强：afterEach截图+error收集
 ```
 
-**总计：102 个测试用例，分组运行全部通过**
+**总计：169 个测试用例（原102 + 新增67），分组运行全部通过**
 
 ### 注意事项
 

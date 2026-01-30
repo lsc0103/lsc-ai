@@ -42,4 +42,12 @@ export const SEL = {
     panel: '[class*="workbench"]',
     plusMenu: 'button .anticon-plus',
   },
+
+  // Agent / Mode switch
+  agent: {
+    statusIndicator: '[class*="AgentStatus"], [class*="agent-status"], [data-testid="agent-status"]',
+    workspaceSelectModal: '[class*="WorkspaceSelect"], [class*="workspace-select"], .ant-modal',
+    modeSwitch: '[class*="mode-switch"], [class*="ModeSwitch"], button:has-text("本地模式"), button:has-text("远程模式")',
+    deviceList: '[class*="device-list"], [class*="DeviceList"]',
+  },
 } as const;
