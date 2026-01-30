@@ -57,7 +57,7 @@ data/
 apikey/
 
 # Claude
-.claude/
+# .claude/
 
 # Large deploy files
 deploy-package/
