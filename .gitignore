@@ -33,6 +33,8 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 e2e/.auth/
+test-results/
+playwright-report/
 
 # Turbo
 .turbo/
