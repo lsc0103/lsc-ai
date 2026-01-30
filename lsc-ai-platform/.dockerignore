@@ -1,0 +1,53 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+build
+**/build
+
+# Development files
+.git
+.gitignore
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment files (use docker env instead)
+.env
+.env.*
+!.env.example
+
+# Test files
+test
+tests
+**/*.test.ts
+**/*.spec.ts
+coverage
+
+# Docker files (avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Misc
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Offline deploy package
+offline-deploy
+lsc-ai-deploy

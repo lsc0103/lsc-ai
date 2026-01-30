@@ -1,0 +1,54 @@
+{
+  "name": "lsc-ai-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LSC-AI 企业级 AI 平台",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@lsc-ai/web",
+    "dev:server": "turbo run dev --filter=@lsc-ai/server",
+    "dev:agent": "turbo run dev --filter=@lsc-ai/client-agent",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@lsc-ai/web",
+    "build:server": "turbo run build --filter=@lsc-ai/server",
+    "build:agent": "turbo run build --filter=@lsc-ai/client-agent",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,json}\"",
+    "clean": "turbo run clean && rimraf node_modules",
+    "docker:dev": "docker compose -f docker/docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.dev.yml down",
+    "docker:logs": "docker compose -f docker/docker-compose.dev.yml logs -f",
+    "docker:reset": "docker compose -f docker/docker-compose.dev.yml down -v && docker compose -f docker/docker-compose.dev.yml up -d",
+    "db:generate": "pnpm --filter @lsc-ai/server exec prisma generate",
+    "db:migrate": "pnpm --filter @lsc-ai/server exec prisma migrate dev",
+    "db:migrate:deploy": "pnpm --filter @lsc-ai/server exec prisma migrate deploy",
+    "db:studio": "pnpm --filter @lsc-ai/server exec prisma studio",
+    "db:seed": "pnpm --filter @lsc-ai/server exec prisma db seed",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@prisma/client": "5.22.0",
+    "@types/node": "^20.11.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "prisma": "5.22.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.21.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

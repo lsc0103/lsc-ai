@@ -1,0 +1,58 @@
+/**
+ * LSC-AI 设计系统 - 阴影变量
+ *
+ * Z轴层级阴影体系 + iOS 风格玻璃复合阴影
+ */
+
+:root {
+  /* ===== 外部投影阴影（模拟光源从左上方照射）===== */
+  --shadow-z1: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-z2: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-z3: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-z4: 0 16px 48px rgba(0, 0, 0, 0.25);
+  --shadow-z5: 0 24px 64px rgba(0, 0, 0, 0.3);
+
+  /* ===== 玻璃专用复合阴影（含边缘光线）===== */
+  --glass-shadow-sm:
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(var(--glass-highlight-color), 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+
+  --glass-shadow-md:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(var(--glass-highlight-color), 0.4),
+    inset 1px 0 0 rgba(var(--glass-highlight-color), 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 120px rgba(255, 255, 255, 0.03);
+
+  --glass-shadow-lg:
+    0 12px 48px rgba(0, 0, 0, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    inset 0 2px 0 rgba(var(--glass-highlight-color), 0.5),
+    inset 2px 0 0 rgba(var(--glass-highlight-color), 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    inset -2px 0 0 rgba(0, 0, 0, 0.1);
+
+  /* ===== 悬浮态阴影 ===== */
+  --glass-shadow-hover:
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(var(--glass-highlight-color), 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+
+  /* ===== 按钮阴影 ===== */
+  --glass-shadow-button:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(var(--glass-highlight-color), 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+
+  --glass-shadow-button-hover:
+    0 6px 20px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(var(--glass-highlight-color), 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+
+  /* ===== 输入框聚焦发光 ===== */
+  --glass-glow-focus: 0 0 0 3px rgba(0, 113, 227, 0.25);
+  --glass-glow-error: 0 0 0 3px rgba(255, 59, 48, 0.25);
+  --glass-glow-success: 0 0 0 3px rgba(52, 199, 89, 0.25);
+}

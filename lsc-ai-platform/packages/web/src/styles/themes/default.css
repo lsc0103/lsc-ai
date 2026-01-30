@@ -1,0 +1,49 @@
+/**
+ * LSC-AI 设计系统 - 默认主题
+ *
+ * 深蓝科技渐变背景，体现 AI 平台的科技感与专业感
+ */
+
+/* 主题背景容器 */
+.theme-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity var(--duration-theme) var(--ease-out-expo);
+}
+
+/* 默认主题：深蓝科技渐变 */
+[data-theme="default"] .theme-background,
+.theme-background {
+  background:
+    /* 左上主光晕 - 蓝色 */
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(59, 130, 246, 0.25) 0%, transparent 60%),
+    /* 右侧紫色光晕 */
+    radial-gradient(ellipse 70% 50% at 85% 30%, rgba(139, 92, 246, 0.18) 0%, transparent 55%),
+    /* 底部青色光晕 */
+    radial-gradient(ellipse 90% 40% at 50% 95%, rgba(34, 211, 238, 0.12) 0%, transparent 50%),
+    /* 中心微弱暖光 */
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(251, 191, 36, 0.04) 0%, transparent 40%),
+    /* 基础渐变 - 更深的蓝黑 */
+    linear-gradient(160deg, #0c1222 0%, #0f172a 30%, #1a2744 70%, #1e293b 100%);
+}
+
+/* 微妙的动态效果（可选，降低运动敏感度时禁用）*/
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="default"] .theme-background::before,
+  .theme-background::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 25% 65%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 30% at 75% 35%, rgba(139, 92, 246, 0.08) 0%, transparent 45%);
+    animation: gentlePulse 12s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes gentlePulse {
+  0% { opacity: 0.4; transform: scale(1) translateX(0); }
+  100% { opacity: 0.7; transform: scale(1.02) translateX(1%); }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@lsc-ai/client-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LSC-AI Client Agent - 本地代理，运行在用户电脑上",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "lsc-agent": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@lsc-ai/core": "workspace:*",
+    "@mastra/core": "^1.0.4",
+    "@mastra/memory": "^1.0.0",
+    "@mastra/libsql": "^1.0.0",
+    "@mastra/fastembed": "beta",
+    "@ai-sdk/deepseek": "^2.0.12",
+    "@ai-sdk/openai": "^1.0.0",
+    "zod": "^3.23.8",
+    "boxen": "^7.1.1",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "conf": "^12.0.0",
+    "inquirer": "^9.2.0",
+    "ora": "^8.0.0",
+    "socket.io-client": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.0",
+    "@types/node": "^20.11.0",
+    "eslint": "^8.56.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0"
+  }
+}

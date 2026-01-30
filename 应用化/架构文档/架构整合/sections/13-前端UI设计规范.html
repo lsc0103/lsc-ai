@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13 - 前端UI设计规范</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .design-principle {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 24px 0;
+        }
+        .principle-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .principle-card h5 {
+            font-size: 16px;
+            color: #1890ff;
+            margin-bottom: 12px;
+        }
+        .principle-card p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .glass-demo {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 24px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-demo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        /* ========== iOS 风格高级玻璃效果 ========== */
+        .glass-card-demo {
+            position: relative;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border-radius: 24px;
+            padding: 28px;
+            color: #fff;
+            /* iOS 风格阴影 - 更柔和 */
+            box-shadow:
+                /* 外部投影 - 柔和浮起感 */
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.08),
+                /* 顶部边缘高光 - 偏蓝色调 */
+                inset 0 1px 0 rgba(200, 225, 255, 0.4),
+                /* 左侧边缘微光 */
+                inset 1px 0 0 rgba(200, 225, 255, 0.2),
+                /* 底部边缘 - 极轻微 */
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+                /* 内部柔和发光 */
+                inset 0 0 120px rgba(255, 255, 255, 0.03);
+        }
+        /* 顶部弧形高光线 - iOS 核心特征 */
+        .glass-card-demo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            border-radius: 24px 24px 0 0;
+            /* 弧形渐变高光 - 跟随圆角 */
+            background: linear-gradient(
+                180deg,
+                rgba(200, 225, 255, 0.5) 0%,
+                rgba(200, 225, 255, 0.15) 8%,
+                transparent 40%
+            );
+            /* 只保留顶部边缘的高光线 */
+            -webkit-mask: linear-gradient(
+                180deg,
+                rgba(0,0,0,1) 0%,
+                rgba(0,0,0,0.3) 2px,
+                rgba(0,0,0,0) 20px
+            );
+            mask: linear-gradient(
+                180deg,
+                rgba(0,0,0,1) 0%,
+                rgba(0,0,0,0.3) 2px,
+                rgba(0,0,0,0) 20px
+            );
+            pointer-events: none;
+        }
+        /* 边缘渐变边框 - 更柔和的 iOS 风格 */
+        .glass-card-demo::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                160deg,
+                rgba(200, 225, 255, 0.5) 0%,
+                rgba(200, 225, 255, 0.2) 20%,
+                rgba(255, 255, 255, 0.08) 40%,
+                rgba(255, 255, 255, 0.05) 60%,
+                rgba(0, 0, 0, 0.02) 100%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .glass-card-demo h5 {
+            color: #fff;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+        .glass-card-demo p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        .glass-button-demo {
+            display: inline-block;
+            position: relative;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border-radius: 14px;
+            padding: 12px 28px;
+            color: #fff;
+            font-weight: 500;
+            margin-top: 16px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(200, 225, 255, 0.4),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+            border: none;
+            overflow: hidden;
+        }
+        /* 按钮顶部弧形高光 */
+        .glass-button-demo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(
+                180deg,
+                rgba(200, 225, 255, 0.4) 0%,
+                transparent 100%
+            );
+            -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 6px);
+            mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 6px);
+            border-radius: 14px 14px 0 0;
+            pointer-events: none;
+        }
+        .glass-button-demo:hover {
+            background: rgba(255, 255, 255, 0.22);
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 24px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(200, 225, 255, 0.5),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+        }
+        .glass-button-demo:active {
+            transform: scale(0.98);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ========== iOS 风格玻璃变体 ========== */
+        .glass-variants {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 32px;
+        }
+        /* 基础玻璃 - 轻量级 */
+        .glass-basic {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(24px) saturate(150%);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            border-radius: 18px;
+            padding: 20px;
+            color: #fff;
+            box-shadow:
+                0 4px 20px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(200, 225, 255, 0.35);
+            overflow: hidden;
+        }
+        .glass-basic::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(200, 225, 255, 0.3) 0%, transparent 100%);
+            -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 4px);
+            mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 4px);
+            border-radius: 18px 18px 0 0;
+            pointer-events: none;
+        }
+        /* 厚玻璃 - 强调层级感 */
+        .glass-thick {
+            position: relative;
+            background: rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border-radius: 22px;
+            padding: 20px;
+            color: #fff;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.06),
+                inset 0 1.5px 0 rgba(200, 225, 255, 0.5),
+                inset 1px 0 0 rgba(200, 225, 255, 0.2);
+            overflow: hidden;
+        }
+        .glass-thick::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(
+                180deg,
+                rgba(200, 225, 255, 0.55) 0%,
+                rgba(200, 225, 255, 0.2) 10%,
+                transparent 50%
+            );
+            -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 3px, rgba(0,0,0,0) 24px);
+            mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 3px, rgba(0,0,0,0) 24px);
+            border-radius: 22px 22px 0 0;
+            pointer-events: none;
+        }
+        .glass-thick::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1.5px;
+            background: linear-gradient(
+                155deg,
+                rgba(200, 225, 255, 0.6) 0%,
+                rgba(200, 225, 255, 0.2) 25%,
+                rgba(255, 255, 255, 0.05) 50%,
+                transparent 100%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        /* 发光玻璃 - 顶部光晕 */
+        .glass-glow {
+            position: relative;
+            background:
+                radial-gradient(ellipse at 50% -20%, rgba(200, 225, 255, 0.15) 0%, transparent 60%),
+                rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(32px) saturate(160%);
+            -webkit-backdrop-filter: blur(32px) saturate(160%);
+            border-radius: 18px;
+            padding: 20px;
+            color: #fff;
+            box-shadow:
+                0 4px 24px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(200, 225, 255, 0.45),
+                inset 0 0 80px rgba(200, 225, 255, 0.03);
+            overflow: hidden;
+        }
+        .glass-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 45%;
+            background: linear-gradient(180deg, rgba(200, 225, 255, 0.4) 0%, transparent 100%);
+            -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 6px);
+            mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 6px);
+            border-radius: 18px 18px 0 0;
+            pointer-events: none;
+        }
+        .glass-variant-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+        .glass-variant-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .z-layer-diagram {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 32px;
+            margin: 24px 0;
+        }
+        .z-layer {
+            background: #fff;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px 24px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .z-layer:hover {
+            transform: translateX(8px);
+        }
+        .z-layer.z5 { border-left: 4px solid #ff4d4f; background: #fff1f0; }
+        .z-layer.z4 { border-left: 4px solid #fa8c16; background: #fff7e6; }
+        .z-layer.z3 { border-left: 4px solid #fadb14; background: #feffe6; }
+        .z-layer.z2 { border-left: 4px solid #52c41a; background: #f6ffed; }
+        .z-layer.z1 { border-left: 4px solid #1890ff; background: #e6f7ff; }
+        .z-layer.z0 { border-left: 4px solid #722ed1; background: #f9f0ff; }
+        .z-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #262626;
+        }
+        .z-desc {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+        .z-effect {
+            font-size: 12px;
+            color: #1890ff;
+            background: #e6f7ff;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        .css-code {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        .css-code pre {
+            margin: 0;
+            color: #d4d4d4;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .css-comment { color: #6a9955; }
+        .css-property { color: #9cdcfe; }
+        .css-value { color: #ce9178; }
+        .css-selector { color: #d7ba7d; }
+        .css-variable { color: #4fc1ff; }
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 24px 0;
+        }
+        .theme-card {
+            border-radius: 16px;
+            padding: 32px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .theme-card h5 {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .theme-card p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+        .theme-default {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .theme-default::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+        }
+        .theme-spring {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%);
+        }
+        .theme-spring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 30%, rgba(251, 191, 36, 0.2) 0%, transparent 50%);
+        }
+        .theme-autumn {
+            background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+        }
+        .theme-autumn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 75% 25%, rgba(251, 191, 36, 0.3) 0%, transparent 40%);
+        }
+        .theme-qingming {
+            background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #166534;
+        }
+        .theme-qingming h5 { color: #166534; }
+        .theme-qingming p { color: #15803d; }
+        .theme-qingming::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(34, 197, 94, 0.15) 0%, transparent 50%);
+        }
+        .motion-table td:first-child {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: #1890ff;
+        }
+        .do-dont {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 24px 0;
+        }
+        .do-box, .dont-box {
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .do-box {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+        .do-box h5 {
+            color: #52c41a;
+            margin-bottom: 12px;
+        }
+        .dont-box {
+            background: #fff1f0;
+            border: 1px solid #ffa39e;
+        }
+        .dont-box h5 {
+            color: #ff4d4f;
+            margin-bottom: 12px;
+        }
+        .do-box li, .dont-box li {
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        .vision-pro-ref {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 24px 0;
+            color: #fff;
+        }
+        .vision-pro-ref h5 {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .vision-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin: 16px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        .vision-feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .vision-feature-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+        .vision-feature-content h6 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .vision-feature-content p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>13 - 前端UI设计规范</h2>
+        <div class="meta">更新日期：2026-01-23 | 设计体系：Glassmorphism</div>
+    </div>
+
+    <h3>一、设计理念</h3>
+
+    <div class="design-principle">
+        <div class="principle-card">
+            <h5>精美而简约</h5>
+            <p>High-end Minimalism，符合AI平台的现代感、科技感、创新感，去除冗余装饰，保留核心功能美学。</p>
+        </div>
+        <div class="principle-card">
+            <h5>玻璃拟态</h5>
+            <p>Glassmorphism / Liquid Glass，通过磨砂玻璃、半透明层、背景模糊创造深度感和层次感。</p>
+        </div>
+        <div class="principle-card">
+            <h5>空间立体</h5>
+            <p>强调 Z 轴层级、立体透视、浮层深度，而非传统的平面卡片堆叠，营造三维空间感。</p>
+        </div>
+    </div>
+
+    <div class="tip-box info">
+        <h5>核心设计策略</h5>
+        <p><strong>玻璃拟态 + 主题背景 = 一套组件，多种氛围</strong></p>
+        <p>组件本身采用半透明玻璃效果，背景决定整体氛围。切换主题背景时，背景色"透"过玻璃层，自然形成不同的主题色调。这种架构大幅降低了主题维护成本，无需为每个主题重新定义所有组件颜色。</p>
+    </div>
+
+    <h3>二、视觉效果演示</h3>
+
+    <h4>2.1 高级玻璃卡片</h4>
+
+    <div class="glass-demo">
+        <div class="glass-card-demo">
+            <h5>高级玻璃效果</h5>
+            <p>真实的玻璃效果需要多层光学模拟：<strong>顶部高光线条</strong>（::before）模拟光线在边缘的聚焦反射；<strong>渐变边框</strong>（::after + mask）模拟光源方向造成的明暗变化；<strong>多层 inset shadow</strong> 模拟玻璃厚度带来的边缘折射。</p>
+            <span class="glass-button-demo">玻璃按钮</span>
+        </div>
+
+        <!-- 三种玻璃变体展示 -->
+        <div class="glass-variants">
+            <div class="glass-basic">
+                <div class="glass-variant-label">基础款</div>
+                <div class="glass-variant-name">Basic Glass</div>
+            </div>
+            <div class="glass-thick">
+                <div class="glass-variant-label">厚玻璃</div>
+                <div class="glass-variant-name">Thick Glass</div>
+            </div>
+            <div class="glass-glow">
+                <div class="glass-variant-label">发光玻璃</div>
+                <div class="glass-variant-name">Glow Glass</div>
+            </div>
+        </div>
+    </div>
+
+    <h4>2.2 玻璃边缘光线原理</h4>
+
+    <div class="tip-box info">
+        <h5>为什么需要边缘光线？</h5>
+        <p>真实世界中的玻璃有<strong>厚度</strong>，光线穿过玻璃边缘时会发生<strong>折射</strong>和<strong>反射</strong>，在边缘处形成明亮的高光线条。平面化的设计缺少这种光学效果，看起来像是"贴图"而非真实材质。</p>
+        <ul style="margin: 12px 0 0 0;">
+            <li><strong>顶部高光</strong>：最亮，因为光源通常从上方照射</li>
+            <li><strong>左侧微光</strong>：次亮，模拟左上方光源</li>
+            <li><strong>底部暗边</strong>：形成对比，增强立体感</li>
+            <li><strong>渐变边框</strong>：从亮到暗的过渡，模拟光照方向</li>
+        </ul>
+    </div>
+
+    <h3>三、Z轴层级体系</h3>
+
+    <p>基于空间深度的层级设计，每层拥有不同的模糊程度和阴影强度，模拟真实的物理深度关系。</p>
+
+    <div class="z-layer-diagram">
+        <div class="z-layer z5">
+            <div>
+                <div class="z-label">Z-5: 模态层</div>
+                <div class="z-desc">Modal / Dialog / 全屏遮罩</div>
+            </div>
+            <span class="z-effect">blur(24px) + shadow-z5</span>
+        </div>
+        <div class="z-layer z4">
+            <div>
+                <div class="z-label">Z-4: 浮层</div>
+                <div class="z-desc">Dropdown / Tooltip / Popover</div>
+            </div>
+            <span class="z-effect">blur(16px) + shadow-z4</span>
+        </div>
+        <div class="z-layer z3">
+            <div>
+                <div class="z-label">Z-3: 悬浮面板</div>
+                <div class="z-desc">侧边栏 / Workbench 面板</div>
+            </div>
+            <span class="z-effect">blur(12px) + shadow-z3</span>
+        </div>
+        <div class="z-layer z2">
+            <div>
+                <div class="z-label">Z-2: 内容卡片</div>
+                <div class="z-desc">消息气泡 / 功能卡片</div>
+            </div>
+            <span class="z-effect">半透明填充（性能优化）</span>
+        </div>
+        <div class="z-layer z1">
+            <div>
+                <div class="z-label">Z-1: 基础层</div>
+                <div class="z-desc">输入框 / 按钮 / 基础控件</div>
+            </div>
+            <span class="z-effect">微透明 + 边框发光</span>
+        </div>
+        <div class="z-layer z0">
+            <div>
+                <div class="z-label">Z-0: 背景层</div>
+                <div class="z-desc">主题背景 / 渐变 / 光晕</div>
+            </div>
+            <span class="z-effect">主题切换载体</span>
+        </div>
+    </div>
+
+    <h3>四、CSS 变量体系</h3>
+
+    <h4>4.1 玻璃材质变量</h4>
+
+    <div class="css-code"><pre><span class="css-selector">:root</span> {
+  <span class="css-comment">/* ===== 玻璃模糊层级（iOS 风格需要更强模糊）===== */</span>
+  <span class="css-variable">--glass-blur-sm</span>: <span class="css-value">16px</span>;
+  <span class="css-variable">--glass-blur-md</span>: <span class="css-value">24px</span>;
+  <span class="css-variable">--glass-blur-lg</span>: <span class="css-value">40px</span>;
+  <span class="css-variable">--glass-blur-xl</span>: <span class="css-value">60px</span>;
+
+  <span class="css-comment">/* ===== 玻璃背景透明度 ===== */</span>
+  <span class="css-variable">--glass-bg-subtle</span>: <span class="css-value">rgba(255, 255, 255, 0.06)</span>;
+  <span class="css-variable">--glass-bg-light</span>: <span class="css-value">rgba(255, 255, 255, 0.10)</span>;
+  <span class="css-variable">--glass-bg-medium</span>: <span class="css-value">rgba(255, 255, 255, 0.14)</span>;
+  <span class="css-variable">--glass-bg-solid</span>: <span class="css-value">rgba(255, 255, 255, 0.20)</span>;
+
+  <span class="css-comment">/* ===== iOS 风格边缘高光（偏蓝色调）===== */</span>
+  <span class="css-variable">--glass-highlight-color</span>: <span class="css-value">200, 225, 255</span>;  <span class="css-comment">/* 冷色调高光 */</span>
+  <span class="css-variable">--glass-edge-highlight</span>: <span class="css-value">rgba(var(--glass-highlight-color), 0.35)</span>;
+  <span class="css-variable">--glass-edge-highlight-strong</span>: <span class="css-value">rgba(var(--glass-highlight-color), 0.55)</span>;
+  <span class="css-variable">--glass-edge-shadow</span>: <span class="css-value">rgba(0, 0, 0, 0.05)</span>;  <span class="css-comment">/* iOS 风格底部阴影更轻 */</span>
+
+  <span class="css-comment">/* ===== 顶部弧形高光渐变 ===== */</span>
+  <span class="css-variable">--glass-rim-gradient</span>: <span class="css-value">linear-gradient(
+    180deg,
+    rgba(var(--glass-highlight-color), 0.5) 0%,
+    rgba(var(--glass-highlight-color), 0.15) 10%,
+    transparent 40%
+  )</span>;
+
+  <span class="css-comment">/* ===== 饱和度增强（让背景色更鲜艳）===== */</span>
+  <span class="css-variable">--glass-saturate</span>: <span class="css-value">saturate(180%)</span>;
+}</pre></div>
+
+    <h4>4.2 iOS 风格玻璃面板完整实现</h4>
+
+    <div class="css-code"><pre><span class="css-comment">/* ===== iOS 风格玻璃面板 ===== */</span>
+<span class="css-selector">.glass-panel</span> {
+  <span class="css-property">position</span>: <span class="css-value">relative</span>;
+  <span class="css-property">background</span>: <span class="css-value">var(--glass-bg-medium)</span>;
+  <span class="css-property">backdrop-filter</span>: <span class="css-value">blur(var(--glass-blur-lg)) var(--glass-saturate)</span>;
+  <span class="css-property">-webkit-backdrop-filter</span>: <span class="css-value">blur(var(--glass-blur-lg)) var(--glass-saturate)</span>;
+  <span class="css-property">border-radius</span>: <span class="css-value">24px</span>;
+  <span class="css-property">overflow</span>: <span class="css-value">hidden</span>;
+
+  <span class="css-comment">/* iOS 风格阴影 - 更柔和、更自然 */</span>
+  <span class="css-property">box-shadow</span>:
+    <span class="css-comment">/* 外部投影 - 柔和浮起 */</span>
+    <span class="css-value">0 8px 32px rgba(0, 0, 0, 0.12)</span>,
+    <span class="css-value">0 2px 8px rgba(0, 0, 0, 0.06)</span>,
+    <span class="css-comment">/* 顶部边缘高光 - 偏蓝色调 */</span>
+    <span class="css-value">inset 0 1px 0 var(--glass-edge-highlight)</span>,
+    <span class="css-comment">/* 左侧边缘微光 */</span>
+    <span class="css-value">inset 1px 0 0 rgba(var(--glass-highlight-color), 0.2)</span>,
+    <span class="css-comment">/* 内部柔和发光 */</span>
+    <span class="css-value">inset 0 0 120px rgba(255, 255, 255, 0.03)</span>;
+}
+
+<span class="css-comment">/* 顶部弧形高光 - iOS 核心视觉特征 */</span>
+<span class="css-selector">.glass-panel::before</span> {
+  <span class="css-property">content</span>: <span class="css-value">''</span>;
+  <span class="css-property">position</span>: <span class="css-value">absolute</span>;
+  <span class="css-property">top</span>: <span class="css-value">0</span>;
+  <span class="css-property">left</span>: <span class="css-value">0</span>;
+  <span class="css-property">right</span>: <span class="css-value">0</span>;
+  <span class="css-property">height</span>: <span class="css-value">50%</span>;
+  <span class="css-property">background</span>: <span class="css-value">var(--glass-rim-gradient)</span>;
+  <span class="css-comment">/* mask 让高光只在顶部边缘可见，向下渐隐 */</span>
+  <span class="css-property">-webkit-mask</span>: <span class="css-value">linear-gradient(180deg, #000 0%, transparent 20px)</span>;
+  <span class="css-property">mask</span>: <span class="css-value">linear-gradient(180deg, #000 0%, transparent 20px)</span>;
+  <span class="css-property">border-radius</span>: <span class="css-value">inherit</span>;
+  <span class="css-property">pointer-events</span>: <span class="css-value">none</span>;
+}
+
+<span class="css-comment">/* 渐变边框 - 光源从左上照射 */</span>
+<span class="css-selector">.glass-panel::after</span> {
+  <span class="css-property">content</span>: <span class="css-value">''</span>;
+  <span class="css-property">position</span>: <span class="css-value">absolute</span>;
+  <span class="css-property">inset</span>: <span class="css-value">0</span>;
+  <span class="css-property">border-radius</span>: <span class="css-value">inherit</span>;
+  <span class="css-property">padding</span>: <span class="css-value">1px</span>;
+  <span class="css-property">background</span>: <span class="css-value">linear-gradient(
+    160deg,
+    rgba(var(--glass-highlight-color), 0.5) 0%,
+    rgba(var(--glass-highlight-color), 0.2) 20%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 100%
+  )</span>;
+  <span class="css-comment">/* 镂空技巧 - 只显示边框 */</span>
+  <span class="css-property">-webkit-mask</span>: <span class="css-value">linear-gradient(#fff 0 0) content-box,
+                 linear-gradient(#fff 0 0)</span>;
+  <span class="css-property">mask</span>: <span class="css-value">linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0)</span>;
+  <span class="css-property">-webkit-mask-composite</span>: <span class="css-value">xor</span>;
+  <span class="css-property">mask-composite</span>: <span class="css-value">exclude</span>;
+  <span class="css-property">pointer-events</span>: <span class="css-value">none</span>;
+}</pre></div>
+
+    <h4>4.3 厚玻璃效果（适用于主要面板）</h4>
+
+    <div class="css-code"><pre><span class="css-comment">/* 更强的边缘效果 - 营造厚实的玻璃感 */</span>
+<span class="css-selector">.glass-thick</span> {
+  <span class="css-property">box-shadow</span>:
+    <span class="css-value">0 12px 48px rgba(0, 0, 0, 0.3)</span>,
+    <span class="css-value">0 4px 12px rgba(0, 0, 0, 0.2)</span>,
+    <span class="css-comment">/* 加粗的顶部高光 - 2px */</span>
+    <span class="css-value">inset 0 2px 0 rgba(255, 255, 255, 0.4)</span>,
+    <span class="css-value">inset 2px 0 0 rgba(255, 255, 255, 0.2)</span>,
+    <span class="css-value">inset 0 -2px 0 rgba(0, 0, 0, 0.2)</span>,
+    <span class="css-value">inset -2px 0 0 rgba(0, 0, 0, 0.12)</span>;
+}
+
+<span class="css-selector">.glass-thick::before</span> {
+  <span class="css-property">height</span>: <span class="css-value">2px</span>;  <span class="css-comment">/* 更粗的高光线 */</span>
+  <span class="css-property">left</span>: <span class="css-value">8%</span>;
+  <span class="css-property">right</span>: <span class="css-value">8%</span>;
+  <span class="css-property">background</span>: <span class="css-value">linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 10%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.4) 90%,
+    transparent 100%
+  )</span>;
+}
+
+<span class="css-selector">.glass-thick::after</span> {
+  <span class="css-property">padding</span>: <span class="css-value">2px</span>;  <span class="css-comment">/* 更粗的渐变边框 */</span>
+  <span class="css-property">background</span>: <span class="css-value">linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  )</span>;
+}</pre></div>
+
+    <h4>4.4 玻璃效果使用场景</h4>
+
+    <table>
+        <thead>
+            <tr><th>效果类型</th><th>适用场景</th><th>边缘强度</th><th>性能消耗</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Basic Glass</strong></td>
+                <td>按钮、小卡片、输入框背景</td>
+                <td>轻微（1px 高光）</td>
+                <td>低</td>
+            </tr>
+            <tr>
+                <td><strong>Standard Glass</strong></td>
+                <td>内容卡片、消息气泡、工具提示</td>
+                <td>标准（1px 高光 + 渐变边框）</td>
+                <td>中</td>
+            </tr>
+            <tr>
+                <td><strong>Thick Glass</strong></td>
+                <td>主要面板、侧边栏、Modal</td>
+                <td>强烈（2px 高光 + 粗渐变边框）</td>
+                <td>中</td>
+            </tr>
+            <tr>
+                <td><strong>Glow Glass</strong></td>
+                <td>重要提示、焦点区域、高亮状态</td>
+                <td>标准 + 内部发光</td>
+                <td>中</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="tip-box warning">
+        <h5>边缘效果使用原则</h5>
+        <ul style="margin: 0;">
+            <li><strong>越靠近用户的层级（Z值越高），边缘效果越明显</strong></li>
+            <li>Modal、Popover 等浮层使用 Thick Glass，强化"浮起"感</li>
+            <li>基础控件使用 Basic Glass，避免视觉杂乱</li>
+            <li>同一视图中，边缘效果强度应形成梯度，而非均匀一致</li>
+        </ul>
+    </div>
+
+    <h4>4.6 阴影层级变量</h4>
+
+    <div class="css-code"><pre><span class="css-selector">:root</span> {
+  <span class="css-comment">/* ===== 外部投影阴影（模拟光源从左上方照射）===== */</span>
+  <span class="css-variable">--shadow-z1</span>: <span class="css-value">0 2px 8px rgba(0, 0, 0, 0.1)</span>;
+  <span class="css-variable">--shadow-z2</span>: <span class="css-value">0 4px 16px rgba(0, 0, 0, 0.15)</span>;
+  <span class="css-variable">--shadow-z3</span>: <span class="css-value">0 8px 32px rgba(0, 0, 0, 0.2)</span>;
+  <span class="css-variable">--shadow-z4</span>: <span class="css-value">0 16px 48px rgba(0, 0, 0, 0.25)</span>;
+  <span class="css-variable">--shadow-z5</span>: <span class="css-value">0 24px 64px rgba(0, 0, 0, 0.3)</span>;
+
+  <span class="css-comment">/* ===== 玻璃专用复合阴影（含边缘光线）===== */</span>
+  <span class="css-variable">--glass-shadow-sm</span>: <span class="css-value">
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1)</span>;
+
+  <span class="css-variable">--glass-shadow-md</span>: <span class="css-value">
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    inset -1px 0 0 rgba(0, 0, 0, 0.08)</span>;
+
+  <span class="css-variable">--glass-shadow-lg</span>: <span class="css-value">
+    0 12px 48px rgba(0, 0, 0, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 2px 0 0 rgba(255, 255, 255, 0.2),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    inset -2px 0 0 rgba(0, 0, 0, 0.1)</span>;
+}</pre></div>
+
+    <h4>4.7 动效缓动曲线</h4>
+
+    <div class="css-code"><pre><span class="css-selector">:root</span> {
+  <span class="css-comment">/* ===== 动效缓动（遵循物理惯性）===== */</span>
+  <span class="css-variable">--ease-out-expo</span>: <span class="css-value">cubic-bezier(0.16, 1, 0.3, 1)</span>;
+  <span class="css-variable">--ease-out-back</span>: <span class="css-value">cubic-bezier(0.34, 1.56, 0.64, 1)</span>;
+  <span class="css-variable">--ease-spring</span>: <span class="css-value">cubic-bezier(0.175, 0.885, 0.32, 1.1)</span>;
+
+  <span class="css-comment">/* ===== 动效时长 ===== */</span>
+  <span class="css-variable">--duration-fast</span>: <span class="css-value">150ms</span>;
+  <span class="css-variable">--duration-normal</span>: <span class="css-value">250ms</span>;
+  <span class="css-variable">--duration-slow</span>: <span class="css-value">400ms</span>;
+}</pre></div>
+
+    <h4>4.8 语义色彩变量</h4>
+
+    <div class="css-code"><pre><span class="css-selector">:root</span> {
+  <span class="css-comment">/* ===== 文字色彩（通过背景透出）===== */</span>
+  <span class="css-variable">--text-primary</span>: <span class="css-value">rgba(0, 0, 0, 0.88)</span>;
+  <span class="css-variable">--text-secondary</span>: <span class="css-value">rgba(0, 0, 0, 0.65)</span>;
+  <span class="css-variable">--text-tertiary</span>: <span class="css-value">rgba(0, 0, 0, 0.45)</span>;
+
+  <span class="css-comment">/* ===== 强调色（少量使用）===== */</span>
+  <span class="css-variable">--accent-primary</span>: <span class="css-value">#0071e3</span>;    <span class="css-comment">/* Apple Blue */</span>
+  <span class="css-variable">--accent-success</span>: <span class="css-value">#34c759</span>;
+  <span class="css-variable">--accent-warning</span>: <span class="css-value">#ff9500</span>;
+  <span class="css-variable">--accent-error</span>: <span class="css-value">#ff3b30</span>;
+}
+
+<span class="css-comment">/* 深色模式覆盖 */</span>
+<span class="css-selector">[data-theme="dark"]</span> {
+  <span class="css-variable">--glass-bg-light</span>: <span class="css-value">rgba(255, 255, 255, 0.06)</span>;
+  <span class="css-variable">--glass-bg-medium</span>: <span class="css-value">rgba(255, 255, 255, 0.10)</span>;
+  <span class="css-variable">--glass-bg-solid</span>: <span class="css-value">rgba(255, 255, 255, 0.14)</span>;
+
+  <span class="css-variable">--text-primary</span>: <span class="css-value">rgba(255, 255, 255, 0.92)</span>;
+  <span class="css-variable">--text-secondary</span>: <span class="css-value">rgba(255, 255, 255, 0.72)</span>;
+  <span class="css-variable">--text-tertiary</span>: <span class="css-value">rgba(255, 255, 255, 0.48)</span>;
+}</pre></div>
+
+    <h3>五、主题背景系统</h3>
+
+    <p>主题系统控制背景渐变和光晕效果。用户可主动切换，平台也会根据节气节日自动切换。</p>
+
+    <div class="theme-grid">
+        <div class="theme-card theme-default">
+            <h5>默认主题</h5>
+            <p>深蓝科技渐变，适合日常使用，体现 AI 平台的科技感与专业感。</p>
+        </div>
+        <div class="theme-card theme-spring">
+            <h5>春节主题</h5>
+            <p>红金配色，喜庆祥和，在春节期间自动启用。</p>
+        </div>
+        <div class="theme-card theme-autumn">
+            <h5>中秋主题</h5>
+            <p>月色金黄，温馨雅致，中秋节期间自动启用。</p>
+        </div>
+        <div class="theme-card theme-qingming">
+            <h5>清明/立春主题</h5>
+            <p>清新绿意，春意盎然，适合春季节气使用。</p>
+        </div>
+    </div>
+
+    <h4>5.1 主题背景 CSS 示例</h4>
+
+    <div class="css-code"><pre><span class="css-comment">/* 背景容器 */</span>
+<span class="css-selector">.theme-background</span> {
+  <span class="css-property">position</span>: <span class="css-value">fixed</span>;
+  <span class="css-property">inset</span>: <span class="css-value">0</span>;
+  <span class="css-property">z-index</span>: <span class="css-value">-1</span>;
+  <span class="css-property">transition</span>: <span class="css-value">opacity 800ms var(--ease-out-expo)</span>;
+}
+
+<span class="css-comment">/* 默认主题：深蓝科技渐变 */</span>
+<span class="css-selector">[data-theme="default"] .theme-background</span> {
+  <span class="css-property">background</span>:
+    <span class="css-value">radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%)</span>,
+    <span class="css-value">radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)</span>,
+    <span class="css-value">linear-gradient(135deg, #0f172a 0%, #1e293b 100%)</span>;
+}
+
+<span class="css-comment">/* 春节主题 */</span>
+<span class="css-selector">[data-theme="spring-festival"] .theme-background</span> {
+  <span class="css-property">background</span>:
+    <span class="css-value">radial-gradient(ellipse at 30% 30%, rgba(220, 38, 38, 0.2) 0%, transparent 50%)</span>,
+    <span class="css-value">radial-gradient(ellipse at 70% 70%, rgba(251, 191, 36, 0.15) 0%, transparent 50%)</span>,
+    <span class="css-value">linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%)</span>;
+}
+
+<span class="css-comment">/* 中秋主题 */</span>
+<span class="css-selector">[data-theme="mid-autumn"] .theme-background</span> {
+  <span class="css-property">background</span>:
+    <span class="css-value">radial-gradient(circle at 75% 25%, rgba(251, 191, 36, 0.25) 0%, transparent 40%)</span>,
+    <span class="css-value">radial-gradient(ellipse at 25% 75%, rgba(180, 83, 9, 0.15) 0%, transparent 50%)</span>,
+    <span class="css-value">linear-gradient(135deg, #1c1917 0%, #292524 100%)</span>;
+}</pre></div>
+
+    <h4>5.2 节气节日自动切换</h4>
+
+    <table>
+        <thead><tr><th>主题</th><th>触发时间</th><th>色彩特点</th></tr></thead>
+        <tbody>
+            <tr><td>春节</td><td>农历腊月二十 - 正月十五</td><td>红金喜庆</td></tr>
+            <tr><td>元宵</td><td>正月十五前后</td><td>暖黄灯笼</td></tr>
+            <tr><td>清明</td><td>4月3日 - 4月7日</td><td>清新绿意</td></tr>
+            <tr><td>端午</td><td>农历五月初五前后</td><td>青绿古韵</td></tr>
+            <tr><td>中秋</td><td>农历八月十五前后</td><td>月色金黄</td></tr>
+            <tr><td>冬至</td><td>12月20日 - 12月24日</td><td>冰蓝雪白</td></tr>
+        </tbody>
+    </table>
+
+    <h3>六、动效规范</h3>
+
+    <h4>6.1 缓动曲线选择</h4>
+
+    <table class="motion-table">
+        <thead><tr><th>曲线</th><th>用途</th><th>物理特性</th></tr></thead>
+        <tbody>
+            <tr><td>ease-out-expo</td><td>常规过渡、hover 反馈</td><td>快速启动，平滑减速</td></tr>
+            <tr><td>ease-out-back</td><td>面板展开、弹窗出现</td><td>轻微回弹，活泼感</td></tr>
+            <tr><td>ease-spring</td><td>拖拽释放、弹性动画</td><td>弹簧阻尼，物理真实</td></tr>
+            <tr><td>cubic-bezier(0.4, 0, 0.2, 1)</td><td>页面切换、长距离移动</td><td>Material Design 标准</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.2 动画性能规则</h4>
+
+    <div class="do-dont">
+        <div class="do-box">
+            <h5>推荐做法</h5>
+            <ul>
+                <li>只动画 <code>transform</code> 和 <code>opacity</code></li>
+                <li>使用 <code>will-change</code> 提示浏览器优化</li>
+                <li>动画时长控制在 150-400ms</li>
+                <li>使用 CSS 变量统一管理缓动曲线</li>
+                <li>复杂动画使用 requestAnimationFrame</li>
+            </ul>
+        </div>
+        <div class="dont-box">
+            <h5>避免做法</h5>
+            <ul>
+                <li>动画 <code>width</code>、<code>height</code>、<code>padding</code></li>
+                <li>动画 <code>top</code>、<code>left</code>（用 transform 代替）</li>
+                <li>大面积 <code>backdrop-filter</code> 动画</li>
+                <li>线性动画（缺乏物理感）</li>
+                <li>花哨的弹跳、旋转动画</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>6.3 动画代码示例</h4>
+
+    <div class="css-code"><pre><span class="css-comment">/* 入场动画 */</span>
+<span class="css-selector">.animate-enter</span> {
+  <span class="css-property">animation</span>: <span class="css-value">fadeSlideIn var(--duration-normal) var(--ease-spring) forwards</span>;
+}
+
+<span class="css-selector">@keyframes fadeSlideIn</span> {
+  <span class="css-selector">from</span> {
+    <span class="css-property">opacity</span>: <span class="css-value">0</span>;
+    <span class="css-property">transform</span>: <span class="css-value">translateY(8px) scale(0.98)</span>;
+  }
+  <span class="css-selector">to</span> {
+    <span class="css-property">opacity</span>: <span class="css-value">1</span>;
+    <span class="css-property">transform</span>: <span class="css-value">translateY(0) scale(1)</span>;
+  }
+}
+
+<span class="css-comment">/* 悬浮反馈 */</span>
+<span class="css-selector">.glass-card</span> {
+  <span class="css-property">transition</span>:
+    <span class="css-value">transform var(--duration-normal) var(--ease-out-expo)</span>,
+    <span class="css-value">box-shadow var(--duration-normal) var(--ease-out-expo)</span>;
+}
+
+<span class="css-selector">.glass-card:hover</span> {
+  <span class="css-property">transform</span>: <span class="css-value">translateY(-2px)</span>;
+  <span class="css-property">box-shadow</span>: <span class="css-value">var(--shadow-z3)</span>;
+}
+
+<span class="css-selector">.glass-card:active</span> {
+  <span class="css-property">transform</span>: <span class="css-value">scale(0.98)</span>;
+  <span class="css-property">transition-duration</span>: <span class="css-value">50ms</span>;
+}</pre></div>
+
+    <h3>七、Apple Vision Pro 设计参考</h3>
+
+    <div class="vision-pro-ref">
+        <h5>追求极致 UI 的设计理念</h5>
+
+        <div class="vision-feature">
+            <div class="vision-feature-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 3v18m9-9H3"/></svg>
+            </div>
+            <div class="vision-feature-content">
+                <h6>材质真实感</h6>
+                <p>材质应有真实的物理质感，而非简单的贴图效果。玻璃就要有玻璃的通透与反射，金属就要有金属的光泽与重量感。</p>
+            </div>
+        </div>
+
+        <div class="vision-feature">
+            <div class="vision-feature-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+            <div class="vision-feature-content">
+                <h6>环境光照</h6>
+                <p>光线来自环境而非组件自身发光。避免组件"自发光"的廉价感，通过阴影和高光暗示统一的光源方向。</p>
+            </div>
+        </div>
+
+        <div class="vision-feature">
+            <div class="vision-feature-icon">
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="vision-feature-content">
+                <h6>惯性与阻尼</h6>
+                <p>动效遵循惯性与阻尼原理，而非线性动画。物体运动应有加速、减速的自然过程，停止时有微妙的回弹。</p>
+            </div>
+        </div>
+
+        <div class="vision-feature">
+            <div class="vision-feature-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <div class="vision-feature-content">
+                <h6>空间层次</h6>
+                <p>界面元素在三维空间中有明确的前后关系，通过模糊度、透明度、阴影强度传达深度信息。</p>
+            </div>
+        </div>
+    </div>
+
+    <h3>八、设计约束清单</h3>
+
+    <table>
+        <thead><tr><th>类别</th><th>规则</th><th>原因</th></tr></thead>
+        <tbody>
+            <tr><td>图标</td><td>仅使用 SVG 图标，禁止 Emoji</td><td>保持专业感，确保跨平台一致性</td></tr>
+            <tr><td>字体</td><td>现代无衬线字体，注重可读性</td><td>系统字体栈，保证渲染质量</td></tr>
+            <tr><td>渐变</td><td>避免过度渐变、过强高光</td><td>防止视觉疲劳和廉价感</td></tr>
+            <tr><td>对比度</td><td>文字对比度需达到 WCAG AA 标准</td><td>保证可读性，无障碍访问</td></tr>
+            <tr><td>模糊</td><td>backdrop-filter 仅用于主要玻璃层</td><td>性能考虑，避免卡顿</td></tr>
+            <tr><td>动画</td><td>节制、自然、符合物理感</td><td>专业感，60fps 流畅体验</td></tr>
+            <tr><td>色彩</td><td>强调色少量使用，功能性优先</td><td>避免视觉混乱</td></tr>
+        </tbody>
+    </table>
+
+    <h3>九、性能优化策略</h3>
+
+    <h4>9.1 backdrop-filter 分层策略</h4>
+
+    <div class="css-code"><pre><span class="css-comment">/* 主容器使用真实模糊 - 数量控制在 3-5 个 */</span>
+<span class="css-selector">.glass-layer-primary</span> {
+  <span class="css-property">backdrop-filter</span>: <span class="css-value">blur(var(--glass-blur-md))</span>;
+}
+
+<span class="css-comment">/* 子元素使用半透明填充代替模糊 - 性能友好 */</span>
+<span class="css-selector">.glass-layer-secondary</span> {
+  <span class="css-property">background</span>: <span class="css-value">var(--glass-bg-light)</span>;
+  <span class="css-comment">/* 不使用 backdrop-filter */</span>
+}</pre></div>
+
+    <h4>9.2 动画性能检查清单</h4>
+
+    <ul>
+        <li>使用 Chrome DevTools Performance 面板检测掉帧</li>
+        <li>确保动画期间 GPU 层合成（transform/opacity）</li>
+        <li>避免动画期间触发 Layout/Paint</li>
+        <li>大列表使用虚拟滚动</li>
+        <li>图片使用 lazy loading</li>
+    </ul>
+
+    <h3>十、文件结构</h3>
+
+    <div class="css-code"><pre>styles/
+├── tokens/
+│   ├── colors.css        <span class="css-comment"># 色彩变量</span>
+│   ├── typography.css    <span class="css-comment"># 字体变量</span>
+│   ├── spacing.css       <span class="css-comment"># 间距变量</span>
+│   ├── shadows.css       <span class="css-comment"># 阴影变量</span>
+│   └── motion.css        <span class="css-comment"># 动效变量</span>
+│
+├── themes/
+│   ├── default.css       <span class="css-comment"># 默认主题背景</span>
+│   ├── dark.css          <span class="css-comment"># 深色模式覆盖</span>
+│   ├── spring-festival.css
+│   ├── mid-autumn.css
+│   └── ...               <span class="css-comment"># 其他节气主题</span>
+│
+├── components/
+│   ├── glass-card.css    <span class="css-comment"># 玻璃卡片</span>
+│   ├── glass-button.css  <span class="css-comment"># 玻璃按钮</span>
+│   ├── glass-input.css   <span class="css-comment"># 玻璃输入框</span>
+│   └── ...               <span class="css-comment"># 其他组件</span>
+│
+└── utilities/
+    ├── animations.css    <span class="css-comment"># 动画类</span>
+    └── helpers.css       <span class="css-comment"># 工具类</span></pre></div>
+
+    <h3>十一、WebGL/ThreeJS 视觉增强（可选）</h3>
+
+    <div class="tip-box warning">
+        <h5>定位说明</h5>
+        <p>WebGL/ThreeJS 作为<strong>可选的视觉增强技术</strong>，用于特定场景的高级视觉效果。核心 UI 组件仍使用纯 CSS 方案，保证性能和兼容性。WebGL 增强功能应设计为<strong>渐进增强</strong>模式，低端设备自动降级为 CSS 方案。</p>
+    </div>
+
+    <h4>11.1 技术选型对比</h4>
+
+    <table>
+        <thead>
+            <tr><th>方案</th><th>适用场景</th><th>优势</th><th>劣势</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>纯 CSS</strong></td>
+                <td>所有 UI 组件</td>
+                <td>性能好、兼容性强、体积小</td>
+                <td>效果上限有限</td>
+            </tr>
+            <tr>
+                <td><strong>Three.js</strong></td>
+                <td>3D 场景、复杂粒子效果</td>
+                <td>功能完整、生态丰富</td>
+                <td>体积较大（~150KB gzip）</td>
+            </tr>
+            <tr>
+                <td><strong>原生 WebGL/WebGL2</strong></td>
+                <td>极致性能要求的场景</td>
+                <td>最小体积、完全控制</td>
+                <td>开发成本高</td>
+            </tr>
+            <tr>
+                <td><strong>GLSL Shader</strong></td>
+                <td>2D 背景特效</td>
+                <td>效果惊艳、可控性强</td>
+                <td>需要 GPU 编程知识</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>11.2 推荐使用场景</h4>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>效果描述</th><th>推荐技术</th><th>优先级</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>背景动态光晕</strong></td>
+                <td>流动的渐变光晕、跟随鼠标的光源</td>
+                <td>GLSL Shader / Three.js</td>
+                <td>中</td>
+            </tr>
+            <tr>
+                <td><strong>首页 Hero 区域</strong></td>
+                <td>3D 粒子流、液态玻璃变形</td>
+                <td>Three.js</td>
+                <td>低</td>
+            </tr>
+            <tr>
+                <td><strong>数据可视化 3D</strong></td>
+                <td>3D 图表、空间数据展示</td>
+                <td>Three.js / D3 + WebGL</td>
+                <td>中</td>
+            </tr>
+            <tr>
+                <td><strong>加载过渡动画</strong></td>
+                <td>品牌 Logo 3D 动画</td>
+                <td>Three.js / Lottie</td>
+                <td>低</td>
+            </tr>
+            <tr>
+                <td><strong>光线折射模拟</strong></td>
+                <td>真实的玻璃光线追踪效果</td>
+                <td>WebGL2 + Shader</td>
+                <td>低（实验性）</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>11.3 实现架构</h4>
+
+    <div class="css-code"><pre><span class="css-comment">// 渐进增强模式架构</span>
+
+<span class="css-selector">interface VisualEnhancement</span> {
+  <span class="css-comment">// 检测设备能力</span>
+  <span class="css-property">canUseWebGL</span>: <span class="css-value">boolean</span>;
+  <span class="css-property">performanceTier</span>: <span class="css-value">'high' | 'medium' | 'low'</span>;
+
+  <span class="css-comment">// 渐进增强入口</span>
+  <span class="css-property">enhance</span>(<span class="css-value">element: HTMLElement, effect: EffectType</span>): <span class="css-value">void</span>;
+
+  <span class="css-comment">// 降级处理</span>
+  <span class="css-property">fallback</span>(<span class="css-value">element: HTMLElement</span>): <span class="css-value">void</span>;
+}
+
+<span class="css-comment">// 使用示例</span>
+<span class="css-selector">const enhancement</span> = <span class="css-value">new VisualEnhancement()</span>;
+
+<span class="css-selector">if</span> (<span class="css-value">enhancement.canUseWebGL && enhancement.performanceTier === 'high'</span>) {
+  <span class="css-comment">// 高端设备：启用 WebGL 背景效果</span>
+  <span class="css-value">enhancement.enhance(backgroundElement, 'fluid-gradient')</span>;
+} <span class="css-selector">else</span> {
+  <span class="css-comment">// 低端设备：使用 CSS 静态渐变</span>
+  <span class="css-value">enhancement.fallback(backgroundElement)</span>;
+}</pre></div>
+
+    <h4>11.4 性能预算</h4>
+
+    <table>
+        <thead>
+            <tr><th>指标</th><th>目标值</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>WebGL 初始化</td>
+                <td>&lt; 100ms</td>
+                <td>不阻塞首屏渲染</td>
+            </tr>
+            <tr>
+                <td>帧率</td>
+                <td>&ge; 60fps</td>
+                <td>动画流畅度</td>
+            </tr>
+            <tr>
+                <td>GPU 内存</td>
+                <td>&lt; 100MB</td>
+                <td>避免移动端 OOM</td>
+            </tr>
+            <tr>
+                <td>Three.js 按需加载</td>
+                <td>动态 import</td>
+                <td>不增加首屏包体积</td>
+            </tr>
+            <tr>
+                <td>降级响应</td>
+                <td>&lt; 16ms</td>
+                <td>检测到性能问题立即降级</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>11.5 开发路线图</h4>
+
+    <div class="tip-box info">
+        <h5>阶段规划</h5>
+        <ul style="margin: 0;">
+            <li><strong>Phase 1（当前）</strong>：纯 CSS 玻璃拟态，覆盖所有核心 UI</li>
+            <li><strong>Phase 2（可选）</strong>：GLSL Shader 背景增强，动态光晕效果</li>
+            <li><strong>Phase 3（可选）</strong>：Three.js 数据可视化 3D 场景</li>
+            <li><strong>Phase 4（实验性）</strong>：高级光线追踪玻璃效果</li>
+        </ul>
+    </div>
+
+    <div class="tip-box success">
+        <h5>设计规范总结</h5>
+        <p>本设计规范以<strong>iOS 风格玻璃拟态（Glassmorphism）</strong>为核心视觉语言，特别强调<strong>边缘光线效果</strong>的真实感。结合<strong>主题背景系统</strong>实现"一套组件，多种氛围"的高效架构。通过严格的<strong>Z轴层级体系</strong>营造空间深度感，遵循<strong>物理动效原则</strong>保证流畅的60fps交互体验。WebGL/ThreeJS 作为可选的视觉增强技术，采用渐进增强模式，在高端设备上提供更极致的视觉体验。</p>
+    </div>
+
+</div>
+</body>
+</html>

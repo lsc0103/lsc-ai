@@ -1,0 +1,10 @@
+/**
+ * LSC-AI 设计系统 - 主题入口
+ *
+ * 主题背景系统：组件采用半透明玻璃效果，背景决定整体氛围
+ */
+
+@import './default.css';
+@import './spring-festival.css';
+@import './mid-autumn.css';
+@import './qingming.css';

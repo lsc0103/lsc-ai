@@ -1,0 +1,198 @@
+/**
+ * LSC-AI 设计系统 - 玻璃面板
+ *
+ * iOS 风格玻璃面板，带有完整的边缘光线效果
+ * 包含多种变体：basic, standard, thick, glow
+ */
+
+/* ===== 基础玻璃面板 ===== */
+.glass-panel {
+  position: relative;
+  background: var(--glass-bg-medium);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: var(--radius-3xl);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
+}
+
+/* 顶部细线高光 - iOS 液态玻璃核心特征 */
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 20%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.5) 80%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 细微边框 */
+.glass-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 确保内容在伪元素之上 */
+.glass-panel > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ===== 轻量级玻璃 (Basic) ===== */
+.glass-basic {
+  position: relative;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* 顶部细线高光 */
+.glass-basic::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.3) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ===== 厚玻璃 (Thick) - 适用于主要面板如侧边栏 ===== */
+.glass-thick {
+  position: relative;
+  background: var(--glass-bg-medium);
+  backdrop-filter: blur(60px) saturate(180%);
+  -webkit-backdrop-filter: blur(60px) saturate(180%);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* 顶部细线高光 */
+.glass-thick::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 20%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0.4) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 细微边框 */
+.glass-thick::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.glass-thick > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ===== 发光玻璃 (Glow) - 用于聚焦状态 ===== */
+.glass-glow {
+  position: relative;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  border-radius: var(--radius-xl);
+  color: var(--text-primary);
+  overflow: hidden;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* 顶部细线高光 */
+.glass-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 25%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ===== 尺寸变体 ===== */
+.glass-panel-sm { border-radius: var(--radius-lg); }
+.glass-panel-lg { border-radius: var(--radius-3xl); }
+
+/* ===== 无边框变体（用于嵌套玻璃）===== */
+.glass-borderless::after {
+  display: none;
+}
+
+/* ===== 悬浮交互 ===== */
+.glass-interactive {
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal),
+    background-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.glass-interactive:hover {
+  transform: translateY(-2px);
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.glass-interactive:active {
+  transform: scale(0.98);
+  transition-duration: var(--duration-instant);
+}

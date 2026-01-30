@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>08 - 部署方案</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>08 - 部署方案</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-19</div>
+    </div>
+
+    <h3>一、部署架构总览</h3>
+
+    <h4>1.1 单机部署架构</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">LSC-AI 单机部署拓扑图</div>
+
+        <!-- 互联网层 -->
+        <div class="arch-layer" style="border-color: #8c8c8c; background: linear-gradient(135deg, #fafafa 0%, #e8e8e8 100%);">
+            <span class="layer-title" style="color: #8c8c8c;">互联网</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">外部用户</div>
+                    <div class="arch-box-desc">浏览器访问</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ 公司防火墙 ↓</div>
+
+        <!-- LSC-AI 服务器 -->
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">LSC-AI 服务器 (192.168.x.100)</span>
+            <div class="layer-content" style="flex-direction: column; gap: 12px;">
+                <div class="arch-box warning" style="min-width: 300px;">
+                    <div class="arch-box-title">Nginx</div>
+                    <div class="arch-box-desc">反向代理 / SSL 终止 / 静态资源</div>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <div class="arch-box primary">
+                        <div class="arch-box-title">LSC-AI Backend</div>
+                        <div class="arch-box-desc">NestJS + PM2</div>
+                    </div>
+                    <div class="arch-box primary">
+                        <div class="arch-box-title">LSC-AI Core</div>
+                        <div class="arch-box-desc">AI 内核</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <div class="arch-box">
+                        <div class="arch-box-title">PostgreSQL</div>
+                        <div class="arch-box-desc">主数据库</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="arch-box-title">Redis</div>
+                        <div class="arch-box-desc">缓存/队列</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="arch-box-title">MinIO</div>
+                        <div class="arch-box-desc">对象存储</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↔ WebSocket ↔</div>
+
+        <!-- 客户端 -->
+        <div class="arch-layer user-layer">
+            <span class="layer-title" style="color: #52c41a;">终端设备</span>
+            <div class="layer-content">
+                <div class="arch-box success">
+                    <div class="arch-box-title">Client Agent</div>
+                    <div class="arch-box-desc">员工电脑</div>
+                </div>
+                <div class="arch-box success">
+                    <div class="arch-box-title">Sentinel Agent</div>
+                    <div class="arch-box-desc">业务服务器</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>1.2 集群部署架构</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">水平扩展架构</div>
+
+        <div class="arch-layer gateway-layer">
+            <span class="layer-title" style="color: #faad14;">负载均衡层</span>
+            <div class="layer-content">
+                <div class="arch-box warning" style="min-width: 250px;">
+                    <div class="arch-box-title">SLB / Nginx</div>
+                    <div class="arch-box-desc">负载均衡器</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">应用服务层</span>
+            <div class="layer-content">
+                <div class="arch-box primary">
+                    <div class="arch-box-title">Backend Node 1</div>
+                </div>
+                <div class="arch-box primary">
+                    <div class="arch-box-title">Backend Node 2</div>
+                </div>
+                <div class="arch-box primary">
+                    <div class="arch-box-title">Backend Node 3</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #722ed1;">数据存储层</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">Redis Cluster</div>
+                    <div class="arch-box-desc">会话/队列共享</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">PostgreSQL</div>
+                    <div class="arch-box-desc">主从复制</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tip-box info">
+        <strong>扩展关键点：</strong>
+        <ul style="margin-top: 8px;">
+            <li>使用 Redis 共享会话和任务队列</li>
+            <li>数据库使用主从复制</li>
+            <li>WebSocket 连接使用 Redis Adapter 实现跨节点通信</li>
+        </ul>
+    </div>
+
+    <h3>二、服务器配置要求</h3>
+
+    <h4>2.1 LSC-AI 主服务器</h4>
+    <table>
+        <thead><tr><th>配置项</th><th>最低配置</th><th>推荐配置</th></tr></thead>
+        <tbody>
+            <tr><td>CPU</td><td>4 核</td><td>8 核</td></tr>
+            <tr><td>内存</td><td>8 GB</td><td>16 GB</td></tr>
+            <tr><td>磁盘</td><td>100 GB SSD</td><td>500 GB SSD</td></tr>
+            <tr><td>操作系统</td><td>Ubuntu 22.04 LTS</td><td>Ubuntu 22.04 LTS</td></tr>
+            <tr><td>网络</td><td>千兆内网</td><td>千兆内网</td></tr>
+        </tbody>
+    </table>
+
+    <h4>2.2 软件版本要求</h4>
+    <table>
+        <thead><tr><th>软件</th><th>版本</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td>Node.js</td><td>20.x LTS</td><td>后端运行时</td></tr>
+            <tr><td>PostgreSQL</td><td>15.x</td><td>主数据库</td></tr>
+            <tr><td>Redis</td><td>7.x</td><td>缓存/队列</td></tr>
+            <tr><td>Nginx</td><td>1.24.x</td><td>反向代理</td></tr>
+            <tr><td>Docker</td><td>24.x</td><td>容器引擎</td></tr>
+            <tr><td>Docker Compose</td><td>2.x</td><td>容器编排</td></tr>
+        </tbody>
+    </table>
+
+    <h3>三、目录结构</h3>
+
+    <pre><code>/opt/lsc-ai/
+├── docker-compose.yml          # 主编排文件
+├── .env                        # 环境变量配置
+├── nginx/
+│   ├── nginx.conf              # Nginx 配置
+│   └── ssl/
+│       ├── cert.pem            # SSL 证书
+│       └── key.pem             # SSL 私钥
+├── data/
+│   ├── postgres/               # PostgreSQL 数据
+│   ├── redis/                  # Redis 数据
+│   └── minio/                  # MinIO 数据
+├── logs/
+│   ├── nginx/                  # Nginx 日志
+│   └── app/                    # 应用日志
+├── web-dist/                   # 前端静态文件
+└── backups/                    # 备份目录</code></pre>
+
+    <h3>四、Docker Compose 配置</h3>
+
+    <h4>4.1 docker-compose.yml</h4>
+    <pre><code class="language-yaml">version: '3.8'
+
+services:
+  # Nginx 反向代理
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: lsc-ai-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+      - ./web-dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+
+  # 后端服务
+  backend:
+    image: lsc-ai/backend:latest
+    container_name: lsc-ai-backend
+    env_file:
+      - .env
+    volumes:
+      - ./logs/app:/app/logs
+      - ./data/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: lsc-ai-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: lsc-ai-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ./data/redis:/data
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: lsc-ai-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    volumes:
+      - ./data/minio:/data
+    ports:
+      - "9001:9001"  # 管理界面（仅内网访问）
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+
+  # Bull Board (任务队列监控)
+  bull-board:
+    image: deadly0/bull-board
+    container_name: lsc-ai-bull-board
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "3001:3000"  # 仅内网访问
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - lsc-ai-network
+
+networks:
+  lsc-ai-network:
+    driver: bridge</code></pre>
+
+    <h3>五、Nginx 配置</h3>
+
+    <h4>5.1 nginx.conf</h4>
+    <pre><code class="language-nginx"># nginx/nginx.conf
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 100M;
+
+    # Gzip 压缩
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript
+               text/xml application/xml;
+
+    # 上游服务
+    upstream backend {
+        server backend:3000;
+        keepalive 32;
+    }
+
+    # HTTP 重定向到 HTTPS
+    server {
+        listen 80;
+        server_name lsc-ai.company.com;
+        return 301 https://$server_name$request_uri;
+    }
+
+    # HTTPS 服务
+    server {
+        listen 443 ssl http2;
+        server_name lsc-ai.company.com;
+
+        # SSL 配置
+        ssl_certificate /etc/nginx/ssl/cert.pem;
+        ssl_certificate_key /etc/nginx/ssl/key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        # 静态文件 (前端)
+        location / {
+            root /usr/share/nginx/html;
+            try_files $uri $uri/ /index.html;
+
+            # 缓存配置
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+                expires 30d;
+                add_header Cache-Control "public, immutable";
+            }
+        }
+
+        # API 代理
+        location /api {
+            proxy_pass http://backend;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # 超时配置
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 120s;  # AI 响应可能较长
+        }
+
+        # WebSocket 代理
+        location /socket.io {
+            proxy_pass http://backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+            # WebSocket 超时
+            proxy_read_timeout 86400s;
+            proxy_send_timeout 86400s;
+        }
+
+        # 健康检查
+        location /health {
+            proxy_pass http://backend/health;
+        }
+    }
+}</code></pre>
+
+    <h3>六、环境变量配置</h3>
+
+    <h4>6.1 .env 文件示例</h4>
+    <pre><code class="language-bash"># ================================
+# LSC-AI 环境变量配置
+# ================================
+
+# 数据库配置
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=lscai
+DB_PASSWORD=your_secure_password_here
+DB_NAME=lscai
+
+# Redis 配置
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password_here
+
+# MinIO 配置
+MINIO_ENDPOINT=minio
+MINIO_PORT=9000
+MINIO_USER=lscai
+MINIO_PASSWORD=your_minio_password_here
+
+# JWT 配置
+JWT_SECRET=your_jwt_secret_key_at_least_32_chars
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# DeepSeek API 配置
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+
+# 凭证加密配置
+CREDENTIAL_SALT=your_credential_salt_32_chars_here
+CREDENTIAL_KEY=your_credential_encryption_key_here
+
+# 应用配置
+NODE_ENV=production
+PORT=3000
+LOG_LEVEL=info
+
+# 可选：SSO 配置
+# SSO_ENABLED=true
+# SSO_CLIENT_ID=your_sso_client_id
+# SSO_CLIENT_SECRET=your_sso_client_secret</code></pre>
+
+    <div class="tip-box warning">
+        <strong>安全提示：</strong>
+        <ul style="margin-top: 8px;">
+            <li>.env 文件包含敏感信息，请勿提交到版本控制系统</li>
+            <li>生产环境密码应使用强密码（至少 16 位，包含大小写字母、数字、特殊字符）</li>
+            <li>JWT_SECRET 建议使用随机生成的 64 位字符串</li>
+        </ul>
+    </div>
+
+    <h3>七、数据库初始化</h3>
+
+    <h4>7.1 初始化 SQL 脚本</h4>
+    <pre><code class="language-sql">-- ================================
+-- LSC-AI 数据库初始化脚本
+-- ================================
+
+-- 创建扩展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- 创建数据库（如果不存在）
+-- CREATE DATABASE lscai WITH ENCODING 'UTF8';
+
+-- 连接到 lscai 数据库后执行 Prisma 迁移
+-- docker compose exec backend npx prisma migrate deploy
+
+-- 初始化默认管理员用户（密码需要通过应用加密）
+-- INSERT INTO users (id, username, email, role, created_at)
+-- VALUES (uuid_generate_v4(), 'admin', 'admin@company.com', 'ADMIN', NOW());
+
+-- 创建只读用户（用于报表查询）
+CREATE USER readonly WITH PASSWORD 'readonly_password';
+GRANT CONNECT ON DATABASE lscai TO readonly;
+GRANT USAGE ON SCHEMA public TO readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly;</code></pre>
+
+    <h4>7.2 使用 Prisma 迁移</h4>
+    <pre><code class="language-bash"># 进入后端容器执行迁移
+docker compose exec backend npx prisma migrate deploy
+
+# 执行数据库种子（初始数据）
+docker compose exec backend npx prisma db seed
+
+# 查看数据库状态
+docker compose exec backend npx prisma migrate status</code></pre>
+
+    <h3>八、启动流程和命令</h3>
+
+    <h4>8.1 首次部署</h4>
+    <pre><code class="language-bash"># 1. 创建目录结构
+mkdir -p /opt/lsc-ai/{nginx/ssl,data/{postgres,redis,minio},logs/{nginx,app},backups,web-dist}
+cd /opt/lsc-ai
+
+# 2. 复制配置文件
+cp /path/to/docker-compose.yml .
+cp /path/to/.env .
+cp /path/to/nginx.conf ./nginx/
+
+# 3. 生成或复制 SSL 证书
+# 使用公司 CA 签发的证书
+cp /path/to/cert.pem ./nginx/ssl/
+cp /path/to/key.pem ./nginx/ssl/
+
+# 或生成自签名证书（仅用于测试）
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ./nginx/ssl/key.pem \
+  -out ./nginx/ssl/cert.pem \
+  -subj "/CN=lsc-ai.company.com"
+
+# 4. 构建后端镜像（或从私有仓库拉取）
+docker build -t lsc-ai/backend:latest /path/to/backend
+
+# 5. 复制前端静态文件
+cp -r /path/to/frontend/dist/* ./web-dist/
+
+# 6. 启动所有服务
+docker compose up -d
+
+# 7. 检查服务状态
+docker compose ps
+docker compose logs -f
+
+# 8. 初始化数据库
+docker compose exec backend npx prisma migrate deploy
+docker compose exec backend npx prisma db seed
+
+# 9. 验证服务
+curl https://lsc-ai.company.com/health</code></pre>
+
+    <h4>8.2 日常操作命令</h4>
+    <table>
+        <thead><tr><th>操作</th><th>命令</th></tr></thead>
+        <tbody>
+            <tr><td>启动所有服务</td><td><code>docker compose up -d</code></td></tr>
+            <tr><td>停止所有服务</td><td><code>docker compose down</code></td></tr>
+            <tr><td>重启单个服务</td><td><code>docker compose restart backend</code></td></tr>
+            <tr><td>查看服务状态</td><td><code>docker compose ps</code></td></tr>
+            <tr><td>查看实时日志</td><td><code>docker compose logs -f backend</code></td></tr>
+            <tr><td>查看最近100行日志</td><td><code>docker compose logs --tail=100 backend</code></td></tr>
+            <tr><td>进入容器</td><td><code>docker compose exec backend sh</code></td></tr>
+            <tr><td>更新单个服务</td><td><code>docker compose up -d --no-deps backend</code></td></tr>
+        </tbody>
+    </table>
+
+    <h4>8.3 更新部署</h4>
+    <pre><code class="language-bash">cd /opt/lsc-ai
+
+# 1. 拉取新镜像
+docker pull lsc-ai/backend:latest
+
+# 2. 备份数据库
+./backup.sh
+
+# 3. 更新服务（零停机）
+docker compose up -d --no-deps backend
+
+# 4. 执行数据库迁移（如有）
+docker compose exec backend npx prisma migrate deploy
+
+# 5. 验证服务
+curl https://lsc-ai.company.com/health</code></pre>
+
+    <h3>九、健康检查</h3>
+
+    <h4>9.1 健康检查端点</h4>
+    <pre><code class="language-typescript">// 后端健康检查端点实现
+@Controller('health')
+export class HealthController {
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
+
+  @Get()
+  async check() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      services: {
+        database: await this.checkDatabase(),
+        redis: await this.checkRedis(),
+        deepseek: await this.checkDeepSeek(),
+      }
+    };
+  }
+
+  private async checkDatabase() {
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return { status: 'ok' };
+    } catch (error) {
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  private async checkRedis() {
+    try {
+      await this.redis.ping();
+      return { status: 'ok' };
+    } catch (error) {
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  private async checkDeepSeek() {
+    // 检查 DeepSeek API 连通性
+    return { status: 'ok' };
+  }
+}</code></pre>
+
+    <h4>9.2 健康检查响应示例</h4>
+    <pre><code class="language-json">{
+  "status": "ok",
+  "timestamp": "2026-01-19T10:30:00.000Z",
+  "uptime": 86400,
+  "services": {
+    "database": { "status": "ok" },
+    "redis": { "status": "ok" },
+    "deepseek": { "status": "ok" }
+  }
+}</code></pre>
+
+    <h4>9.3 Docker 健康检查配置</h4>
+    <pre><code class="language-yaml"># docker-compose.yml 中的健康检查
+backend:
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 40s</code></pre>
+
+    <h3>十、日志管理</h3>
+
+    <h4>10.1 日志配置</h4>
+    <pre><code class="language-yaml"># docker-compose.yml 中添加日志配置
+services:
+  backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        compress: "true"
+
+  nginx:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"</code></pre>
+
+    <h4>10.2 日志级别说明</h4>
+    <table>
+        <thead><tr><th>级别</th><th>说明</th><th>生产环境建议</th></tr></thead>
+        <tbody>
+            <tr><td><code>error</code></td><td>错误信息</td><td>始终启用</td></tr>
+            <tr><td><code>warn</code></td><td>警告信息</td><td>始终启用</td></tr>
+            <tr><td><code>info</code></td><td>一般信息</td><td>建议启用</td></tr>
+            <tr><td><code>debug</code></td><td>调试信息</td><td>按需启用</td></tr>
+            <tr><td><code>trace</code></td><td>详细跟踪</td><td>仅调试时启用</td></tr>
+        </tbody>
+    </table>
+
+    <h4>10.3 日志查看命令</h4>
+    <pre><code class="language-bash"># 查看实时日志
+docker compose logs -f backend
+
+# 查看特定时间段日志
+docker compose logs --since="2026-01-19T00:00:00" --until="2026-01-19T12:00:00" backend
+
+# 搜索错误日志
+docker compose logs backend 2>&1 | grep -i error
+
+# 查看 Nginx 访问日志
+tail -f /opt/lsc-ai/logs/nginx/access.log
+
+# 查看 Nginx 错误日志
+tail -f /opt/lsc-ai/logs/nginx/error.log</code></pre>
+
+    <h3>十一、备份恢复策略</h3>
+
+    <h4>11.1 自动备份脚本</h4>
+    <pre><code class="language-bash">#!/bin/bash
+# /opt/lsc-ai/backup.sh
+
+set -e
+
+BACKUP_DIR="/opt/lsc-ai/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+RETENTION_DAYS=7
+
+echo "=========================================="
+echo "LSC-AI 备份开始: $DATE"
+echo "=========================================="
+
+# 创建备份目录
+mkdir -p "$BACKUP_DIR"
+
+# 数据库备份
+echo "备份 PostgreSQL 数据库..."
+docker compose exec -T postgres pg_dump -U lscai lscai | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+echo "数据库备份完成: db_$DATE.sql.gz"
+
+# Redis 备份 (触发 RDB 快照)
+echo "备份 Redis 数据..."
+docker compose exec redis redis-cli -a ${REDIS_PASSWORD} BGSAVE
+sleep 5
+docker cp lsc-ai-redis:/data/dump.rdb "$BACKUP_DIR/redis_$DATE.rdb"
+echo "Redis 备份完成: redis_$DATE.rdb"
+
+# MinIO 数据备份 (可选，数据量大时考虑增量备份)
+# tar -czf "$BACKUP_DIR/minio_$DATE.tar.gz" -C /opt/lsc-ai/data minio
+
+# 清理旧备份
+echo "清理 ${RETENTION_DAYS} 天前的备份..."
+find "$BACKUP_DIR" -name "*.gz" -mtime +$RETENTION_DAYS -delete
+find "$BACKUP_DIR" -name "*.rdb" -mtime +$RETENTION_DAYS -delete
+
+# 显示备份文件列表
+echo "当前备份文件:"
+ls -lh "$BACKUP_DIR"
+
+echo "=========================================="
+echo "备份完成: $(date)"
+echo "=========================================="</code></pre>
+
+    <h4>11.2 定时备份 (Cron)</h4>
+    <pre><code class="language-bash"># 编辑 crontab
+crontab -e
+
+# 每天凌晨 2 点执行备份
+0 2 * * * /opt/lsc-ai/backup.sh >> /opt/lsc-ai/logs/backup.log 2>&1
+
+# 每周日凌晨 3 点执行完整备份（包含 MinIO）
+0 3 * * 0 /opt/lsc-ai/backup-full.sh >> /opt/lsc-ai/logs/backup.log 2>&1</code></pre>
+
+    <h4>11.3 数据恢复</h4>
+    <pre><code class="language-bash"># 恢复 PostgreSQL 数据库
+echo "停止后端服务..."
+docker compose stop backend
+
+echo "恢复数据库..."
+gunzip -c /opt/lsc-ai/backups/db_YYYYMMDD_HHMMSS.sql.gz | \
+  docker compose exec -T postgres psql -U lscai lscai
+
+echo "重启后端服务..."
+docker compose start backend
+
+# 恢复 Redis 数据
+docker compose stop redis
+cp /opt/lsc-ai/backups/redis_YYYYMMDD_HHMMSS.rdb /opt/lsc-ai/data/redis/dump.rdb
+docker compose start redis
+
+# 验证恢复
+curl https://lsc-ai.company.com/health</code></pre>
+
+    <h3>十二、监控告警配置</h3>
+
+    <h4>12.1 监控指标清单</h4>
+    <div class="grid-2">
+        <div class="feature-card">
+            <h5>系统指标</h5>
+            <ul style="text-align: left; font-size: 13px;">
+                <li>CPU 使用率</li>
+                <li>内存使用率</li>
+                <li>磁盘使用率</li>
+                <li>网络 IO</li>
+            </ul>
+        </div>
+        <div class="feature-card">
+            <h5>应用指标</h5>
+            <ul style="text-align: left; font-size: 13px;">
+                <li>HTTP 请求数/秒</li>
+                <li>响应时间 (P50/P95/P99)</li>
+                <li>错误率 (4xx/5xx)</li>
+                <li>WebSocket 连接数</li>
+            </ul>
+        </div>
+        <div class="feature-card">
+            <h5>AI 指标</h5>
+            <ul style="text-align: left; font-size: 13px;">
+                <li>DeepSeek API 调用次数</li>
+                <li>API 响应时间</li>
+                <li>Token 使用量</li>
+                <li>API 错误率</li>
+            </ul>
+        </div>
+        <div class="feature-card">
+            <h5>任务指标</h5>
+            <ul style="text-align: left; font-size: 13px;">
+                <li>定时任务成功率</li>
+                <li>RPA 任务成功率</li>
+                <li>任务队列长度</li>
+                <li>任务平均耗时</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>12.2 告警规则配置</h4>
+    <table>
+        <thead><tr><th>告警项</th><th>阈值</th><th>级别</th><th>通知方式</th></tr></thead>
+        <tbody>
+            <tr><td>服务不可用</td><td>健康检查失败 3 次</td><td><span class="priority p0">P0 紧急</span></td><td>电话 + 短信 + 邮件</td></tr>
+            <tr><td>CPU 使用率</td><td>&gt; 90% 持续 5 分钟</td><td><span class="priority p1">P1 严重</span></td><td>短信 + 邮件</td></tr>
+            <tr><td>内存使用率</td><td>&gt; 85% 持续 5 分钟</td><td><span class="priority p1">P1 严重</span></td><td>短信 + 邮件</td></tr>
+            <tr><td>磁盘使用率</td><td>&gt; 80%</td><td><span class="priority p1">P1 严重</span></td><td>短信 + 邮件</td></tr>
+            <tr><td>HTTP 错误率</td><td>&gt; 5% 持续 5 分钟</td><td><span class="priority p1">P1 严重</span></td><td>短信 + 邮件</td></tr>
+            <tr><td>响应时间 P99</td><td>&gt; 5s 持续 5 分钟</td><td><span class="priority p2">P2 警告</span></td><td>邮件</td></tr>
+            <tr><td>DeepSeek API 错误</td><td>&gt; 10% 持续 5 分钟</td><td><span class="priority p1">P1 严重</span></td><td>短信 + 邮件</td></tr>
+        </tbody>
+    </table>
+
+    <h4>12.3 Prometheus + Grafana 配置</h4>
+    <pre><code class="language-yaml"># prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'lsc-ai-backend'
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:9187']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - '/etc/prometheus/alert.rules.yml'</code></pre>
+
+    <h4>12.4 故障排查步骤</h4>
+    <div class="tip-box info">
+        <strong>故障排查清单：</strong>
+        <ol style="margin-top: 8px;">
+            <li>检查服务状态：<code>docker compose ps</code></li>
+            <li>查看错误日志：<code>docker compose logs --tail=100 backend</code></li>
+            <li>检查健康端点：<code>curl http://localhost:3000/health</code></li>
+            <li>检查数据库连接：<code>docker compose exec postgres pg_isready</code></li>
+            <li>检查 Redis 连接：<code>docker compose exec redis redis-cli ping</code></li>
+            <li>检查磁盘空间：<code>df -h</code></li>
+            <li>检查内存使用：<code>free -h</code></li>
+            <li>重启问题服务：<code>docker compose restart backend</code></li>
+        </ol>
+    </div>
+
+    <h3>十三、故障恢复</h3>
+
+    <h4>13.1 常见问题处理</h4>
+    <table>
+        <thead><tr><th>问题</th><th>可能原因</th><th>解决方案</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>服务无法启动</td>
+                <td>端口被占用、配置错误</td>
+                <td>检查端口、查看日志</td>
+            </tr>
+            <tr>
+                <td>数据库连接失败</td>
+                <td>密码错误、服务未启动</td>
+                <td>检查 .env 配置、重启 postgres</td>
+            </tr>
+            <tr>
+                <td>WebSocket 断连</td>
+                <td>Nginx 配置、网络问题</td>
+                <td>检查 Nginx 配置、超时设置</td>
+            </tr>
+            <tr>
+                <td>AI 响应超时</td>
+                <td>DeepSeek API 限流</td>
+                <td>检查 API 配额、增加重试</td>
+            </tr>
+            <tr>
+                <td>磁盘空间不足</td>
+                <td>日志、备份过多</td>
+                <td>清理日志、增加磁盘</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>13.2 服务重启命令</h4>
+    <pre><code class="language-bash"># 重启所有服务
+docker compose restart
+
+# 重启单个服务
+docker compose restart backend
+
+# 强制重建并启动
+docker compose up -d --force-recreate backend
+
+# 查看日志定位问题
+docker compose logs -f backend --tail=100</code></pre>
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

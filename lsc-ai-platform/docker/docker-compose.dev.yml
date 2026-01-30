@@ -1,0 +1,200 @@
+# LSC-AI Platform 开发环境 (全容器化)
+# 启动: docker compose -f docker/docker-compose.dev.yml up -d
+# 停止: docker compose -f docker/docker-compose.dev.yml down
+# 日志: docker compose -f docker/docker-compose.dev.yml logs -f
+
+services:
+  # ============== 基础设施 ==============
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: lscai-postgres-dev
+    environment:
+      POSTGRES_USER: ${DB_USER:-lscai}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lscai123}
+      POSTGRES_DB: ${DB_NAME:-lscai_dev}
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lscai} -d ${DB_NAME:-lscai_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
+  # Redis 缓存/队列
+  redis:
+    image: redis:7-alpine
+    container_name: lscai-redis-dev
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
+  # LibSQL Server (Mastra Memory 存储)
+  libsql:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    container_name: lscai-libsql-dev
+    command: --http-listen-addr 0.0.0.0:8080
+    ports:
+      - "8080:8080"  # HTTP API
+    volumes:
+      - libsql_data:/var/lib/sqld
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: lscai-minio-dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
+  # Redis Commander (Redis 可视化管理)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: lscai-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-redis123}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
+  # ============== 数据库迁移 ==============
+  migrate:
+    image: lscai/server:latest
+    container_name: lscai-migrate-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-lscai}:${DB_PASSWORD:-lscai123}@postgres:5432/${DB_NAME:-lscai_dev}?schema=public
+    command: >
+      sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma &&
+             npx prisma db seed --schema=prisma/schema.prisma || true"
+    networks:
+      - lscai-dev-network
+
+  # ============== 后端服务 ==============
+  server:
+    image: lscai/server:latest
+    container_name: lscai-server-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      libsql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${DB_USER:-lscai}:${DB_PASSWORD:-lscai123}@postgres:5432/${DB_NAME:-lscai_dev}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USER: ${MINIO_USER:-minioadmin}
+      MINIO_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-lscai}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-refresh-secret-change-in-production}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # DeepSeek API 配置
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      # Mastra Memory (LibSQL) 配置
+      LIBSQL_URL: http://libsql:8080
+      # 凭证加密
+      CREDENTIAL_SALT: ${CREDENTIAL_SALT:-your-credential-salt-32-characters}
+      CREDENTIAL_KEY: ${CREDENTIAL_KEY:-your-credential-encryption-key-here}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - lscai-dev-network
+
+  # ============== 前端服务 ==============
+  web:
+    image: lscai/web:latest
+    container_name: lscai-web-dev
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - lscai-dev-network
+
+volumes:
+  postgres_data:
+    name: lscai-postgres-data
+  redis_data:
+    name: lscai-redis-data
+  minio_data:
+    name: lscai-minio-data
+  libsql_data:
+    name: lscai-libsql-data
+
+networks:
+  lscai-dev-network:
+    name: lscai-dev-network
+    driver: bridge

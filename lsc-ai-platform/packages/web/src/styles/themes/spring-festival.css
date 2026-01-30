@@ -1,0 +1,23 @@
+/**
+ * LSC-AI 设计系统 - 春节主题
+ *
+ * 红金配色，喜庆祥和
+ * 触发时间：农历腊月二十 - 正月十五
+ */
+
+[data-theme="spring-festival"] .theme-background {
+  background:
+    /* 左侧红色光晕 */
+    radial-gradient(ellipse at 30% 30%, rgba(220, 38, 38, 0.2) 0%, transparent 50%),
+    /* 右侧金色光晕 */
+    radial-gradient(ellipse at 70% 70%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+    /* 红色基调渐变 */
+    linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%);
+}
+
+/* 覆盖高光色为金色调 */
+[data-theme="spring-festival"] {
+  --glass-highlight-color: 255, 215, 140;
+  --accent-primary: #fbbf24;
+  --accent-primary-hover: #f59e0b;
+}

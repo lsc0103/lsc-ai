@@ -1,0 +1,52 @@
+# LSC-AI Platform - Frontend Dockerfile
+# Build from parent directory: docker build -f lsc-ai-platform/Dockerfile.web -t lscai/web:latest .
+
+# ============== Build Stage ==============
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Create minimal localAI structure for workspace
+RUN mkdir -p localAI/packages/core && \
+    echo '{"name":"@lsc-ai/core","version":"0.1.0"}' > localAI/packages/core/package.json
+
+# Copy lsc-ai-platform files
+COPY lsc-ai-platform/package.json lsc-ai-platform/pnpm-workspace.yaml ./lsc-ai-platform/
+COPY lsc-ai-platform/pnpm-lock.yaml* ./lsc-ai-platform/
+COPY lsc-ai-platform/tsconfig.base.json ./lsc-ai-platform/
+COPY lsc-ai-platform/packages/web ./lsc-ai-platform/packages/web/
+
+WORKDIR /app/lsc-ai-platform
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# Build with production API URL
+ENV VITE_API_URL=/api
+RUN pnpm --filter @lsc-ai/web run build
+
+# ============== Production Stage ==============
+FROM nginx:alpine AS production
+
+# Copy nginx configuration
+COPY lsc-ai-platform/packages/web/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built files
+COPY --from=builder /app/lsc-ai-platform/packages/web/dist /usr/share/nginx/html
+
+# Set permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

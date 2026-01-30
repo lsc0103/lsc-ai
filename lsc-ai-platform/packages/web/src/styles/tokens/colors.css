@@ -1,0 +1,92 @@
+/**
+ * LSC-AI 设计系统 - 色彩变量
+ *
+ * iOS 风格玻璃拟态色彩体系
+ * 所有组件使用半透明玻璃效果，背景决定整体氛围
+ */
+
+:root {
+  /* ===== 玻璃背景透明度（更通透）===== */
+  --glass-bg-subtle: rgba(255, 255, 255, 0.03);
+  --glass-bg-light: rgba(255, 255, 255, 0.05);
+  --glass-bg-medium: rgba(255, 255, 255, 0.08);
+  --glass-bg-solid: rgba(255, 255, 255, 0.12);
+  --glass-bg-hover: rgba(255, 255, 255, 0.10);
+  --glass-bg-active: rgba(255, 255, 255, 0.06);
+
+  /* ===== iOS 液态玻璃高光（纯白细线）===== */
+  --glass-highlight-color: 255, 255, 255;
+  --glass-edge-highlight: rgba(var(--glass-highlight-color), 0.4);
+  --glass-edge-highlight-strong: rgba(var(--glass-highlight-color), 0.6);
+  --glass-edge-shadow: rgba(0, 0, 0, 0.1);
+
+  /* ===== 顶部细线高光（iOS 风格）===== */
+  --glass-rim-gradient: linear-gradient(
+    180deg,
+    rgba(var(--glass-highlight-color), 0.6) 0%,
+    rgba(var(--glass-highlight-color), 0.3) 1px,
+    transparent 2px
+  );
+
+  /* ===== 渐变边框（细微）===== */
+  --glass-border-gradient: linear-gradient(
+    160deg,
+    rgba(var(--glass-highlight-color), 0.4) 0%,
+    rgba(var(--glass-highlight-color), 0.15) 15%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 50%
+  );
+
+  /* ===== 文字色彩（深色背景适用）===== */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-tertiary: rgba(255, 255, 255, 0.48);
+  --text-disabled: rgba(255, 255, 255, 0.32);
+  --text-placeholder: rgba(255, 255, 255, 0.40);
+  --text-inverse: rgba(0, 0, 0, 0.88);
+
+  /* ===== 强调色（少量使用）===== */
+  --accent-primary: #0071e3;
+  --accent-primary-hover: #0077ed;
+  --accent-primary-active: #0066cc;
+  --accent-success: #34c759;
+  --accent-warning: #ff9500;
+  --accent-error: #ff3b30;
+  --accent-info: #5ac8fa;
+
+  /* ===== 边框色 ===== */
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(var(--glass-highlight-color), 0.6);
+
+  /* ===== 遮罩层 ===== */
+  --overlay-bg: rgba(0, 0, 0, 0.45);
+  --overlay-bg-heavy: rgba(0, 0, 0, 0.65);
+
+  /* ===== 功能状态色（玻璃化处理）===== */
+  --status-success-bg: rgba(52, 199, 89, 0.15);
+  --status-success-border: rgba(52, 199, 89, 0.3);
+  --status-warning-bg: rgba(255, 149, 0, 0.15);
+  --status-warning-border: rgba(255, 149, 0, 0.3);
+  --status-error-bg: rgba(255, 59, 48, 0.15);
+  --status-error-border: rgba(255, 59, 48, 0.3);
+  --status-info-bg: rgba(90, 200, 250, 0.15);
+  --status-info-border: rgba(90, 200, 250, 0.3);
+}
+
+/* 浅色模式覆盖（预留）*/
+[data-theme="light"] {
+  --text-primary: rgba(0, 0, 0, 0.88);
+  --text-secondary: rgba(0, 0, 0, 0.65);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+  --text-disabled: rgba(0, 0, 0, 0.25);
+  --text-placeholder: rgba(0, 0, 0, 0.35);
+  --text-inverse: rgba(255, 255, 255, 0.92);
+
+  --glass-bg-light: rgba(0, 0, 0, 0.04);
+  --glass-bg-medium: rgba(0, 0, 0, 0.08);
+  --glass-bg-solid: rgba(0, 0, 0, 0.12);
+
+  --border-default: rgba(0, 0, 0, 0.12);
+  --border-light: rgba(0, 0, 0, 0.06);
+}

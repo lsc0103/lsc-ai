@@ -1,0 +1,32 @@
+/**
+ * LSC-AI 设计系统 - 清明/立春主题
+ *
+ * 清新绿意，春意盎然
+ * 触发时间：4月3日 - 4月7日 / 立春节气
+ */
+
+[data-theme="qingming"] .theme-background {
+  background:
+    /* 顶部绿色光晕 */
+    radial-gradient(ellipse at 50% 0%, rgba(34, 197, 94, 0.15) 0%, transparent 50%),
+    /* 浅绿渐变 */
+    linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+/* 清明主题使用深色文字 */
+[data-theme="qingming"] {
+  --text-primary: rgba(0, 0, 0, 0.88);
+  --text-secondary: rgba(0, 0, 0, 0.65);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+
+  /* 玻璃效果调整为深色边框 */
+  --glass-highlight-color: 100, 180, 130;
+  --glass-bg-light: rgba(0, 0, 0, 0.04);
+  --glass-bg-medium: rgba(0, 0, 0, 0.06);
+  --glass-bg-solid: rgba(0, 0, 0, 0.08);
+
+  --border-default: rgba(0, 0, 0, 0.1);
+  --border-light: rgba(0, 0, 0, 0.06);
+
+  --accent-primary: #16a34a;
+}

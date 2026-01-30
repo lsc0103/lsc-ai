@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 - 架构设计总览</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>01 - 架构设计总览</h2>
+        <div class="meta">文档版本：2.0 (Mastra 升级) | 更新日期：2026-01-28 | 作者：lsc0103</div>
+    </div>
+
+    <h3>一、架构概览</h3>
+
+    <h4>1.1 系统定位</h4>
+    <p>LSC-AI 是一个企业级 AI 统一平台，具备以下核心能力：</p>
+    <ul>
+        <li>智能对话与任务执行</li>
+        <li>万能工作台（Workbench）动态构建</li>
+        <li>RPA 流程自动化</li>
+        <li>定时任务调度</li>
+        <li>跨系统集成与监管</li>
+    </ul>
+
+    <h4>1.2 整体架构图</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">LSC-AI 平台整体架构</div>
+
+        <!-- 用户层 -->
+        <div class="arch-layer user-layer">
+            <span class="layer-title" style="color: #52c41a;">用户层</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">浏览器 Web</div>
+                    <div class="arch-box-desc">主入口</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">移动端 H5</div>
+                    <div class="arch-box-desc">可选</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">其他业务系统</div>
+                    <div class="arch-box-desc">API 调用</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Client Agent</div>
+                    <div class="arch-box-desc">本地开发/操作</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ HTTPS / WebSocket ↓</div>
+
+        <!-- 网关层 -->
+        <div class="arch-layer gateway-layer">
+            <span class="layer-title" style="color: #faad14;">网关层</span>
+            <div class="layer-content">
+                <div class="arch-box warning" style="min-width: 400px;">
+                    <div class="arch-box-title">Nginx / Traefik</div>
+                    <div class="arch-box-desc">SSL 终止 • 负载均衡 • 静态资源 • WebSocket 代理 • 限流</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 应用层 -->
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">应用层</span>
+            <div class="layer-content" style="flex-direction: column; gap: 16px;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <div class="arch-box primary"><div class="arch-box-title">对话服务 Chat</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">任务调度 Scheduler</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">RPA 引擎</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">用户服务 User</div></div>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <div class="arch-box primary"><div class="arch-box-title">会话管理 Session</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">项目管理 Project</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">文件服务 File</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">Client 管理</div></div>
+                </div>
+                <div style="margin-top: 8px; padding: 16px; background: rgba(24,144,255,0.1); border-radius: 8px;">
+                    <div style="text-align: center; font-weight: 600; margin-bottom: 12px;">LSC-AI 内核 (Mastra + LSC 工具)</div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                        <div class="arch-box"><div class="arch-box-title">Mastra Agent</div><div class="arch-box-desc">开源框架</div></div>
+                        <div class="arch-box"><div class="arch-box-title">Memory 持久化</div><div class="arch-box-desc">LibSQL</div></div>
+                        <div class="arch-box"><div class="arch-box-title">LSC Office 工具</div><div class="arch-box-desc">23+工具</div></div>
+                        <div class="arch-box"><div class="arch-box-title">LLM DeepSeek</div></div>
+                        <div class="arch-box"><div class="arch-box-title">MCP 协议</div></div>
+                    </div>
+                </div>
+                <div style="margin-top: 8px; padding: 16px; background: rgba(114,46,209,0.1); border-radius: 8px;">
+                    <div style="text-align: center; font-weight: 600; margin-bottom: 12px;">智能增强模块</div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                        <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">IDP 文档处理</div><div class="arch-box-desc">OCR/表格/合同</div></div>
+                        <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">RAG 知识库</div><div class="arch-box-desc">关键词检索/问答</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 数据层 -->
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #722ed1;">数据层</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">PostgreSQL</div><div class="arch-box-desc">主数据库</div></div>
+                <div class="arch-box"><div class="arch-box-title">Redis</div><div class="arch-box-desc">缓存/队列</div></div>
+                <div class="arch-box"><div class="arch-box-title">MinIO</div><div class="arch-box-desc">文件存储</div></div>
+                <div class="arch-box"><div class="arch-box-title">Elasticsearch</div><div class="arch-box-desc">日志检索</div></div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 外部系统 -->
+        <div class="arch-layer external-layer">
+            <span class="layer-title" style="color: #eb2f96;">外部系统集成</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">MES 系统</div></div>
+                <div class="arch-box"><div class="arch-box-title">OA 系统</div></div>
+                <div class="arch-box"><div class="arch-box-title">WMS 系统</div></div>
+                <div class="arch-box"><div class="arch-box-title">QMS 系统</div></div>
+                <div class="arch-box"><div class="arch-box-title">Sentinel Agent</div><div class="arch-box-desc">服务器感知器</div></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>二、技术栈选型</h3>
+
+    <h4>2.1 前端技术栈</h4>
+    <table>
+        <thead><tr><th>类别</th><th>技术选型</th><th>版本</th><th>选型理由</th></tr></thead>
+        <tbody>
+            <tr><td>框架</td><td><strong>React 18</strong></td><td>^18.2.0</td><td>生态成熟，组件化开发</td></tr>
+            <tr><td>构建</td><td><strong>Vite</strong></td><td>^5.0.0</td><td>快速热更新，现代化构建</td></tr>
+            <tr><td>路由</td><td><strong>React Router</strong></td><td>^6.20.0</td><td>官方路由方案</td></tr>
+            <tr><td>状态管理</td><td><strong>Zustand</strong></td><td>^4.4.0</td><td>轻量简洁，TypeScript 友好</td></tr>
+            <tr><td>UI 组件库</td><td><strong>Ant Design</strong></td><td>^5.12.0</td><td>企业级，组件丰富</td></tr>
+            <tr><td>图表</td><td><strong>ECharts</strong></td><td>^5.4.0</td><td>功能强大，可定制</td></tr>
+            <tr><td>代码编辑器</td><td><strong>Monaco Editor</strong></td><td>^0.45.0</td><td>VS Code 同款</td></tr>
+            <tr><td>Markdown</td><td><strong>MDX + react-markdown</strong></td><td>-</td><td>支持组件嵌入</td></tr>
+            <tr><td>样式</td><td><strong>TailwindCSS + CSS Modules</strong></td><td>^3.4.0</td><td>原子化 + 模块化</td></tr>
+            <tr><td>请求</td><td><strong>Axios + React Query</strong></td><td>-</td><td>请求管理 + 缓存</td></tr>
+            <tr><td>WebSocket</td><td><strong>Socket.io-client</strong></td><td>^4.7.0</td><td>实时通信</td></tr>
+            <tr><td>类型</td><td><strong>TypeScript</strong></td><td>^5.3.0</td><td>类型安全</td></tr>
+        </tbody>
+    </table>
+
+    <h4>2.2 后端技术栈</h4>
+    <table>
+        <thead><tr><th>类别</th><th>技术选型</th><th>版本</th><th>选型理由</th></tr></thead>
+        <tbody>
+            <tr><td>运行时</td><td><strong>Node.js</strong></td><td>^20.10.0 LTS</td><td>与内核一致，长期支持</td></tr>
+            <tr><td>框架</td><td><strong>NestJS</strong></td><td>^10.3.0</td><td>企业级，模块化，TypeScript 原生</td></tr>
+            <tr><td>API 文档</td><td><strong>Swagger</strong></td><td>@nestjs/swagger</td><td>自动生成 API 文档</td></tr>
+            <tr><td>验证</td><td><strong>class-validator</strong></td><td>-</td><td>请求参数校验</td></tr>
+            <tr><td>ORM</td><td><strong>Prisma</strong></td><td>^5.7.0</td><td>类型安全，迁移友好</td></tr>
+            <tr><td>缓存</td><td><strong>@nestjs/cache-manager</strong></td><td>-</td><td>统一缓存抽象</td></tr>
+            <tr><td>任务队列</td><td><strong>BullMQ</strong></td><td>^5.1.0</td><td>持久化，可视化</td></tr>
+            <tr><td>WebSocket</td><td><strong>Socket.io</strong></td><td>^4.7.0</td><td>实时双向通信</td></tr>
+            <tr><td>日志</td><td><strong>Pino</strong></td><td>^8.17.0</td><td>高性能结构化日志</td></tr>
+            <tr><td>进程管理</td><td><strong>PM2</strong></td><td>^5.3.0</td><td>集群模式，自动重启</td></tr>
+        </tbody>
+    </table>
+
+    <h4>2.3 数据存储</h4>
+    <table>
+        <thead><tr><th>类别</th><th>技术选型</th><th>用途</th></tr></thead>
+        <tbody>
+            <tr><td>关系数据库</td><td><strong>PostgreSQL 15</strong></td><td>用户、会话、任务、项目、知识库等核心数据（含全文检索）</td></tr>
+            <tr><td>缓存</td><td><strong>Redis 7</strong></td><td>会话缓存、任务队列、分布式锁</td></tr>
+            <tr><td>对象存储</td><td><strong>MinIO</strong></td><td>文件、图片、文档存储</td></tr>
+            <tr><td>搜索引擎</td><td><strong>Elasticsearch 8</strong> (可选)</td><td>聊天历史检索、日志分析</td></tr>
+        </tbody>
+    </table>
+
+    <h4>2.4 基础设施</h4>
+    <table>
+        <thead><tr><th>类别</th><th>技术选型</th><th>用途</th></tr></thead>
+        <tbody>
+            <tr><td>反向代理</td><td><strong>Nginx</strong></td><td>负载均衡、SSL、静态资源</td></tr>
+            <tr><td>容器化</td><td><strong>Docker + Docker Compose</strong></td><td>开发和部署</td></tr>
+            <tr><td>编排 (可选)</td><td><strong>Kubernetes</strong></td><td>生产环境高可用</td></tr>
+            <tr><td>CI/CD</td><td><strong>GitLab CI 或 Jenkins</strong></td><td>自动化构建部署</td></tr>
+            <tr><td>监控</td><td><strong>Prometheus + Grafana</strong></td><td>性能监控、告警</td></tr>
+        </tbody>
+    </table>
+
+    <h4>2.5 AI 与 RPA</h4>
+    <table>
+        <thead><tr><th>类别</th><th>技术选型</th><th>用途</th></tr></thead>
+        <tbody>
+            <tr><td>Agent 框架</td><td><strong>Mastra Framework</strong></td><td>企业级 AI Agent 框架（@mastra/core, @mastra/memory）</td></tr>
+            <tr><td>LLM</td><td><strong>DeepSeek API</strong></td><td>核心 AI 能力（集团统一），含关键词提取</td></tr>
+            <tr><td>工具扩展</td><td><strong>LSC Office Tools</strong></td><td>Word/Excel/PPT/PDF 办公自动化工具集</td></tr>
+            <tr><td>RAG 检索</td><td><strong>PostgreSQL 全文检索</strong></td><td>LLM 关键词提取 + GIN 索引全文检索</td></tr>
+            <tr><td>IDP 服务</td><td><strong>PaddleOCR (Python)</strong></td><td>智能文档处理微服务</td></tr>
+            <tr><td>浏览器自动化</td><td><strong>Playwright</strong></td><td>RPA Web 操作</td></tr>
+            <tr><td>定时调度</td><td><strong>BullMQ</strong></td><td>定时任务</td></tr>
+            <tr><td>远程执行</td><td><strong>自研 Sentinel Agent</strong></td><td>跨服务器操作</td></tr>
+        </tbody>
+    </table>
+
+    <h3>三、核心架构设计</h3>
+
+    <h4>3.1 前后端分离架构</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">前后端分离架构</div>
+        <div class="grid-2">
+            <div class="arch-layer" style="border-color: #52c41a;">
+                <span class="layer-title" style="color: #52c41a;">前端应用 (独立部署 - Nginx)</span>
+                <div style="padding: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 12px;">React SPA</div>
+                    <ul>
+                        <li>/chat - 聊天界面</li>
+                        <li>/workbench - 工作台</li>
+                        <li>/projects - 项目管理</li>
+                        <li>/rpa - RPA/定时任务</li>
+                        <li>/settings - 设置</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="arch-layer" style="border-color: #1890ff;">
+                <span class="layer-title" style="color: #1890ff;">后端服务 (独立部署 - PM2)</span>
+                <div style="padding: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 12px;">NestJS Application</div>
+                    <ul>
+                        <li>ChatModule - 对话管理</li>
+                        <li>SessionModule - 会话管理</li>
+                        <li>TaskModule - 定时任务</li>
+                        <li>RPAModule - RPA 流程</li>
+                        <li>ProjectModule - 项目管理</li>
+                        <li>UserModule - 用户权限</li>
+                        <li>FileModule - 文件服务</li>
+                        <li>ClientAgentModule - 本地 Agent 管理</li>
+                        <li>IntegrationModule - 外部系统集成</li>
+                    </ul>
+                    <div style="margin-top: 12px; padding: 12px; background: rgba(24,144,255,0.1); border-radius: 6px; text-align: center;">
+                        <strong>Mastra Framework + LSC Office Tools</strong><br/>
+                        <small style="color: #8c8c8c;">@mastra/core + @mastra/memory + LSC 特色工具集</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 16px; color: var(--text-secondary);">← REST API + WebSocket →</div>
+    </div>
+
+    <h4>3.2 实时通信架构</h4>
+    <div class="tip-box info">
+        <h5 style="margin-bottom: 12px;">WebSocket 连接类型</h5>
+        <div class="grid-3">
+            <div>
+                <strong>1. 用户浏览器 ←→ LSC-AI 服务器</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>聊天消息流式输出 (SSE/WS)</li>
+                    <li>Workbench 实时更新</li>
+                    <li>任务执行状态推送</li>
+                    <li>通知消息</li>
+                </ul>
+            </div>
+            <div>
+                <strong>2. Client Agent ←→ LSC-AI 服务器</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>用户本地电脑主动连接服务器</li>
+                    <li>服务器下发文件操作指令</li>
+                    <li>Agent 执行并返回结果</li>
+                    <li>心跳保活</li>
+                </ul>
+            </div>
+            <div>
+                <strong>3. Sentinel Agent ←→ LSC-AI 服务器</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>业务服务器主动连接</li>
+                    <li>执行监控、重启等命令</li>
+                    <li>上报系统状态</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h4>3.3 模块依赖关系</h4>
+    <div class="mermaid">
+graph TD
+    A[API Gateway<br/>Nginx] --> B[ChatModule<br/>对话服务]
+    A --> C[TaskModule<br/>定时任务]
+    A --> D[RPAModule<br/>RPA 引擎]
+    B --> E[LSC-AI Core]
+    C --> E
+    D --> E
+    E --> F[DeepSeek API<br/>LLM]
+    E --> G[Client Agent<br/>用户电脑]
+    E --> H[Sentinel Agent<br/>业务服务器]
+    style E fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
+    style A fill:#fffbe6,stroke:#faad14
+    </div>
+
+    <h4>3.4 Agent 体系架构（核心设计）</h4>
+    <div class="tip-box info">
+        <h5 style="margin-bottom: 12px;">三种 Agent 统一基于 Mastra 框架 + LSC 工具</h5>
+        <p style="margin-bottom: 16px;">LSC-AI 采用<strong>开源 Mastra 框架 + LSC 特色工具</strong>的混合架构，所有三种 Agent 共享 Mastra 的成熟 Agent 能力、Memory 持久化、MCP 协议，同时集成 LSC Office 工具集（23+ 工具），确保一致且成熟的 AI 能力。</p>
+        <div class="grid-3">
+            <div style="background: #e6f7ff; padding: 16px; border-radius: 8px; border-left: 4px solid #1890ff;">
+                <strong style="color: #1890ff;">🌐 Platform Agent（云端）</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>Mastra Agent 核心框架</li>
+                    <li>Memory 持久化 (LibSQL/PostgreSQL)</li>
+                    <li>LSC Office 工具集成</li>
+                    <li>处理云端任务（RPA、定时任务）</li>
+                    <li>MCP 协议扩展能力</li>
+                </ul>
+            </div>
+            <div style="background: #f6ffed; padding: 16px; border-radius: 8px; border-left: 4px solid #52c41a;">
+                <strong style="color: #52c41a;">💻 Client Agent（本地）</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>Mastra Agent 核心框架</li>
+                    <li>本地 Memory 存储 (SQLite)</li>
+                    <li>LSC Office 工具 (完整)</li>
+                    <li>处理本地开发任务</li>
+                    <li>开发环境检测与操作</li>
+                </ul>
+            </div>
+            <div style="background: #fff0f6; padding: 16px; border-radius: 8px; border-left: 4px solid #eb2f96;">
+                <strong style="color: #eb2f96;">🖥️ Sentinel Agent（服务器）</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>Mastra Agent 核心框架</li>
+                    <li>服务器状态监控工具</li>
+                    <li>系统运维工具集成</li>
+                    <li>日志分析与异常检测</li>
+                    <li>自动化运维决策</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h5>3.4.1 为什么三种 Agent 都需要完整集成 Core？</h5>
+    <table>
+        <thead><tr><th>场景</th><th>执行位置</th><th>为什么需要 Core</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>云端任务</strong><br/>定时报表、RPA流程、知识库问答</td>
+                <td>Platform Agent（服务器）</td>
+                <td>Platform 直接调用 Core 工具，操作服务器资源，无需中转</td>
+            </tr>
+            <tr>
+                <td><strong>本地开发</strong><br/>代码编写、文件操作、Office办公</td>
+                <td>Client Agent（用户电脑）</td>
+                <td>Client Agent 需要本地 AI 推理能力，完整工具链在本地执行</td>
+            </tr>
+            <tr>
+                <td><strong>服务器运维</strong><br/>状态监控、服务重启、日志分析</td>
+                <td>Sentinel Agent（业务服务器）</td>
+                <td>Sentinel 需要智能决策能力，自主分析问题并执行修复</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h5>3.4.2 三方实时通信架构</h5>
+    <div class="arch-diagram">
+        <div class="arch-title">用户 ↔ Platform ↔ Agent 实时交互</div>
+        <div style="display: flex; justify-content: space-around; align-items: center; padding: 20px;">
+            <div class="arch-box primary" style="min-width: 120px;">
+                <div class="arch-box-title">浏览器</div>
+                <div class="arch-box-desc">用户界面</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; color: #1890ff;">
+                <span>← WebSocket →</span>
+                <span style="font-size: 12px; color: #8c8c8c;">实时双向通信</span>
+            </div>
+            <div class="arch-box" style="min-width: 140px; border-color: #1890ff; background: #e6f7ff;">
+                <div class="arch-box-title">LSC-AI Platform</div>
+                <div class="arch-box-desc">任务协调中心</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; color: #52c41a;">
+                <span>← WebSocket →</span>
+                <span style="font-size: 12px; color: #8c8c8c;">指令下发/结果回传</span>
+            </div>
+            <div class="arch-box" style="min-width: 120px; border-color: #52c41a;">
+                <div class="arch-box-title">Client Agent</div>
+                <div class="arch-box-desc">本地执行</div>
+            </div>
+        </div>
+        <div style="text-align: center; padding: 12px; background: rgba(24,144,255,0.05); border-radius: 6px; margin-top: 12px;">
+            <strong>Workbench 实时可视化：</strong>用户可在 Workbench 中看到完整的任务执行过程（工具调用、文件操作、代码生成等），而非仅看到最终结果。
+        </div>
+    </div>
+
+    <h5>3.4.3 任务执行流程示例</h5>
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户浏览器
+    participant P as LSC-AI Platform
+    participant C as Client Agent
+
+    U->>P: "帮我在本地创建一个 React 项目"
+    P->>P: AI 分析：需要本地执行
+    P->>C: 下发任务指令
+
+    loop 任务执行
+        C->>C: Core Agent 执行工具
+        C-->>P: 实时状态推送
+        P-->>U: Workbench 实时更新
+    end
+
+    C->>P: 任务完成，返回结果
+    P->>U: 展示最终结果
+    </div>
+
+    <h3>四、部署架构</h3>
+
+    <h4>4.1 单机部署（开发/测试）</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">单台服务器 - Docker Compose</div>
+        <div class="layer-content" style="flex-wrap: wrap;">
+            <div class="arch-box"><div class="arch-box-title">nginx</div><div class="arch-box-desc">端口 80/443</div></div>
+            <div class="arch-box"><div class="arch-box-title">lsc-ai-web</div><div class="arch-box-desc">前端静态文件</div></div>
+            <div class="arch-box"><div class="arch-box-title">lsc-ai-server</div><div class="arch-box-desc">后端服务</div></div>
+            <div class="arch-box"><div class="arch-box-title">postgresql</div><div class="arch-box-desc">数据库</div></div>
+            <div class="arch-box"><div class="arch-box-title">redis</div><div class="arch-box-desc">缓存/队列</div></div>
+            <div class="arch-box"><div class="arch-box-title">minio</div><div class="arch-box-desc">文件存储</div></div>
+        </div>
+    </div>
+
+    <h4>4.2 生产部署（高可用）</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">生产高可用部署架构</div>
+        <div class="arch-layer gateway-layer">
+            <span class="layer-title" style="color: #faad14;">负载均衡层</span>
+            <div class="layer-content">
+                <div class="arch-box warning" style="min-width: 200px;"><div class="arch-box-title">Nginx / SLB</div></div>
+            </div>
+        </div>
+        <div class="connector">↓</div>
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">应用服务层</span>
+            <div class="layer-content">
+                <div class="arch-box primary"><div class="arch-box-title">lsc-ai-web Node 1</div></div>
+                <div class="arch-box primary"><div class="arch-box-title">lsc-ai-web Node 2</div></div>
+                <div class="arch-box primary"><div class="arch-box-title">lsc-ai-server Node 1</div></div>
+                <div class="arch-box primary"><div class="arch-box-title">lsc-ai-server Node 2</div></div>
+            </div>
+        </div>
+        <div class="connector">↓</div>
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #722ed1;">数据存储层</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">PostgreSQL</div><div class="arch-box-desc">主从复制</div></div>
+                <div class="arch-box"><div class="arch-box-title">Redis</div><div class="arch-box-desc">Sentinel</div></div>
+                <div class="arch-box"><div class="arch-box-title">MinIO</div><div class="arch-box-desc">分布式</div></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>五、安全架构</h3>
+    <div class="tip-box warning">
+        <h5 style="margin-bottom: 12px;">安全防护层</h5>
+        <div class="grid-2">
+            <div>
+                <strong>【网络层】</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>HTTPS 强制</li>
+                    <li>内网隔离（业务系统在内网）</li>
+                    <li>防火墙规则</li>
+                </ul>
+            </div>
+            <div>
+                <strong>【认证层】</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>JWT Token 认证</li>
+                    <li>可选：对接公司 SSO/LDAP</li>
+                    <li>Token 刷新机制</li>
+                </ul>
+            </div>
+            <div>
+                <strong>【授权层】</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>RBAC 角色权限模型</li>
+                    <li>资源级别权限控制</li>
+                    <li>操作审计日志</li>
+                </ul>
+            </div>
+            <div>
+                <strong>【数据层】</strong>
+                <ul style="font-size: 13px; margin-top: 8px;">
+                    <li>敏感数据加密存储</li>
+                    <li>凭证加密（AES-256）</li>
+                    <li>数据库连接加密</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h3>六、技术栈总览图</h3>
+    <div class="arch-diagram">
+        <div class="arch-title">LSC-AI 技术栈全景</div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>前端:</strong> React 18 | Vite | TypeScript | Ant Design | TailwindCSS | ECharts | Monaco Editor | Socket.io | React Query | Zustand
+            </div>
+            <div style="background: linear-gradient(135deg, #e6f7ff 0%, #91d5ff 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>后端:</strong> Node.js 20 | NestJS | TypeScript | Prisma | BullMQ | Socket.io | Passport | Swagger | Pino | PM2
+            </div>
+            <div style="background: linear-gradient(135deg, #fff0f6 0%, #ffadd2 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>AI 内核:</strong> Mastra Framework (@mastra/core, @mastra/memory) | LSC Office Tools (23+) | MCP Protocol
+            </div>
+            <div style="background: linear-gradient(135deg, #fffbe6 0%, #ffe58f 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>AI & RPA:</strong> DeepSeek API (@ai-sdk/deepseek) | LibSQL Storage | Playwright | BullMQ Scheduler
+            </div>
+            <div style="background: linear-gradient(135deg, #f9f0ff 0%, #d3adf7 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>数据存储:</strong> PostgreSQL 15 | Redis 7 | MinIO | Elasticsearch (可选)
+            </div>
+            <div style="background: linear-gradient(135deg, #f5f5f5 0%, #d9d9d9 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>基础设施:</strong> Nginx | Docker | Docker Compose | PM2 | GitLab CI
+            </div>
+            <div style="background: linear-gradient(135deg, #e6fffb 0%, #87e8de 100%); padding: 12px 20px; border-radius: 6px;">
+                <strong>监控运维:</strong> Prometheus | Grafana | Pino Logs | Bull Board
+            </div>
+        </div>
+    </div>
+
+    <h3>七、后续文档索引</h3>
+    <table>
+        <thead><tr><th>文档</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td style="background: #fffbe6;"><strong>00-Mastra框架升级方案</strong></td><td><strong>重要：Mastra 框架升级决策与 PoC 验证报告</strong></td></tr>
+            <tr><td>02-功能清单</td><td>详细功能模块清单</td></tr>
+            <tr><td>03-本地开发方案</td><td>Client Agent 架构设计</td></tr>
+            <tr><td>04-数据存储设计</td><td>数据库表结构设计</td></tr>
+            <tr><td>05-业务系统对接</td><td>MES/OA/WMS 等系统集成</td></tr>
+            <tr><td>06-RPA与定时任务</td><td>RPA 和调度系统设计</td></tr>
+            <tr><td>07-安全与权限</td><td>权限模型和安全设计</td></tr>
+            <tr><td>08-部署方案</td><td>部署和运维指南</td></tr>
+            <tr><td>09-前端组件库</td><td>Workbench 组件库设计</td></tr>
+            <tr><td>10-IDP智能文档</td><td>智能文档处理模块设计</td></tr>
+            <tr><td>11-RAG知识库</td><td>企业知识库系统设计</td></tr>
+            <tr><td>12-Workbench工作台</td><td>万能工作台架构设计与应用场景</td></tr>
+            <tr><td>13-前端UI设计规范</td><td>玻璃拟态设计体系与主题系统</td></tr>
+            <tr><td>14-开发总进度</td><td>功能开发进度跟踪</td></tr>
+            <tr><td style="background: #fffbe6;"><strong>15-Mastra迁移开发计划</strong></td><td><strong>重要：Mastra 框架迁移详细开发计划（14 天）</strong></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# Docker volumes
+docker/data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+nul
+
+# Data files
+*.db
+*.db-journal
+data/
+
+# API keys (safety)
+apikey/
+
+# Claude
+.claude/
+
+# Large deploy files
+deploy-package/
+offline-deploy/
+*.tar
+*.exe

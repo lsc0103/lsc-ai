@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12-1 Workbench 后续开发计划</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .phase-card {
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .phase-header {
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .phase-1 .phase-header { background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); color: white; }
+        .phase-2 .phase-header { background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%); color: white; }
+        .phase-3 .phase-header { background: linear-gradient(135deg, #1890ff 0%, #69c0ff 100%); color: white; }
+        .phase-4 .phase-header { background: linear-gradient(135deg, #52c41a 0%, #95de64 100%); color: white; }
+        .phase-content { padding: 20px; }
+        .task-group { margin-bottom: 20px; }
+        .task-group-title {
+            font-weight: 600;
+            color: #1890ff;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .task-item:last-child { border-bottom: none; }
+        .task-priority {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .priority-p0 { background: #ff4d4f; color: white; }
+        .priority-p1 { background: #fa8c16; color: white; }
+        .priority-p2 { background: #1890ff; color: white; }
+        .task-name { font-weight: 500; flex: 1; }
+        .task-desc { color: #666; font-size: 13px; margin-top: 4px; }
+        .task-files { color: #999; font-size: 12px; margin-top: 4px; font-family: monospace; }
+        .architecture-box {
+            background: #f6f8fa;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .code-block {
+            background: #1e1e2e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .code-block .keyword { color: #c586c0; }
+        .code-block .type { color: #4ec9b0; }
+        .code-block .string { color: #ce9178; }
+        .code-block .comment { color: #6a9955; }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        .summary-table th, .summary-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e8e8e8;
+        }
+        .summary-table th { background: #fafafa; font-weight: 600; }
+        .milestone {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e6f7ff;
+            color: #1890ff;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>12-1 Workbench 后续开发计划</h2>
+        <div class="meta">创建日期：2026-01-27 | 基于架构文档【12-Workbench工作台】</div>
+    </div>
+
+    <h3>一、现状分析</h3>
+
+    <table class="summary-table">
+        <thead>
+            <tr><th>维度</th><th>完成度</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>组件库</strong></td>
+                <td style="color: #52c41a; font-weight: 600;">85%</td>
+                <td>基础组件齐全，缺少 Gantt、SQLEditor、Citation、ScatterChart</td>
+            </tr>
+            <tr>
+                <td><strong>交互能力</strong></td>
+                <td style="color: #ff4d4f; font-weight: 600;">0%</td>
+                <td>Button action 无法执行，无法触发 AI 对话、导出文件、API 调用</td>
+            </tr>
+            <tr>
+                <td><strong>多代理协同</strong></td>
+                <td style="color: #ff4d4f; font-weight: 600;">0%</td>
+                <td>未利用内核子代理系统，Workbench 生成全靠单代理</td>
+            </tr>
+            <tr>
+                <td><strong>数据联动</strong></td>
+                <td style="color: #ff4d4f; font-weight: 600;">0%</td>
+                <td>组件间无法传递数据，表格选择无法触发图表更新</td>
+            </tr>
+            <tr>
+                <td><strong>应用场景</strong></td>
+                <td style="color: #fa8c16; font-weight: 600;">30%</td>
+                <td>能展示但无法交互，10大场景仅"软件开发"基本可用</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>二、开发计划总览</h3>
+
+    <div class="mermaid">
+    gantt
+        title Workbench 后续开发计划
+        dateFormat  YYYY-MM-DD
+        section 阶段1
+        ActionHandler 事件系统    :a1, 2026-01-28, 3d
+        导出功能实现              :a2, after a1, 2d
+        section 阶段2
+        WorkbenchContext 数据总线 :b1, after a2, 2d
+        组件间数据联动            :b2, after b1, 2d
+        section 阶段3
+        Workbench Builder 代理   :c1, after b2, 3d
+        多代理协同优化            :c2, after c1, 2d
+        section 阶段4
+        高级组件开发              :d1, after c2, 5d
+        应用场景完善              :d2, after d1, 3d
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 阶段1：交互闭环 -->
+    <!-- ================================================================== -->
+
+    <h3>三、详细开发任务</h3>
+
+    <div class="phase-card phase-1">
+        <div class="phase-header">
+            <span>阶段1：交互闭环 (P0 最高优先级)</span>
+            <span class="milestone">里程碑：用户点击按钮 → AI 响应</span>
+        </div>
+        <div class="phase-content">
+            <p><strong>目标</strong>：让 Workbench 中的按钮和操作能够真正执行，形成用户-AI 交互闭环。</p>
+
+            <div class="task-group">
+                <div class="task-group-title">1.1 ActionHandler 事件系统</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p0">P0</span>
+                    <div>
+                        <div class="task-name">创建 ActionHandler 核心模块</div>
+                        <div class="task-desc">处理 WorkbenchAction 的统一入口，支持 chat/api/export/update/navigate 等动作类型</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/actions/ActionHandler.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p0">P0</span>
+                    <div>
+                        <div class="task-name">实现 ChatAction 处理器</div>
+                        <div class="task-desc">点击按钮后发送消息到 AI 对话，触发新一轮响应。需要与 ChatStore 集成</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/actions/chatAction.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p0">P0</span>
+                    <div>
+                        <div class="task-name">Button 组件接入 ActionHandler</div>
+                        <div class="task-desc">修改 Button 组件，点击时调用 ActionHandler 执行 action</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/form/Button.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p0">P0</span>
+                    <div>
+                        <div class="task-name">DataTable 行操作接入 ActionHandler</div>
+                        <div class="task-desc">表格行的操作按钮、行选择事件能够触发 action</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/data/DataTable.tsx</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-group">
+                <div class="task-group-title">1.2 导出功能</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p0">P0</span>
+                    <div>
+                        <div class="task-name">实现 ExportAction 处理器</div>
+                        <div class="task-desc">支持导出为 Excel(.xlsx)、CSV、PDF、JSON 格式</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/actions/exportAction.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">DataTable 导出按钮</div>
+                        <div class="task-desc">在 DataTable 工具栏添加导出按钮，支持导出当前数据</div>
+                        <div class="task-files">📁 修改 DataTable.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">图表导出为图片</div>
+                        <div class="task-desc">ECharts 图表支持导出为 PNG/SVG 图片</div>
+                        <div class="task-files">📁 修改 BaseChart.tsx</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-box">
+                <strong>架构设计：ActionHandler</strong>
+                <div class="code-block">
+<span class="comment">// packages/web/src/components/workbench/actions/ActionHandler.ts</span>
+
+<span class="keyword">import</span> { useChatStore } <span class="keyword">from</span> <span class="string">'@/store/chat'</span>;
+
+<span class="keyword">export class</span> <span class="type">ActionHandler</span> {
+  <span class="comment">// 处理 chat 动作：发送消息给 AI</span>
+  <span class="keyword">async</span> handleChat(message: <span class="type">string</span>) {
+    <span class="keyword">const</span> { sendMessage } = useChatStore.getState();
+    <span class="keyword">await</span> sendMessage(message);
+  }
+
+  <span class="comment">// 处理 export 动作：导出文件</span>
+  <span class="keyword">async</span> handleExport(format: <span class="string">'excel'</span> | <span class="string">'csv'</span> | <span class="string">'pdf'</span>, data: <span class="type">any</span>, filename: <span class="type">string</span>) {
+    <span class="keyword">switch</span> (format) {
+      <span class="keyword">case</span> <span class="string">'excel'</span>:
+        <span class="keyword">return</span> <span class="keyword">this</span>.exportExcel(data, filename);
+      <span class="keyword">case</span> <span class="string">'csv'</span>:
+        <span class="keyword">return</span> <span class="keyword">this</span>.exportCSV(data, filename);
+      <span class="keyword">case</span> <span class="string">'pdf'</span>:
+        <span class="keyword">return</span> <span class="keyword">this</span>.exportPDF(data, filename);
+    }
+  }
+
+  <span class="comment">// 处理 api 动作：调用后端 API</span>
+  <span class="keyword">async</span> handleApi(endpoint: <span class="type">string</span>, method: <span class="type">string</span>, params: <span class="type">any</span>) {
+    <span class="keyword">const</span> response = <span class="keyword">await</span> fetch(endpoint, {
+      method,
+      body: JSON.stringify(params),
+    });
+    <span class="keyword">return</span> response.json();
+  }
+
+  <span class="comment">// 处理 update 动作：更新组件数据</span>
+  handleUpdate(targetId: <span class="type">string</span>, data: <span class="type">any</span>) {
+    <span class="keyword">const</span> { updateComponentData } = useWorkbenchStore.getState();
+    updateComponentData(targetId, data);
+  }
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 阶段2：数据联动 -->
+    <!-- ================================================================== -->
+
+    <div class="phase-card phase-2">
+        <div class="phase-header">
+            <span>阶段2：数据联动 (P1)</span>
+            <span class="milestone">里程碑：表格选择 → 图表联动更新</span>
+        </div>
+        <div class="phase-content">
+            <p><strong>目标</strong>：实现组件间的数据传递和联动，让 Workbench 成为动态交互界面。</p>
+
+            <div class="task-group">
+                <div class="task-group-title">2.1 WorkbenchContext 数据总线</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">创建 WorkbenchContext</div>
+                        <div class="task-desc">组件间共享数据的上下文，支持组件注册、数据订阅、事件广播</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/context/WorkbenchContext.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">组件状态管理</div>
+                        <div class="task-desc">每个组件可以暴露自己的状态（如 DataTable 的选中行），其他组件可以订阅</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/context/componentState.ts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-group">
+                <div class="task-group-title">2.2 组件联动实现</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">DataTable 选择行广播</div>
+                        <div class="task-desc">表格选择行时，将选中数据广播到 WorkbenchContext</div>
+                        <div class="task-files">📁 修改 DataTable.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">图表订阅数据更新</div>
+                        <div class="task-desc">图表组件可以订阅某个组件的数据变化，自动重新渲染</div>
+                        <div class="task-files">📁 修改 BaseChart.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">表单值双向绑定</div>
+                        <div class="task-desc">Input/Select/DatePicker 的值可以绑定到 Context，实现表单联动</div>
+                        <div class="task-files">📁 修改表单组件</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-box">
+                <strong>架构设计：数据联动示例</strong>
+                <div class="code-block">
+<span class="comment">// Schema 示例：表格选择触发图表更新</span>
+{
+  <span class="string">"type"</span>: <span class="string">"workbench"</span>,
+  <span class="string">"tabs"</span>: [{
+    <span class="string">"key"</span>: <span class="string">"analysis"</span>,
+    <span class="string">"title"</span>: <span class="string">"数据分析"</span>,
+    <span class="string">"components"</span>: [
+      {
+        <span class="string">"type"</span>: <span class="string">"DataTable"</span>,
+        <span class="string">"id"</span>: <span class="string">"sales-table"</span>,
+        <span class="string">"columns"</span>: [...],
+        <span class="string">"data"</span>: [...],
+        <span class="string">"onSelectAction"</span>: {
+          <span class="string">"type"</span>: <span class="string">"update"</span>,
+          <span class="string">"targetId"</span>: <span class="string">"sales-chart"</span>,
+          <span class="string">"data"</span>: <span class="string">"${selectedRows}"</span>  <span class="comment">// 变量引用</span>
+        }
+      },
+      {
+        <span class="string">"type"</span>: <span class="string">"BarChart"</span>,
+        <span class="string">"id"</span>: <span class="string">"sales-chart"</span>,
+        <span class="string">"dataSource"</span>: <span class="string">"sales-table.selectedRows"</span>  <span class="comment">// 数据绑定</span>
+      }
+    ]
+  }]
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 阶段3：多代理协同 -->
+    <!-- ================================================================== -->
+
+    <div class="phase-card phase-3">
+        <div class="phase-header">
+            <span>阶段3：多代理协同 (P1)</span>
+            <span class="milestone">里程碑：复杂任务 → 多代理分工 → Schema 合成</span>
+        </div>
+        <div class="phase-content">
+            <p><strong>目标</strong>：利用内核的子代理系统，实现复杂 Workbench 内容的多代理协同构建。</p>
+
+            <div class="task-group">
+                <div class="task-group-title">3.1 Workbench Builder 专用代理</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">定义 workbench-builder 子代理类型</div>
+                        <div class="task-desc">专门用于生成 Workbench Schema 的子代理，了解所有组件能力</div>
+                        <div class="task-files">📁 localAI/packages/core/src/agent/workbenchAgent.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">Workbench Schema 生成提示词</div>
+                        <div class="task-desc">针对 Workbench 构建的专用系统提示词，包含组件列表、示例 Schema</div>
+                        <div class="task-files">📁 localAI/packages/core/src/agent/prompts/workbenchPrompt.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">Schema 验证和修复</div>
+                        <div class="task-desc">验证生成的 Schema 是否合法，自动修复常见错误</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/schema/validator.ts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-group">
+                <div class="task-group-title">3.2 多代理任务分解</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">任务分解器</div>
+                        <div class="task-desc">主代理分析用户需求，拆分为多个子任务（数据查询、可视化、交互按钮等）</div>
+                        <div class="task-files">📁 localAI/packages/core/src/agent/taskDecomposer.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">并行子代理执行</div>
+                        <div class="task-desc">多个子代理并行执行，如：数据代理查询数据，UI代理设计布局</div>
+                        <div class="task-files">📁 修改 agentManager.ts</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p1">P1</span>
+                    <div>
+                        <div class="task-name">Schema 合并器</div>
+                        <div class="task-desc">将多个子代理的输出合并为完整的 Workbench Schema</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/schema/merger.ts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-box">
+                <strong>架构设计：多代理协同流程</strong>
+                <pre style="background: #f6f8fa; padding: 16px; border-radius: 8px; font-size: 13px;">
+用户: "分析上月销售数据，生成报表"
+
+┌─────────────────────────────────────────────────────────────┐
+│                    主代理 (Orchestrator)                     │
+│  1. 理解用户意图：销售数据分析 + 报表生成                      │
+│  2. 任务分解：                                               │
+│     - 子任务A：查询销售数据（需要数据库访问）                   │
+│     - 子任务B：设计可视化图表（需要选择图表类型）               │
+│     - 子任务C：生成交互按钮（导出、深入分析）                   │
+│  3. 分配给子代理并行执行                                      │
+└──────────────┬───────────────────┬───────────────────┬───────┘
+               │                   │                   │
+       ┌───────▼───────┐   ┌───────▼───────┐   ┌───────▼───────┐
+       │  数据查询代理  │   │  可视化代理    │   │  交互设计代理  │
+       │  (explore)    │   │  (general)    │   │  (general)    │
+       │               │   │               │   │               │
+       │ - 执行 SQL    │   │ - 选择图表类型 │   │ - 设计按钮    │
+       │ - 数据聚合    │   │ - 配置颜色    │   │ - 定义动作    │
+       │ - 返回数据    │   │ - 返回Schema  │   │ - 返回Schema  │
+       └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
+               │                   │                   │
+               └───────────────────┼───────────────────┘
+                                   │
+                           ┌───────▼───────┐
+                           │ Schema 合并器  │
+                           │               │
+                           │ 合并为完整的   │
+                           │ Workbench     │
+                           │ Schema        │
+                           └───────────────┘
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 阶段4：高级组件与场景 -->
+    <!-- ================================================================== -->
+
+    <div class="phase-card phase-4">
+        <div class="phase-header">
+            <span>阶段4：高级组件与场景 (P2)</span>
+            <span class="milestone">里程碑：10大应用场景全覆盖</span>
+        </div>
+        <div class="phase-content">
+            <p><strong>目标</strong>：补充高级组件，完善各应用场景的支持。</p>
+
+            <div class="task-group">
+                <div class="task-group-title">4.1 缺失组件开发</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">Gantt 甘特图组件</div>
+                        <div class="task-desc">项目管理场景核心组件，展示任务时间线和依赖关系</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/chart/Gantt.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">SQLEditor 组件</div>
+                        <div class="task-desc">SQL 编辑器，语法高亮、自动补全、执行查询</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/code/SQLEditor.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">Citation 引用组件</div>
+                        <div class="task-desc">知识管理场景，展示引用来源和参考文献</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/data/Citation.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">ScatterChart 散点图</div>
+                        <div class="task-desc">数据分析场景，展示数据分布和相关性</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/chart/ScatterChart.tsx</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">Tabs/Collapse 布局组件完善</div>
+                        <div class="task-desc">标签页、折叠面板的完整实现</div>
+                        <div class="task-files">📁 packages/web/src/components/workbench/components/layout/Tabs.tsx</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-group">
+                <div class="task-group-title">4.2 应用场景完善</div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">软件开发场景增强</div>
+                        <div class="task-desc">代码审查"一键应用建议"、Bug 修复"应用修复"按钮真正生效</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">数据分析场景增强</div>
+                        <div class="task-desc">"导出 Excel"、"生成周报"、"深入分析"按钮功能实现</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">文档处理场景增强</div>
+                        <div class="task-desc">"生成审查报告"、"标注问题条款"功能实现</div>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span class="task-priority priority-p2">P2</span>
+                    <div>
+                        <div class="task-name">运维监控场景增强</div>
+                        <div class="task-desc">"AI 智能诊断"、"批量重启"功能，需要与 Client Agent 联动</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 开发时间估算 -->
+    <!-- ================================================================== -->
+
+    <h3>四、开发时间估算</h3>
+
+    <table class="summary-table">
+        <thead>
+            <tr><th>阶段</th><th>核心任务</th><th>优先级</th><th>预计工时</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>阶段1</strong></td>
+                <td>ActionHandler + 导出功能</td>
+                <td style="color: #ff4d4f;">P0</td>
+                <td>3-5 天</td>
+            </tr>
+            <tr>
+                <td><strong>阶段2</strong></td>
+                <td>WorkbenchContext + 数据联动</td>
+                <td style="color: #fa8c16;">P1</td>
+                <td>3-4 天</td>
+            </tr>
+            <tr>
+                <td><strong>阶段3</strong></td>
+                <td>多代理协同 + Schema 合成</td>
+                <td style="color: #fa8c16;">P1</td>
+                <td>4-5 天</td>
+            </tr>
+            <tr>
+                <td><strong>阶段4</strong></td>
+                <td>高级组件 + 场景完善</td>
+                <td style="color: #1890ff;">P2</td>
+                <td>5-7 天</td>
+            </tr>
+            <tr style="background: #f6f8fa;">
+                <td colspan="3"><strong>总计</strong></td>
+                <td><strong>15-21 天</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>五、关键成功指标</h3>
+
+    <div class="tip-box success" style="border-color: #52c41a; background: #f6ffed;">
+        <h5>阶段1 验收标准</h5>
+        <ul>
+            <li>✅ 点击 Workbench 中的按钮，能触发 AI 新一轮对话</li>
+            <li>✅ DataTable 的"导出 Excel"按钮能下载文件</li>
+            <li>✅ 图表能导出为 PNG 图片</li>
+        </ul>
+    </div>
+
+    <div class="tip-box info">
+        <h5>阶段2 验收标准</h5>
+        <ul>
+            <li>✅ 表格选择行后，关联图表自动更新</li>
+            <li>✅ 表单输入变化能触发其他组件更新</li>
+            <li>✅ 组件间可以通过 ID 引用数据</li>
+        </ul>
+    </div>
+
+    <div class="tip-box warning">
+        <h5>阶段3 验收标准</h5>
+        <ul>
+            <li>✅ 复杂任务能自动拆分给多个子代理</li>
+            <li>✅ 子代理并行执行，结果正确合并</li>
+            <li>✅ 生成的 Workbench 包含合理的交互按钮</li>
+        </ul>
+    </div>
+
+    <div class="tip-box" style="border-color: #722ed1; background: #f9f0ff;">
+        <h5>阶段4 验收标准</h5>
+        <ul>
+            <li>✅ 10大应用场景的核心流程全部可用</li>
+            <li>✅ 用户能完成"数据分析 → 导出报告 → AI 深入分析"完整闭环</li>
+            <li>✅ 运维场景能触发 Client Agent 执行实际操作</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="../assets/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>02 - 功能清单</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>02 - 功能清单</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-19</div>
+    </div>
+
+    <h3>一、功能模块总览</h3>
+    <p>LSC-AI 平台包含以下 8 个核心功能模块：</p>
+
+    <div class="grid-4">
+        <div class="feature-card">
+            <h5>智能对话</h5>
+            <p>Chat</p>
+        </div>
+        <div class="feature-card">
+            <h5>工作台</h5>
+            <p>Workbench</p>
+        </div>
+        <div class="feature-card">
+            <h5>项目管理</h5>
+            <p>Projects</p>
+        </div>
+        <div class="feature-card">
+            <h5>RPA/定时任务</h5>
+            <p>Tasks</p>
+        </div>
+        <div class="feature-card">
+            <h5>用户系统</h5>
+            <p>Users</p>
+        </div>
+        <div class="feature-card">
+            <h5>权限管理</h5>
+            <p>Permissions</p>
+        </div>
+        <div class="feature-card">
+            <h5>系统监管</h5>
+            <p>Monitoring</p>
+        </div>
+        <div class="feature-card">
+            <h5>系统设置</h5>
+            <p>Settings</p>
+        </div>
+    </div>
+
+    <h3>二、核心功能详细清单</h3>
+
+    <!-- 2.1 智能对话模块 -->
+    <h4>2.1 智能对话模块 (Chat)</h4>
+
+    <h5>2.1.1 基础对话</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>新建对话</td><td>创建新的 AI 对话会话</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>历史对话列表</td><td>显示用户历史对话，按时间排序</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>搜索对话</td><td>在历史对话中搜索关键词</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>删除对话</td><td>删除单个或批量删除对话</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>重命名对话</td><td>修改对话标题</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>对话归档</td><td>归档不常用的对话</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.1.2 对话交互</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>文本输入</td><td>支持多行文本输入</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>流式输出</td><td>AI 回复流式展示（打字机效果）</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>中断生成</td><td>用户可中断 AI 生成过程</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>重新生成</td><td>对 AI 回复不满意可重新生成</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>复制回复</td><td>复制 AI 回复内容</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>Markdown 渲染</td><td>支持 Markdown 格式渲染</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>代码高亮</td><td>代码块语法高亮</td><td><span class="priority p0">P0</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.1.3 附件与上下文</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>上传图片</td><td>支持上传图片供 AI 分析</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>上传文件</td><td>支持上传文档、代码文件</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>选择工作路径</td><td>选择用户本地或云端工作目录</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>工作路径切换提醒</td><td>切换路径时提醒会重新发起会话</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>语音输入</td><td>语音转文字输入（可选）</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- 2.2 工作台模块 -->
+    <h4>2.2 工作台模块 (Workbench)</h4>
+
+    <h5>2.2.1 工作台核心功能</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>动态开启</td><td>AI 执行任务时自动开启 Workbench</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>分屏展示</td><td>左侧聊天，右侧工作台</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>返回主界面</td><td>点击返回按钮切回主界面</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>多标签页</td><td>工作台内支持多标签页</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>标签页管理</td><td>新增、关闭、切换标签页</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.2.2 内容展示类型</h5>
+    <table>
+        <thead><tr><th>类型</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>代码编辑器</td><td>Monaco Editor，支持语法高亮、编辑</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>文件预览</td><td>图片、PDF、Office 文档预览</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>数据表格</td><td>数据展示、排序、筛选</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>图表展示</td><td>ECharts 图表（柱状、折线、饼图等）</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>Markdown 预览</td><td>Markdown 文档渲染</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>网页嵌入</td><td>iframe 嵌入其他网站</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>终端输出</td><td>命令执行结果展示</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>表单</td><td>动态表单（AI 构建）</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.2.3 AI 动态构建</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>组件库调用</td><td>AI 可调用预设组件库构建界面</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>报表生成</td><td>AI 根据数据自动生成报表</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>交互响应</td><td>用户在 Workbench 操作可触发 AI 响应</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- 2.3 项目管理模块 -->
+    <h4>2.3 项目管理模块 (Projects)</h4>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>新建项目</td><td>创建新项目</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>项目列表</td><td>展示用户所有项目</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>项目详情</td><td>查看项目信息和关联对话</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>项目对话</td><td>项目内的多个对话共享文件上下文</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>项目文件</td><td>项目关联的文件管理</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>删除项目</td><td>删除项目及关联数据</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>项目设置</td><td>项目名称、描述等设置</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- 2.4 RPA/定时任务模块 -->
+    <h4>2.4 RPA/定时任务模块 (Tasks)</h4>
+
+    <h5>2.4.1 定时任务</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>创建定时任务</td><td>设置时间规则和任务内容</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>任务列表</td><td>展示所有定时任务</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>启用/禁用</td><td>启用或暂停定时任务</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>任务编辑</td><td>修改任务配置</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>任务删除</td><td>删除定时任务</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>执行历史</td><td>查看任务执行记录</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>执行日志</td><td>查看详细执行日志</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>手动触发</td><td>立即执行一次任务</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>失败告警</td><td>任务失败通知</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.4.2 RPA 自动化流程</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>创建 RPA 流程</td><td>定义自动化操作流程</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>流程列表</td><td>展示所有 RPA 流程</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>流程执行</td><td>手动触发执行 RPA 流程</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>流程编辑</td><td>修改流程步骤</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>凭证管理</td><td>管理系统登录凭证（加密存储）</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>执行记录</td><td>RPA 执行历史和状态</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- 2.5 用户与权限模块 -->
+    <h4>2.5 用户与权限模块 (Users & Permissions)</h4>
+
+    <h5>2.5.1 用户管理</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>用户登录</td><td>账号密码登录</td><td><span class="priority p0">P0</span></td></tr>
+            <tr><td>SSO 登录</td><td>对接公司统一认证（可选）</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>用户注册</td><td>管理员创建用户</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>用户列表</td><td>管理员查看所有用户</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>用户信息</td><td>查看/编辑用户信息</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>修改密码</td><td>用户修改自己密码</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>用户禁用</td><td>管理员禁用/启用用户</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.5.2 权限管理</h5>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>角色管理</td><td>创建、编辑角色</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>角色分配</td><td>为用户分配角色</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>权限配置</td><td>配置角色的功能权限</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>资源权限</td><td>配置对业务系统的访问权限</td><td><span class="priority p1">P1</span></td></tr>
+        </tbody>
+    </table>
+
+    <h5>2.5.3 RBAC 权限模型</h5>
+    <div class="mermaid">
+graph TD
+    subgraph "RBAC 权限模型"
+        U[用户 User] -->|拥有| R[角色 Role]
+        R -->|包含| P[权限 Permission]
+        P --> FP[功能权限]
+        P --> RP[资源权限]
+        FP --> F1[chat]
+        FP --> F2[workbench]
+        FP --> F3[rpa]
+        FP --> F4[admin]
+        RP --> R1["MES:read"]
+        RP --> R2["OA:write"]
+        RP --> R3["WMS:admin"]
+    end
+
+    subgraph "预设角色"
+        PR1["超级管理员 admin<br/>所有权限"]
+        PR2["系统管理员 sys_admin<br/>系统管理，无业务数据"]
+        PR3["普通用户 user<br/>基础对话、Workbench"]
+        PR4["只读用户 viewer<br/>只能查看，不能执行"]
+    end
+
+    style U fill:#e6f7ff,stroke:#1890ff
+    style R fill:#f6ffed,stroke:#52c41a
+    style P fill:#fffbe6,stroke:#faad14
+    </div>
+
+    <!-- 2.6 系统监管模块 -->
+    <h4>2.6 系统监管模块 (Monitoring)</h4>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>服务器状态</td><td>查看各业务服务器运行状态</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>服务状态</td><td>查看业务系统服务状态</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>重启服务</td><td>远程重启业务服务</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>执行命令</td><td>远程执行服务器命令</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>日志查看</td><td>查看服务器日志</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>告警通知</td><td>服务异常告警</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- 2.7 系统设置模块 -->
+    <h4>2.7 系统设置模块 (Settings)</h4>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th><th>优先级</th></tr></thead>
+        <tbody>
+            <tr><td>个人设置</td><td>用户个人偏好设置</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>主题设置</td><td>明暗主题切换</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>通知设置</td><td>通知偏好配置</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>API 密钥</td><td>管理 API 访问密钥</td><td><span class="priority p2">P2</span></td></tr>
+            <tr><td>系统配置</td><td>管理员系统级配置</td><td><span class="priority p1">P1</span></td></tr>
+            <tr><td>审计日志</td><td>查看操作审计日志</td><td><span class="priority p2">P2</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>三、功能优先级汇总</h3>
+
+    <div class="tip-box info">
+        <h5 style="margin-bottom: 12px;">P0 - 必须有（MVP）</h5>
+        <table>
+            <thead><tr><th>模块</th><th>功能</th></tr></thead>
+            <tbody>
+                <tr><td>Chat</td><td>新建对话、历史对话、文本输入/输出、流式展示、文件上传、工作路径选择</td></tr>
+                <tr><td>Workbench</td><td>动态开启、分屏展示、代码编辑器、数据表格、文件预览</td></tr>
+                <tr><td>User</td><td>用户登录、基础权限</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="tip-box warning">
+        <h5 style="margin-bottom: 12px;">P1 - 应该有（完整版）</h5>
+        <table>
+            <thead><tr><th>模块</th><th>功能</th></tr></thead>
+            <tbody>
+                <tr><td>Chat</td><td>搜索对话、删除对话、重新生成、中断生成</td></tr>
+                <tr><td>Workbench</td><td>多标签页、图表展示、AI 动态构建</td></tr>
+                <tr><td>Projects</td><td>项目管理全部功能</td></tr>
+                <tr><td>Tasks</td><td>定时任务、RPA 流程全部功能</td></tr>
+                <tr><td>Permissions</td><td>角色管理、权限配置</td></tr>
+                <tr><td>Monitoring</td><td>服务器监管功能</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="tip-box success">
+        <h5 style="margin-bottom: 12px;">P2 - 可以有（增强版）</h5>
+        <table>
+            <thead><tr><th>模块</th><th>功能</th></tr></thead>
+            <tbody>
+                <tr><td>Chat</td><td>语音输入、对话归档</td></tr>
+                <tr><td>Workbench</td><td>网页嵌入</td></tr>
+                <tr><td>User</td><td>SSO 登录</td></tr>
+                <tr><td>Settings</td><td>主题设置、审计日志</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>四、功能依赖关系</h3>
+
+    <div class="mermaid">
+graph TD
+    subgraph "核心依赖"
+        Auth[用户认证<br/>登录/权限] --> Chat[智能对话]
+        Auth --> Projects[项目管理]
+        Auth --> Settings[系统设置]
+        Chat --> Workbench[Workbench<br/>由对话触发]
+        Workbench --> LocalDev[本地开发<br/>Client Agent]
+        Workbench --> RPA[RPA/定时任务]
+        Workbench --> Monitoring[系统监管<br/>Sentinel]
+    end
+
+    style Auth fill:#fffbe6,stroke:#faad14,stroke-width:2px
+    style Chat fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
+    style Workbench fill:#f6ffed,stroke:#52c41a,stroke-width:2px
+    style Projects fill:#f9f0ff,stroke:#722ed1
+    style Settings fill:#f9f0ff,stroke:#722ed1
+    style LocalDev fill:#fff0f6,stroke:#eb2f96
+    style RPA fill:#fff0f6,stroke:#eb2f96
+    style Monitoring fill:#fff0f6,stroke:#eb2f96
+    </div>
+
+    <div class="tip-box info">
+        <strong>依赖说明：</strong>
+        <ul>
+            <li><strong>用户认证</strong> 是所有功能的前置依赖，必须首先实现</li>
+            <li><strong>智能对话</strong> 是核心功能入口，触发 Workbench 展示</li>
+            <li><strong>Workbench</strong> 承载所有任务执行结果的展示</li>
+            <li><strong>Client Agent / RPA / Sentinel</strong> 是执行层，由 Workbench 触发</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

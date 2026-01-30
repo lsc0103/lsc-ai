@@ -1,0 +1,6 @@
+API endpoint URL:
+http://10.18.55.233:30069/rerank/chi/v1/rerank
+
+API Key:
+275c91fa-72b6-47a4-b367-213412eca8ef
+

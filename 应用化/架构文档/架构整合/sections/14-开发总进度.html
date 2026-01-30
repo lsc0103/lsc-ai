@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>14 - 开发总进度</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-done {
+            background: #d9f7be;
+            color: #389e0d;
+        }
+        .status-testing {
+            background: #bae7ff;
+            color: #0958d9;
+        }
+        .status-dev {
+            background: #fff1b8;
+            color: #d48806;
+        }
+        .status-pending {
+            background: #f5f5f5;
+            color: #8c8c8c;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #52c41a, #73d13d);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            transition: width 0.3s;
+        }
+        .module-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .module-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+        .legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .summary-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1890ff;
+        }
+        .summary-label {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+        .summary-card.done .summary-number { color: #52c41a; }
+        .summary-card.testing .summary-number { color: #1890ff; }
+        .summary-card.dev .summary-number { color: #faad14; }
+        .summary-card.pending .summary-number { color: #8c8c8c; }
+    </style>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>14 - 开发总进度</h2>
+        <div class="meta">更新日期：2026-01-29 | 开发周期：进行中</div>
+    </div>
+
+    <h3>一、进度总览</h3>
+
+    <div class="summary-grid">
+        <div class="summary-card done">
+            <div class="summary-number">103</div>
+            <div class="summary-label">已完成</div>
+        </div>
+        <div class="summary-card testing">
+            <div class="summary-number">7</div>
+            <div class="summary-label">可测试</div>
+        </div>
+        <div class="summary-card dev">
+            <div class="summary-number">1</div>
+            <div class="summary-label">开发中</div>
+        </div>
+        <div class="summary-card pending">
+            <div class="summary-number">41</div>
+            <div class="summary-label">未开始</div>
+        </div>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: 73%;">73%</div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><span class="status-badge status-done">已完成</span> 功能开发完成并测试通过</div>
+        <div class="legend-item"><span class="status-badge status-testing">可测试</span> 功能已实现，可进行测试</div>
+        <div class="legend-item"><span class="status-badge status-dev">开发中</span> 正在开发或部分完成</div>
+        <div class="legend-item"><span class="status-badge status-pending">未开始</span> 尚未开始开发</div>
+    </div>
+
+    <h3>二、基础架构</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">项目架构与基础设施</span>
+            <span class="status-badge status-done">已完成</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>Monorepo 架构</td><td>pnpm workspace + Turborepo</td><td><span class="status-badge status-done">已完成</span></td><td>packages/server, packages/web</td></tr>
+                <tr><td>前端框架</td><td>React 18 + Vite + TypeScript</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>后端框架</td><td>NestJS + Prisma + PostgreSQL</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>UI 组件库</td><td>Ant Design 5 + TailwindCSS</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>状态管理</td><td>Zustand</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>数据库设计</td><td>Prisma Schema (User, Session, Message, Project, Task)</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>API 文档</td><td>Swagger 自动生成</td><td><span class="status-badge status-done">已完成</span></td><td>/api/docs</td></tr>
+                <tr><td>Docker 容器化</td><td>Dockerfile.server, Dockerfile.web, docker-compose</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>一键部署包</td><td>deploy-package (含镜像、脚本、配置)</td><td><span class="status-badge status-done">已完成</span></td><td>deploy.bat, deploy.sh</td></tr>
+                <tr><td>开发环境配置</td><td>.env 环境变量管理</td><td><span class="status-badge status-done">已完成</span></td><td>支持切换 DeepSeek API</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">Mastra 框架集成（已替代 @lsc-ai/core）</span>
+            <span class="status-badge status-done">已完成</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">核心架构</td></tr>
+                <tr><td>MastraAgentService</td><td>Mastra Agent 服务，替代原 CoreService</td><td><span class="status-badge status-done">已完成</span></td><td>mastra-agent.service.ts</td></tr>
+                <tr><td>4 个专业化 Agent</td><td>Platform / Code Expert / Data Analyst / Office Worker</td><td><span class="status-badge status-done">已完成</span></td><td>各 Agent 独立职责和工具集</td></tr>
+                <tr><td>Mastra 实例</td><td>统一注册所有 Agent，启用 AgentNetwork</td><td><span class="status-badge status-done">已完成</span></td><td>__registerMastra 注入</td></tr>
+                <tr><td>35+ 工具集</td><td>核心工具 + Office 工具 + 高级工具 + Workbench 工具</td><td><span class="status-badge status-done">已完成</span></td><td>Zod Schema 定义</td></tr>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">Memory 系统</td></tr>
+                <tr><td>LibSQL 存储</td><td>对话消息持久化到 LibSQL (SQLite 文件)</td><td><span class="status-badge status-done">已完成</span></td><td>file:./data/lsc-ai.db</td></tr>
+                <tr><td>Memory 消息管理</td><td>Mastra Memory 自动管理对话历史</td><td><span class="status-badge status-done">已完成</span></td><td>lastMessages: 50</td></tr>
+                <tr><td>Working Memory</td><td>Agent 持久化上下文（用户偏好、项目信息）</td><td><span class="status-badge status-done">已完成</span></td><td>结构化模板配置</td></tr>
+                <tr><td>会话消息读取</td><td>从 Mastra Memory 加载历史消息</td><td><span class="status-badge status-done">已完成</span></td><td>memory.recall() API</td></tr>
+                <tr><td>线程清理</td><td>删除会话时同步清理 Mastra Memory</td><td><span class="status-badge status-done">已完成</span></td><td>deleteThread()</td></tr>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">多 Agent 协作</td></tr>
+                <tr><td>AgentNetwork</td><td>多 Agent 协作路由，自动选择最佳 Agent</td><td><span class="status-badge status-done">已完成</span></td><td>networkChat() + platformAgent.network()</td></tr>
+                <tr><td>前端 Network 模式</td><td>WebSocket 支持 useNetwork 参数</td><td><span class="status-badge status-done">已完成</span></td><td>handleNetworkMessage()</td></tr>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">Workflow 编排</td></tr>
+                <tr><td>MastraWorkflowService</td><td>Mastra Workflow 引擎集成</td><td><span class="status-badge status-done">已完成</span></td><td>mastra-workflow.service.ts</td></tr>
+                <tr><td>RPA 流程执行</td><td>将 RpaFlow 转换为 Mastra Workflow 执行</td><td><span class="status-badge status-done">已完成</span></td><td>支持多种步骤类型</td></tr>
+                <tr><td>定时任务执行</td><td>Prompt 类型 / RPA 类型任务执行</td><td><span class="status-badge status-done">已完成</span></td><td>TaskLog 执行日志</td></tr>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">通信与流式响应</td></tr>
+                <tr><td>流式响应</td><td>agent.stream() + fullStream reader</td><td><span class="status-badge status-done">已完成</span></td><td>text-delta / tool-call / tool-result</td></tr>
+                <tr><td>工具调用回调</td><td>onToolCall, onToolResult 实时推送</td><td><span class="status-badge status-done">已完成</span></td><td>chat:stream 事件</td></tr>
+                <tr><td>Token 用量统计</td><td>onTokenUsage 回调</td><td><span class="status-badge status-done">已完成</span></td><td>chat:token_usage 事件</td></tr>
+                <tr><td>文件附件处理</td><td>多模态消息（文本 + 文件内容）</td><td><span class="status-badge status-done">已完成</span></td><td>MinIO 文件读取 + 内容注入</td></tr>
+                <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">待实现的高级能力</td></tr>
+                <tr><td>语义记忆召回</td><td>Mastra Memory semanticRecall（对话级语义检索）</td><td><span class="status-badge status-done">已完成</span></td><td>LibSQLVector + fastembed，非企业知识库 RAG</td></tr>
+                <tr><td>企业知识库 RAG</td><td>文档上传/分块/关键词提取/全文检索/问答（见 11-RAG 设计）</td><td><span class="status-badge status-pending">未开始</span></td><td>PostgreSQL 全文检索方案，独立模块</td></tr>
+                <tr><td>Observability</td><td>分布式追踪、Span、性能监控</td><td><span class="status-badge status-done">已完成</span></td><td>createLogger 集成</td></tr>
+                <tr><td>Evals / 评分</td><td>Agent 回复质量评估</td><td><span class="status-badge status-pending">未开始</span></td><td>P3</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>三、用户与认证模块</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">用户系统 (Users)</span>
+            <span class="status-badge status-testing">可测试</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>用户登录</td><td>账号密码登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>JWT Token 认证</td></tr>
+                <tr><td>Token 刷新</td><td>自动刷新访问令牌</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Axios 拦截器</td></tr>
+                <tr><td>密码加密</td><td>bcrypt 加密存储</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>登录页面</td><td>美观的登录界面</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>奶油色主题</td></tr>
+                <tr><td>退出登录</td><td>清除 Token，跳转登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>SSO 登录</td><td>对接公司统一认证</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>用户注册</td><td>管理员创建用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>用户列表</td><td>管理员查看所有用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>修改密码</td><td>用户修改自己密码</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>四、智能对话模块 (Chat)</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">基础对话</span>
+            <span class="status-badge status-testing">可测试</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>新建对话</td><td>创建新的 AI 对话会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>发送首条消息时创建 (Claude 风格)</td></tr>
+                <tr><td>历史对话列表</td><td>显示用户历史对话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>侧边栏展示</td></tr>
+                <tr><td>会话切换</td><td>点击历史对话切换</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>搜索对话</td><td>在历史对话中搜索关键词</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>删除对话</td><td>删除单个或批量删除对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
+                <tr><td>重命名对话</td><td>修改对话标题</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
+                <tr><td>对话归档</td><td>归档不常用的对话</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">对话交互</span>
+            <span class="status-badge status-done">已完成</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>文本输入</td><td>支持多行文本输入</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Shift+Enter 换行</td></tr>
+                <tr><td>消息发送</td><td>发送消息到后端</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>消息列表</td><td>展示对话消息</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>MessageList 组件</td></tr>
+                <tr><td>流式输出</td><td>AI 回复流式展示（打字机效果）</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Socket.IO 实时流式通信</td></tr>
+                <tr><td>中断生成</td><td>用户可中断 AI 生成过程</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>前后端双向停止信号</td></tr>
+                <tr><td>重新生成</td><td>对 AI 回复不满意可重新生成</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>复制回复</td><td>复制 AI 回复内容</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>Markdown 渲染</td><td>支持 Markdown 格式渲染</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>react-markdown + 完整语法支持</td></tr>
+                <tr><td>代码高亮</td><td>代码块语法高亮</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Prism.js 多语言高亮</td></tr>
+                <tr><td>工具调用展示</td><td>显示 AI 工具调用状态</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Claude 风格可折叠步骤（ToolSteps.tsx）</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">附件与上下文</span>
+            <span class="status-badge status-dev">开发中</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>上传图片</td><td>支持上传图片供 AI 分析</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>MinIO 存储，支持预览</td></tr>
+                <tr><td>上传文件</td><td>支持上传文档、代码文件</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>多文件上传，大小显示</td></tr>
+                <tr><td>文件发送到AI</td><td>附件随消息发送给 AI 处理</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>fileIds 传递到 Agent</td></tr>
+                <tr><td>选择工作路径</td><td>选择用户本地或云端工作目录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需 Client Agent 支持</td></tr>
+                <tr><td>工作路径切换提醒</td><td>切换路径时提醒会重新发起会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>语音输入</td><td>语音转文字输入</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>UI 已预留入口</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>五、工作台模块 (Workbench)</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">Workbench 核心</span>
+            <span class="status-badge status-dev">开发中</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">基础框架</td></tr>
+                <tr><td>动态开启</td><td>AI 执行任务时自动开启 Workbench</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>AI 输出 workbench-schema 代码块</td></tr>
+                <tr><td>分屏展示</td><td>左侧聊天，右侧工作台</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>可拖拽调整宽度</td></tr>
+                <tr><td>返回主界面</td><td>点击返回按钮切回主界面</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>关闭按钮</td></tr>
+                <tr><td>多标签页</td><td>工作台内支持多标签页</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>新增/关闭/切换</td></tr>
+                <tr><td>手动打开</td><td>用户手动打开 Workbench 浏览文件</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>底部按钮 + 文件浏览器</td></tr>
+                <tr><td>拖放打开文件</td><td>拖放本地文件到 Workbench 预览</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>支持多种文件类型</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">内容组件</td></tr>
+                <tr><td>代码编辑器</td><td>Monaco Editor</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>语法高亮、只读模式</td></tr>
+                <tr><td>文件预览</td><td>图片、PDF、视频、音频预览</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>FileViewer + PdfPreview/VideoPreview/AudioPreview</td></tr>
+                <tr><td>Office 预览</td><td>Word/Excel/PPT 文档预览</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>mammoth(Word) + xlsx(Excel)，本地模式可用</td></tr>
+                <tr><td>文件浏览器</td><td>本地/远程文件目录浏览</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>FileBrowser 组件</td></tr>
+                <tr><td>Markdown 渲染</td><td>Markdown 内容展示</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>MarkdownView 组件</td></tr>
+                <tr><td>数据表格</td><td>数据展示、排序、分页</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>DataTable 组件</td></tr>
+                <tr><td>图表展示</td><td>ECharts 图表（柱状图/折线图/饼图/面积图）</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>BarChart/LineChart/PieChart/AreaChart 组件</td></tr>
+                <tr><td>终端输出</td><td>命令执行结果展示，支持 ANSI 颜色</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Terminal 组件</td></tr>
+                <tr><td>代码对比</td><td>Monaco Diff Editor 代码对比视图</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>CodeDiff 组件，并排/内联模式</td></tr>
+                <tr><td>时间线</td><td>事件序列、任务进度展示</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>Timeline 组件</td></tr>
+                <tr><td>列表组件</td><td>条目列表展示，支持状态图标</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>List 组件</td></tr>
+                <tr><td>表单组件</td><td>输入框、选择器、日期选择器</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>Input/Select/DatePicker 组件</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">会话关联与持久化</td></tr>
+                <tr><td>会话独立 Workbench</td><td>每个会话拥有独立的 Workbench 状态</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Session.workbenchState 存储</td></tr>
+                <tr><td>Workbench 持久化</td><td>Workbench Schema 保存到数据库</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>切换会话时自动保存</td></tr>
+                <tr><td>会话切换恢复</td><td>切换会话时恢复对应的 Workbench</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>useSessionWorkbench Hook 统一管理</td></tr>
+                <tr><td>实时同步保存</td><td>Workbench 变化时自动保存</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>2秒防抖保存（useSessionWorkbench）</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">AI 协作</td></tr>
+                <tr><td>AI 上下文感知</td><td>AI 能感知 Workbench 当前内容</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>发送 workbenchContext</td></tr>
+                <tr><td>AI 动态构建</td><td>AI 调用组件库构建界面</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>workbench-schema 代码块</td></tr>
+                <tr><td>内容合并</td><td>AI 生成内容添加为新标签页</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>mergeSchema 方法</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>六、项目管理模块 (Projects)</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">项目管理</span>
+            <span class="status-badge status-dev">开发中</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>项目列表</td><td>展示用户所有项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-dev">开发中</span></td><td>页面框架已有</td></tr>
+                <tr><td>新建项目</td><td>创建新项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
+                <tr><td>项目详情</td><td>查看项目信息和关联对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>项目对话</td><td>项目内的多个对话共享文件上下文</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>删除项目</td><td>删除项目及关联数据</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>七、RPA/定时任务模块 (Tasks)</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">定时任务</span>
+            <span class="status-badge status-dev">开发中</span>
+        </div>
+        <p style="margin-bottom: 12px; color: #666;">后端调度器 + REST API 已完成，前端管理界面未开始。</p>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">后端（已完成）</td></tr>
+                <tr><td>定时任务调度器</td><td>@nestjs/schedule 集成，每分钟 Cron 检查</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>task-scheduler.service.ts</td></tr>
+                <tr><td>Workflow REST API</td><td>RPA Flow + ScheduledTask CRUD + 执行</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>workflow.controller.ts</td></tr>
+                <tr><td>Mastra Workflow 引擎</td><td>流程步骤编排执行（5 种步骤类型）</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>mastra-workflow.service.ts</td></tr>
+                <tr><td>创建/启用/禁用/手动触发</td><td>定时任务全生命周期 API</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>后端 API 已完成</td></tr>
+                <tr><td>执行历史</td><td>TaskLog 执行记录查询</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>GET /workflow/tasks/:id/logs</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">前端（未开始）</td></tr>
+                <tr><td>任务列表页</td><td>展示所有定时任务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需调用后端 API</td></tr>
+                <tr><td>创建任务表单</td><td>Cron 编辑器 + 任务配置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>执行日志页</td><td>查看执行记录和输出</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">RPA 自动化</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <p style="margin-bottom: 12px; color: #666;">Workflow 编排骨架已具备（mastra-workflow.service.ts 支持 5 种步骤类型），但核心的 Playwright 浏览器引擎尚未实现。</p>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>Playwright 浏览器引擎</td><td>BrowserPool + RPAExecutor（架构设计核心）</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>见 06-RPA 设计</td></tr>
+                <tr><td>创建 RPA 流程</td><td>定义浏览器自动化操作流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>流程执行</td><td>手动触发执行 RPA 流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>凭证管理</td><td>AES-256 加密凭证存储</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>数据库已设计</td></tr>
+                <tr><td>RPA 前端管理</td><td>流程编辑器、执行监控、截图查看</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>八、IDP 智能文档模块</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">IDP 智能文档处理</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>IDP 微服务部署</td><td>Python FastAPI + PaddleOCR</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>独立 Docker 容器</td></tr>
+                <tr><td>OCR 文字识别</td><td>图片/扫描件文字提取</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>支持中英文</td></tr>
+                <tr><td>PDF 解析</td><td>PDF 文档内容提取</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>Word 解析</td><td>Word 文档内容提取</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>表格识别</td><td>表格结构化提取</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>返回 JSON 格式</td></tr>
+                <tr><td>合同审核</td><td>合同七大要素提取</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>甲乙方、金额等</td></tr>
+                <tr><td>印章识别</td><td>印章检测与识别</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>签名识别</td><td>手写签名检测</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>NestJS 集成</td><td>HTTP 调用 IDP 服务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>IdpModule</td></tr>
+                <tr><td>文档预览</td><td>Workbench 文档预览组件</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>九、RAG 知识库模块</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">RAG 知识库系统</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>知识库管理</td><td>创建/删除/配置知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>KnowledgeBaseModule</td></tr>
+                <tr><td>文档上传</td><td>上传文档到知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>支持批量</td></tr>
+                <tr><td>文档解析</td><td>调用 IDP 解析文档</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>文本分块</td><td>自定义 TextSplitter</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>500字/块</td></tr>
+                <tr><td>LLM 关键词提取</td><td>DeepSeek Chat API 提取关键词</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>复用现有 API</td></tr>
+                <tr><td>全文检索索引</td><td>PostgreSQL tsvector + GIN</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>无需额外扩展</td></tr>
+                <tr><td>关键词检索</td><td>全文检索 + 关键词匹配</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>Top-K</td></tr>
+                <tr><td>知识问答</td><td>RAG 问答生成</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>QAModule</td></tr>
+                <tr><td>引用来源</td><td>回答展示引用来源</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>混合检索</td><td>全文检索 + 关键词数组混合</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>提升召回率</td></tr>
+                <tr><td>检索缓存</td><td>Redis 缓存高频查询</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>十一、权限与监管模块</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">权限管理</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>角色管理</td><td>创建、编辑角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>角色分配</td><td>为用户分配角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>权限配置</td><td>配置角色的功能权限</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">系统监管</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>服务器状态</td><td>查看各业务服务器运行状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需 Sentinel Agent</td></tr>
+                <tr><td>服务状态</td><td>查看业务系统服务状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>重启服务</td><td>远程重启业务服务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>十二、Agent 体系开发</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">Client Agent（本地 Agent）</span>
+            <span class="status-badge status-testing">可测试</span>
+        </div>
+        <p style="margin-bottom: 12px; color: #666;">部署在用户电脑，已迁移 Mastra 框架（替代 @lsc-ai/core），用于本地开发、Office 办公等任务。</p>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">基础架构</td></tr>
+                <tr><td>项目初始化</td><td>Node.js CLI 项目，集成 @lsc-ai/core</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>packages/client-agent</td></tr>
+                <tr><td>Mastra 框架迁移</td><td>从 @lsc-ai/core 迁移到 Mastra Agent</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>统一架构，与 Platform 一致</td></tr>
+                <tr><td>@lsc-ai/core 集成</td><td>完整集成 Agent、Tools、MCP</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>已迁移至 Mastra</td></tr>
+                <tr><td>配置管理</td><td>本地配置文件管理</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>conf 库持久化配置</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">通信机制</td></tr>
+                <tr><td>配对机制</td><td>Client Agent 与用户配对</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>pairing code 机制</td></tr>
+                <tr><td>配对码生成</td><td>生成 6 位配对码</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>WebSocket 连接</td><td>主动连接 Platform 服务器</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Socket.IO 客户端</td></tr>
+                <tr><td>心跳保活</td><td>定期发送心跳维持连接</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>30秒心跳间隔</td></tr>
+                <tr><td>断线重连</td><td>网络断开后自动重连</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>最多重试10次</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">任务执行</td></tr>
+                <tr><td>任务接收</td><td>接收 Platform 下发的任务</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>agent:task 事件</td></tr>
+                <tr><td>Agent 执行</td><td>使用 Core Agent 执行任务</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>executor.ts 实现</td></tr>
+                <tr><td>状态回传</td><td>实时推送执行状态到 Platform</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>stream/tool_call/tool_result 事件</td></tr>
+                <tr><td>结果返回</td><td>任务完成后返回结果</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>task_result 事件</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">本地能力</td></tr>
+                <tr><td>文件操作</td><td>读写本地文件系统</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Core read/write/edit 工具</td></tr>
+                <tr><td>命令执行</td><td>执行本地 Shell 命令</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Core bash 工具</td></tr>
+                <tr><td>代码开发</td><td>项目创建、代码编写</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>已验证可正常工作</td></tr>
+                <tr><td>Office 预览</td><td>Word/Excel/PPT 文件预览</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>mammoth + xlsx 库，Workbench 预览</td></tr>
+                <tr><td>Office 编辑</td><td>Word/Excel/PPT 自动化编辑</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需扩展 Office 工具</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">前端 UX 集成</td></tr>
+                <tr><td>JWT 认证集成</td><td>ChatGateway 使用正确的用户认证</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>修复 hardcoded temp-user-id</td></tr>
+                <tr><td>跨网关通信</td><td>AgentGateway 转发到 ChatGateway</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>taskRegistry 映射机制</td></tr>
+                <tr><td>工具步骤展示</td><td>Claude 风格可折叠工具步骤</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>ToolSteps.tsx 组件</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">分发部署</td></tr>
+                <tr><td>可执行文件</td><td>打包为 exe/dmg/AppImage</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>pkg 或 electron-builder</td></tr>
+                <tr><td>安装向导</td><td>图形化安装界面</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>自动更新</td><td>检测新版本自动更新</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">Sentinel Agent（服务器感知器）</span>
+            <span class="status-badge status-pending">未开始</span>
+        </div>
+        <p style="margin-bottom: 12px; color: #666;">部署在业务服务器，完整集成 @lsc-ai/core，用于服务器运维、状态监控、服务管理。</p>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">基础架构</td></tr>
+                <tr><td>项目初始化</td><td>Node.js 服务，集成 @lsc-ai/core</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>packages/sentinel-agent</td></tr>
+                <tr><td>@lsc-ai/core 集成</td><td>完整集成 Agent、Tools</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>配置管理</td><td>服务器信息、Platform 地址</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">通信机制</td></tr>
+                <tr><td>WebSocket 连接</td><td>主动连接 Platform 服务器</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>身份认证</td><td>服务器身份验证</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>API Key / 证书</td></tr>
+                <tr><td>心跳上报</td><td>定期上报服务器状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>CPU/内存/磁盘</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">监控能力</td></tr>
+                <tr><td>系统状态</td><td>CPU、内存、磁盘使用率</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>服务状态</td><td>检测业务服务运行状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>pm2/docker/systemd</td></tr>
+                <tr><td>日志采集</td><td>采集业务日志</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">运维能力</td></tr>
+                <tr><td>服务重启</td><td>远程重启业务服务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>命令执行</td><td>执行运维命令</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>权限控制</td></tr>
+                <tr><td>文件管理</td><td>远程文件操作</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>日志分析</td><td>AI 分析日志定位问题</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>Core Agent 智能分析</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">部署方式</td></tr>
+                <tr><td>Docker 部署</td><td>提供 Docker 镜像</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>二进制部署</td><td>提供独立可执行文件</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>十三、系统设置</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">系统设置</span>
+            <span class="status-badge status-dev">开发中</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>设置页面</td><td>用户设置界面</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-dev">开发中</span></td><td>页面框架已有</td></tr>
+                <tr><td>个人设置</td><td>用户个人偏好设置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>主题设置</td><td>明暗主题切换</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>API 密钥</td><td>管理 API 访问密钥</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>十四、UI/UX 设计</h3>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">界面与体验（临时样式）</span>
+            <span class="status-badge status-done">已完成</span>
+        </div>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td>奶油色主题</td><td>临时配色方案</td><td><span class="status-badge status-done">已完成</span></td><td>待迁移至玻璃拟态</td></tr>
+                <tr><td>侧边栏导航</td><td>可折叠的侧边栏</td><td><span class="status-badge status-done">已完成</span></td><td>framer-motion 动画</td></tr>
+                <tr><td>聊天输入框</td><td>多行输入、快捷键支持</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>欢迎界面</td><td>新对话欢迎页</td><td><span class="status-badge status-done">已完成</span></td><td>可点击建议卡片</td></tr>
+                <tr><td>加载状态</td><td>Loading 动画</td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
+                <tr><td>响应式布局</td><td>适配不同屏幕</td><td><span class="status-badge status-dev">开发中</span></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-card">
+        <div class="module-header">
+            <span class="module-title">玻璃拟态设计体系</span>
+            <span class="status-badge status-done">已完成</span>
+        </div>
+        <p style="margin-bottom: 12px; color: #666;">全新 UI 设计方向：精美而简约（High-end Minimalism）+ 玻璃拟态（Glassmorphism），参考 Apple Vision Pro / iOS 液态玻璃设计理念。纯白色调高光（1px顶部细线），玻璃材质无色透明。</p>
+        <table>
+            <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
+            <tbody>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">设计规范</td></tr>
+                <tr><td>设计规范文档</td><td>玻璃拟态 UI 设计规范</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>13-前端UI设计规范.html</td></tr>
+                <tr><td>CSS 变量体系</td><td>玻璃材质/阴影/动效变量</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/tokens/*.css</td></tr>
+                <tr><td>Z轴层级体系</td><td>Z0-Z5 六层空间深度设计</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>阴影层级、模糊层级</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">主题系统</td></tr>
+                <tr><td>主题背景系统</td><td>渐变/光晕背景切换</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/themes/*.css</td></tr>
+                <tr><td>默认主题</td><td>深蓝科技渐变</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>data-theme="default"</td></tr>
+                <tr><td>深色模式</td><td>暗色变量覆盖</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>当前默认即深色</td></tr>
+                <tr><td>节气主题</td><td>春节/中秋/清明等节气主题</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-done">已完成</span></td><td>CSS 定义完成，待切换逻辑</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">玻璃组件</td></tr>
+                <tr><td>玻璃面板</td><td>glass-panel/glass-thick/glass-glow</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/components/glass-panel.css</td></tr>
+                <tr><td>玻璃卡片</td><td>glass-card 组件</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/components/glass-card.css</td></tr>
+                <tr><td>玻璃按钮</td><td>glass-btn 组件</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/components/glass-button.css</td></tr>
+                <tr><td>玻璃输入框</td><td>glass-input/glass-textarea</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/components/glass-input.css</td></tr>
+                <tr><td>玻璃模态框</td><td>Ant Design Modal 玻璃化</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>global.css 覆盖</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">动效系统</td></tr>
+                <tr><td>缓动曲线库</td><td>物理惯性/阻尼曲线</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>ease-out-expo/spring</td></tr>
+                <tr><td>入场动画</td><td>fadeSlideIn 等标准动画</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>styles/utilities/animations.css</td></tr>
+                <tr><td>交互反馈</td><td>hover/active 状态反馈</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>60fps 目标</td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">组件迁移</td></tr>
+                <tr><td>MainLayout</td><td>主布局 + 主题背景</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>渐变光晕背景</td></tr>
+                <tr><td>Sidebar</td><td>侧边栏玻璃化</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>ChatGPT风格折叠动画</td></tr>
+                <tr><td>ChatInput</td><td>输入框玻璃化</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>聚焦发光边框、元素居中</td></tr>
+                <tr><td>MessageBubble</td><td>消息气泡玻璃化</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>AI 消息半透明玻璃</td></tr>
+                <tr><td>Ant Design 主题</td><td>theme.ts 深色玻璃主题</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>完整组件适配</td></tr>
+                <tr><td>WelcomeScreen</td><td>欢迎界面固定居中</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>不受状态栏影响</td></tr>
+                <tr><td>WorkspaceSelectModal</td><td>工作路径选择弹窗</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>玻璃风格适配</td></tr>
+                <tr><td>AgentStatusIndicator</td><td>Agent状态指示器</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>出入动画过渡</td></tr>
+                <tr><td>Login</td><td>登录页面玻璃化</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>深色背景主题</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>十五、下一步优先开发</h3>
+
+    <div class="tip-box success" style="border-color: #52c41a; background: #f6ffed;">
+        <h5 style="margin-bottom: 12px; color: #52c41a;">已完成的核心功能</h5>
+        <ul style="margin-bottom: 0;">
+            <li><strong style="color: #52c41a;">Mastra 框架完整迁移</strong> - 替代 @lsc-ai/core，Agent + Memory + Tools + AgentNetwork + Workflow 全部就位</li>
+            <li><strong style="color: #52c41a;">4 个专业化 Agent</strong> - Platform（全能）、Code Expert（代码）、Data Analyst（数据）、Office Worker（办公）</li>
+            <li><strong style="color: #52c41a;">Mastra Memory 系统</strong> - LibSQL 存储对话历史 + Working Memory 持久化上下文</li>
+            <li><strong style="color: #52c41a;">AgentNetwork 多 Agent 协作</strong> - 自动路由任务到最合适的专业 Agent</li>
+            <li><strong style="color: #52c41a;">Mastra Workflow 引擎</strong> - RPA 流程 + 定时任务编排</li>
+            <li><strong style="color: #52c41a;">混合存储策略</strong> - PostgreSQL（业务数据+Workbench）+ LibSQL（AI对话+Agent记忆）</li>
+            <li><strong>流式输出</strong> - Mastra agent.stream() + fullStream reader</li>
+            <li><strong>Client Agent 核心功能</strong> - 本地 Agent 可在用户电脑执行开发任务</li>
+            <li><strong>Claude 风格工具步骤</strong> - 可折叠展开的工具执行过程展示</li>
+            <li><strong>玻璃拟态 UI 系统</strong> - iOS 液态玻璃效果、CSS 变量体系、主题背景系统</li>
+            <li><strong>Workbench 万能工作台</strong> - 分屏布局、多标签页、Schema 驱动渲染、AI 内容合并</li>
+            <li><strong>Workbench 持久化重构</strong> - useSessionWorkbench 统一管理，防抖自动保存，新对话自动清空</li>
+            <li><strong>Office 文档预览</strong> - Word/Excel 文件预览（mammoth + xlsx），本地模式可用</li>
+            <li><strong>多媒体预览</strong> - 图片/PDF/视频/音频/代码文件预览，支持拖放</li>
+        </ul>
+    </div>
+
+    <div class="tip-box warning">
+        <h5 style="margin-bottom: 12px;">下一阶段优先级开发项</h5>
+        <p style="margin-bottom: 8px; color: #52c41a; font-weight: 600;">✅ 2026-01-29 已完成：清理 Prisma Message、Mastra 语义记忆、Workflow 后端 API、定时任务调度器、Client Agent Mastra 迁移、Observability、AgentNetwork 路由优化、Workbench 交互系统</p>
+        <ol>
+            <li><strong style="color: #ff4d4f;">[P0] 企业知识库 RAG</strong> - 文档上传/分块/LLM 关键词提取/PostgreSQL 全文检索/问答（见 11-RAG 设计，与 Mastra 语义记忆不同）</li>
+            <li><strong style="color: #ff4d4f;">[P0] 定时任务前端管理</strong> - 调度器后端已完成，需前端任务列表、Cron 编辑器、日志查看</li>
+            <li><strong style="color: #fa8c16;">[P1] Playwright RPA 引擎</strong> - 浏览器自动化核心能力（BrowserPool + RPAExecutor），Workflow 编排骨架已有</li>
+            <li><strong style="color: #fa8c16;">[P1] Evals / 评分系统</strong> - Agent 回复质量评估</li>
+            <li><strong style="color: #fa8c16;">[P1] Sentinel Agent 开发</strong> - 服务器感知器，远程运维监控</li>
+            <li><strong style="color: #fa8c16;">[P1] Office 编辑能力</strong> - Word/Excel/PPT 自动化编辑（当前仅支持预览）</li>
+            <li><strong>[P1] Client Agent 分发打包</strong> - exe/dmg/AppImage 可执行文件打包</li>
+            <li><strong>[P2] 运维监控模块</strong> - 服务器状态、服务状态、远程重启</li>
+        </ol>
+    </div>
+
+    <div class="tip-box info">
+        <h5 style="margin-bottom: 12px;">当前可测试功能</h5>
+        <ul>
+            <li>用户登录 (admin/admin123)</li>
+            <li>新建对话、历史对话列表、会话切换</li>
+            <li><strong style="color: #52c41a;">切换历史会话自动恢复消息内容（Mastra Memory）</strong></li>
+            <li>发送消息、AI 流式回复（打字机效果）</li>
+            <li>代码高亮渲染</li>
+            <li>中断 AI 生成</li>
+            <li>上传图片/文件</li>
+            <li>工具调用状态实时展示（Claude 风格可折叠步骤）</li>
+            <li>退出登录</li>
+            <li><strong style="color: #52c41a;">【本地模式】Client Agent 本地执行任务</strong></li>
+            <li><strong style="color: #52c41a;">本地文件读写、命令执行、代码开发</strong></li>
+            <li><strong style="color: #52c41a;">【Workbench】手动打开工作台、浏览本地文件</strong></li>
+            <li><strong style="color: #52c41a;">【Workbench】拖放文件到工作台预览（图片/PDF/视频/音频/代码/Office）</strong></li>
+            <li><strong style="color: #52c41a;">【Workbench】本地模式查看 Word/Excel 文件内容</strong></li>
+            <li><strong style="color: #52c41a;">【Workbench】AI 生成内容自动打开工作台（workbench-schema）</strong></li>
+            <li><strong style="color: #52c41a;">切换会话自动保存/恢复 Workbench 状态</strong></li>
+            <li><strong style="color: #52c41a;">【新】AgentNetwork 多 Agent 协作模式</strong></li>
+        </ul>
+        <p style="margin-top: 12px;"><strong>访问地址：</strong>http://localhost:5173 (开发) 或 http://localhost (Docker)</p>
+        <p><strong>Client Agent：</strong>pnpm --filter @lsc-ai/client-agent start</p>
+    </div>
+
+    <h3>十六、更新日志</h3>
+
+    <table>
+        <thead><tr><th>日期</th><th>更新内容</th></tr></thead>
+        <tbody>
+            <tr><td>2026-01-29 (二)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] 核心任务推进 + 进度校准</strong> - 已完成 95→103（+8 项），新增细化条目后总计 152 项，进度 73%</li>
+                    <li><strong>清理 Prisma Message 死代码</strong> - 移除废弃的 Message 模型相关代码</li>
+                    <li><strong>Mastra 语义记忆</strong> - LibSQLVector + fastembed + semanticRecall 对话级语义召回（非企业知识库 RAG）</li>
+                    <li><strong>Workflow REST API</strong> - workflow.controller.ts CRUD + 执行接口</li>
+                    <li><strong>定时任务调度器</strong> - task-scheduler.service.ts，@nestjs/schedule 集成</li>
+                    <li><strong>Client Agent Mastra 迁移</strong> - 统一架构，从 @lsc-ai/core 迁移至 Mastra Agent</li>
+                    <li><strong>Observability</strong> - createLogger 集成，分布式追踪</li>
+                    <li><strong>AgentNetwork 路由优化</strong> - 正式 Mastra 路由策略配置</li>
+                    <li><strong>Workbench 交互系统</strong> - ActionHandler、7 种 action handler、Button 绑定、导出功能</li>
+                    <li><strong>修复上下文共享</strong> - 多处上下文/状态共享问题修复</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-29</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Mastra 框架能力全面优化</strong> - 深入分析并充分发挥 Mastra 所有能力</li>
+                    <li><strong>修复 Memory API</strong> - getThreadMessages/getThreadSummary 从错误的 getStore('memory') 改为正确的 memory.recall() API</li>
+                    <li><strong>启用 Working Memory</strong> - Agent 持久化上下文（用户偏好、项目信息、近期任务），跨会话记忆</li>
+                    <li><strong>Memory 线程清理</strong> - 删除会话时同步清理 Mastra Memory 中的线程数据</li>
+                    <li><strong>MastraWorkflowService</strong> - 新建 Mastra Workflow 服务，集成 RPA 流程执行和定时任务编排</li>
+                    <li><strong>存储策略确认</strong> - PostgreSQL（业务数据+Workbench）+ LibSQL（AI对话+Agent记忆）+ MinIO（文件）+ Redis（缓存）</li>
+                    <li><strong>LibSQL 部署确认</strong> - 本地开发用 SQLite 文件（file:./data/lsc-ai.db），容器部署用 Docker LibSQL Server</li>
+                    <li>更新开发进度：72%（+7%），已完成 95 项（后续同日校准至 73%/103 项，因新增细化条目总数增至 152）</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-28</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Mastra 框架迁移完成</strong> - 完全替代 @lsc-ai/core，所有核心功能基于 Mastra 运行</li>
+                    <li><strong>重构 Workbench 持久化</strong> - useSessionWorkbench Hook 完全重写，4 个 useEffect 分离职责</li>
+                    <li><strong>修复新对话 Workbench 清空</strong> - 多次迭代修复，解决 React 异步状态更新导致的竞态问题</li>
+                    <li><strong>修复 Sidebar-Workbench 联动</strong> - 使用函数式 setState 解决状态滞后问题</li>
+                    <li><strong>消除重复存储</strong> - 消息不再写入 PostgreSQL Message 表，统一由 Mastra Memory (LibSQL) 管理</li>
+                    <li><strong>Schema 转换统一</strong> - socket.ts workbenchHandler 从 200+ 行简化为 30 行，使用统一的 schema-transformer</li>
+                    <li><strong>AgentNetwork 实现</strong> - networkChat() 多 Agent 协作，前端支持 useNetwork 参数</li>
+                    <li><strong>4 个专业化 Agent</strong> - Platform（全能路由）、Code Expert（代码）、Data Analyst（数据可视化）、Office Worker（办公文档）</li>
+                    <li><strong>Docker 部署更新</strong> - docker-compose.dev.yml 新增 LibSQL Server 容器配置</li>
+                    <li><strong>Mastra 实例注册</strong> - 4 个 Agent 统一注册到 Mastra 实例，启用 AgentNetwork 发现</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-27</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Workbench 组件库大幅扩展</strong> - 新增 8 个核心组件</li>
+                    <li><strong>Terminal 终端组件</strong> - 命令输出展示，支持 ANSI 颜色代码、自动滚动、复制功能</li>
+                    <li><strong>CodeDiff 代码对比组件</strong> - Monaco DiffEditor，支持并排/内联视图切换、变更统计</li>
+                    <li><strong>Timeline 时间线组件</strong> - 事件序列展示，支持颜色状态（blue/green/red/gray/yellow）</li>
+                    <li><strong>AreaChart 面积图组件</strong> - ECharts 面积图，支持堆叠、渐变填充</li>
+                    <li><strong>List 列表组件</strong> - 条目列表展示，支持状态图标、点击动作</li>
+                    <li><strong>Input 输入框组件</strong> - 多类型输入（text/password/textarea），支持前后缀、验证状态</li>
+                    <li><strong>Select 选择器组件</strong> - 单选/多选，支持搜索过滤、可清空</li>
+                    <li><strong>DatePicker 日期选择器</strong> - 日历选择，支持快捷选项</li>
+                    <li><strong>Schema 类型完善</strong> - 添加 InputSchema、SelectSchema、DatePickerSchema 类型定义</li>
+                    <li>更新开发进度：65%（+2%），已完成 81 项</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-26 (晚)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] 会话恢复功能完成</strong> - 点击历史会话自动恢复消息内容和 Workbench 状态</li>
+                    <li><strong>消息加载</strong> - chat.ts 新增 loadSession action，从后端 API 加载历史消息</li>
+                    <li><strong>Workbench 状态恢复</strong> - WorkbenchStore 新增 loadState/getSerializableState 方法</li>
+                    <li><strong>会话切换自动保存</strong> - Sidebar 切换会话前自动保存当前 Workbench 状态</li>
+                    <li><strong>Chat.tsx 加载逻辑</strong> - useEffect 监听 sessionId 变化，自动加载消息和 Workbench</li>
+                    <li><strong>状态栏响应式</strong> - AgentStatusIndicator 支持 flex-wrap 换行，窄屏不再变形</li>
+                    <li>更新开发进度：63%（+2%），已完成 75 项</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-26 (下午)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Office 文档预览功能完成</strong> - Word(.docx)/Excel(.xlsx) 文件可在 Workbench 中预览</li>
+                    <li><strong>Word 文档预览</strong> - 使用 mammoth 库将 docx 转换为 HTML 渲染</li>
+                    <li><strong>Excel 表格预览</strong> - 使用 xlsx 库解析，支持多工作表切换，表格数据展示</li>
+                    <li><strong>PPT 预览占位</strong> - 显示文件信息（完整预览待后续扩展）</li>
+                    <li><strong>本地模式 Office 预览</strong> - 通过 Client Agent + FileService 读取本地 Office 文件并预览</li>
+                    <li><strong>拖放 Office 文件</strong> - 支持拖放 Word/Excel/PPT 到 Workbench 预览</li>
+                    <li><strong>PDF/视频/音频预览</strong> - 完善 FileViewer 对 PDF、视频、音频的预览支持</li>
+                    <li><strong style="color: #faad14;">[待开发] Office 编辑功能</strong> - 当前仅支持只读预览，编辑功能待后续扩展</li>
+                    <li>新增依赖：xlsx（Excel 解析）、mammoth（Word 解析）</li>
+                    <li>更新开发进度：61%（+2%），已完成 72 项</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-26 (上午)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Workbench 基础框架完成</strong> - 分屏布局、多标签页、Schema 渲染引擎</li>
+                    <li><strong>Workbench 核心组件</strong> - FileViewer、FileBrowser、CodeEditor、MarkdownView</li>
+                    <li><strong>手动打开 Workbench</strong> - 底部按钮 + 文件浏览器</li>
+                    <li><strong>拖放文件预览</strong> - 支持拖放本地文件到 Workbench</li>
+                    <li><strong>AI 上下文感知</strong> - AI 能感知 Workbench 当前内容（workbenchContext）</li>
+                    <li><strong>AI 内容合并</strong> - AI 生成内容添加为新标签页（mergeSchema）</li>
+                    <li><strong style="color: #faad14;">[待开发] Workbench 会话持久化</strong> - 每个会话独立 Workbench + 数据库持久化 + 会话切换恢复</li>
+                    <li>更新开发进度：59%（+9%），已完成 69 项</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-23 (晚)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] 前端 UI 玻璃拟态改造完成</strong> - 整体UI达到满意状态，进度达到50%</li>
+                    <li><strong>iOS 液态玻璃效果</strong> - 1px顶部细线高光，纯白色调，玻璃材质无色透明</li>
+                    <li><strong>侧边栏动画优化</strong> - ChatGPT风格折叠效果，纯CSS过渡动画(200ms)</li>
+                    <li><strong>主题背景增强</strong> - 多层渐变光晕，蓝紫青暖色组合，微妙动态效果</li>
+                    <li><strong>工作路径选择弹窗</strong> - 完整玻璃风格适配，设备列表/状态指示器</li>
+                    <li><strong>Agent状态指示器</strong> - 出入动画过渡，不影响主内容区域布局</li>
+                    <li><strong>欢迎界面固定定位</strong> - 绝对居中，不受底部状态栏影响</li>
+                    <li><strong>输入框元素对齐</strong> - 所有元素垂直居中对齐</li>
+                    <li><strong>Ant Design组件适配</strong> - List/Alert/Radio/Popconfirm/Typography完整覆盖</li>
+                    <li>移除蓝色调高光，改用纯白色(255,255,255)高光</li>
+                    <li>节气主题只改变高光色和强调色，玻璃本身保持无色透明</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-23 (早)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #1890ff;">[重大] 前端 UI 设计规范确定</strong> - 玻璃拟态（Glassmorphism）+ 主题背景系统</li>
+                    <li><strong style="color: #1890ff;">[重大] Workbench 架构设计完成</strong> - Schema 驱动渲染、10大应用场景、6阶段开发计划</li>
+                    <li>新增架构文档：12-Workbench工作台.html（万能工作台架构设计）</li>
+                    <li>新增架构文档：14-前端UI设计规范.html（玻璃拟态设计体系）</li>
+                    <li>设计方向：精美而简约（High-end Minimalism），参考 Apple Vision Pro</li>
+                    <li>视觉体系：磨砂玻璃、液态玻璃、半透明层、背景模糊</li>
+                    <li>空间感：Z轴层级（Z0-Z5）、立体透视、浮层深度</li>
+                    <li>动效：丝滑、克制、60fps 目标、物理惯性与阻尼</li>
+                    <li>主题系统：用户手动切换 + 节气节日自动切换（春节/中秋/清明等）</li>
+                    <li>核心策略：组件半透明，背景决定氛围，一套组件多种主题</li>
+                    <li>调整文档顺序：开发总进度移至最后（15号）</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-22 (下午)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Client Agent 本地模式可用</strong> - 可在用户电脑本地执行开发任务</li>
+                    <li><strong style="color: #52c41a;">[重大] Claude 风格工具步骤 UI</strong> - 可折叠展开的工具执行过程展示（ToolSteps.tsx）</li>
+                    <li>修复 JWT 认证问题：ChatGateway 从使用 hardcoded 'temp-user-id' 改为正确用户认证</li>
+                    <li>跨网关通信：AgentGateway 通过 taskRegistry 正确转发事件到 ChatGateway</li>
+                    <li>结构化工具调用：tool_call/tool_result 作为结构化数据跟踪，不再拼接文本</li>
+                    <li>前端状态管理：chat.ts store 新增 streamingToolSteps 状态和相关方法</li>
+                    <li>socket.ts 增强：处理 tool_call/tool_result 事件，更新工具步骤状态</li>
+                    <li>移除 emoji 状态文字，改用 SVG 图标（Ant Design Icons）</li>
+                    <li>本地模式验证：文件读写、命令执行、代码开发均正常工作</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-22 (上午)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Client Agent 基础架构完成</strong> - 创建 packages/client-agent 项目</li>
+                    <li>Client Agent CLI 实现：start/pair/config/status/unpair 命令</li>
+                    <li>Socket.IO 客户端：WebSocket 连接 Platform、心跳保活、断线重连</li>
+                    <li>任务执行器：集成 @lsc-ai/core，支持 chat/execute/file_operation 任务</li>
+                    <li>配置管理：使用 conf 库持久化配置（platformUrl/deviceId/apiKey 等）</li>
+                    <li>Server 端 AgentGateway：处理 Agent 配对、上线、任务分发、状态回传</li>
+                    <li>更新 Prisma Schema：ClientAgent 模型添加 deviceId/deviceName/token 字段</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-21 (晚)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Platform Agent 提示词系统</strong> - 创建 platform.prompts.ts，模块化设计（对话/文件分析/代码辅助/RAG/RPA/监控）</li>
+                    <li><strong style="color: #52c41a;">[重大] @lsc-ai/core 支持 customSystemPrompt</strong> - Agent 支持自定义系统提示词，Platform/Client/Sentinel 可使用各自专属提示词</li>
+                    <li>明确 Platform Agent 边界：云端平台不能访问用户本地文件系统</li>
+                    <li>修复文件上传体验：发送消息后立即清空已上传文件列表</li>
+                    <li>修复 AI 回复不再提及服务器工作目录（添加 showCwd 选项）</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-21</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] @lsc-ai/core 完整集成</strong> - Platform 后端正确集成 Core Agent（CoreService 封装）</li>
+                    <li><strong style="color: #52c41a;">[重大] Agent 体系架构确定</strong> - Platform + Client Agent + Sentinel Agent 三种 Agent 统一集成 @lsc-ai/core</li>
+                    <li>完成 Socket.IO 流式输出功能</li>
+                    <li>完成代码高亮渲染（Prism.js）</li>
+                    <li>完成中断生成功能（前后端双向停止信号）</li>
+                    <li>完成文件上传功能（MinIO 存储，多文件支持）</li>
+                    <li>完成工具调用状态实时展示（🔧执行中 / ✅完成）</li>
+                    <li>新增 Client Agent 详细开发计划</li>
+                    <li>新增 Sentinel Agent 开发计划</li>
+                    <li>更新架构总览：添加 Agent 体系架构章节</li>
+                    <li>更新开发进度：35项已完成，进度 36%</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-21 (早)</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>新增 IDP 智能文档处理模块架构设计（PaddleOCR + DeepSeek LLM）</li>
+                    <li>新增 RAG 知识库系统模块架构设计（LLM 关键词提取 + PostgreSQL 全文检索）</li>
+                    <li>更新数据存储设计：添加知识库相关表（使用全文检索，无需额外扩展）</li>
+                    <li>技术方案优化：RAG 采用 Dify 经济型模式，仅需 DeepSeek Chat API</li>
+                    <li>场景覆盖率预计从 68% 提升至 93%</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-20</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>修复新对话 UX: 改为发送首条消息后才创建会话 (Claude 风格)</li>
+                    <li>欢迎界面建议卡片可点击</li>
+                    <li>添加会话加载逻辑</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-19</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>完成 Docker 容器化部署</li>
+                    <li>创建一键部署包</li>
+                    <li>配置 DeepSeek API 切换机制</li>
+                    <li>完成前端 TypeScript 错误修复</li>
+                </ul>
+            </td></tr>
+            <tr><td>2026-01-18</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>完成基础架构搭建</li>
+                    <li>完成用户登录功能</li>
+                    <li>完成聊天界面基础 UI</li>
+                </ul>
+            </td></tr>
+        </tbody>
+    </table>
+
+</div>
+</body>
+</html>

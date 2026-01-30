@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11 - RAG 知识库系统</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>11 - RAG 知识库系统</h2>
+        <div class="meta">文档版本：1.1 | 更新日期：2026-01-21</div>
+    </div>
+
+    <h3>一、模块概述</h3>
+
+    <div class="tip-box info">
+        <h5>RAG（Retrieval-Augmented Generation）知识增强生成</h5>
+        <p>RAG 是一种将检索系统与大语言模型结合的技术架构，通过检索企业知识库中的相关文档，为 LLM 提供上下文，从而生成更准确、更专业的回答。</p>
+        <ul>
+            <li><strong>解决幻觉问题</strong>：基于真实文档生成回答，减少 AI 编造内容</li>
+            <li><strong>企业知识私有化</strong>：将企业内部文档、规范、流程沉淀为可查询的知识资产</li>
+            <li><strong>实时更新</strong>：新文档入库后立即可被检索，无需重新训练模型</li>
+        </ul>
+    </div>
+
+    <h4>1.1 核心能力</h4>
+    <div class="grid-4">
+        <div class="feature-card">
+            <h5>文档管理</h5>
+            <p>上传、解析、分块、索引企业文档</p>
+        </div>
+        <div class="feature-card">
+            <h5>智能检索</h5>
+            <p>基于关键词的全文检索</p>
+        </div>
+        <div class="feature-card">
+            <h5>知识问答</h5>
+            <p>结合检索结果生成专业回答</p>
+        </div>
+        <div class="feature-card">
+            <h5>多知识库</h5>
+            <p>按部门/项目隔离知识库</p>
+        </div>
+    </div>
+
+    <h4>1.2 应用场景</h4>
+    <table>
+        <thead><tr><th>场景</th><th>描述</th><th>示例</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>规范查询</strong></td>
+                <td>查询企业规章制度、操作规范</td>
+                <td>"报销流程是什么？""出差标准是多少？"</td>
+            </tr>
+            <tr>
+                <td><strong>技术文档</strong></td>
+                <td>查询产品手册、API 文档</td>
+                <td>"MES 系统如何录入工单？"</td>
+            </tr>
+            <tr>
+                <td><strong>历史经验</strong></td>
+                <td>查询项目经验、问题解决方案</td>
+                <td>"之前类似故障是怎么处理的？"</td>
+            </tr>
+            <tr>
+                <td><strong>培训学习</strong></td>
+                <td>新员工培训、业务学习</td>
+                <td>"安全生产有哪些注意事项？"</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>二、技术选型</h3>
+
+    <div class="tip-box success">
+        <h5>技术方案：LLM 关键词提取 + PostgreSQL 全文检索</h5>
+        <p>参考 Dify 平台的经济型索引模式，采用 <strong>无需额外 Embedding 模型</strong> 的轻量化方案：</p>
+        <ul>
+            <li><strong>关键词提取</strong>：使用 DeepSeek LLM 自动提取文档关键词（复用现有 API）</li>
+            <li><strong>全文检索</strong>：PostgreSQL 原生全文检索，无需额外安装扩展</li>
+            <li><strong>问答生成</strong>：DeepSeek LLM 基于检索结果生成回答</li>
+            <li><strong>零额外成本</strong>：不需要部署 Embedding 模型，不需要调用额外 API</li>
+        </ul>
+    </div>
+
+    <h4>2.1 方案对比</h4>
+    <table>
+        <thead><tr><th>方案</th><th>检索方式</th><th>所需模型</th><th>优点</th><th>缺点</th></tr></thead>
+        <tbody>
+            <tr style="background: rgba(82, 196, 26, 0.1);">
+                <td><strong>本方案 ✓</strong></td>
+                <td>LLM 关键词 + 全文检索</td>
+                <td>仅 DeepSeek Chat</td>
+                <td>无需额外模型、成本低</td>
+                <td>语义理解略弱</td>
+            </tr>
+            <tr>
+                <td>向量检索方案</td>
+                <td>Embedding + 向量相似度</td>
+                <td>需 Embedding 模型</td>
+                <td>语义理解强</td>
+                <td>需额外部署/付费</td>
+            </tr>
+            <tr>
+                <td>纯关键词方案</td>
+                <td>分词 + 倒排索引</td>
+                <td>无</td>
+                <td>最简单</td>
+                <td>召回率低</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="tip-box warning">
+        <h5>为什么选择 LLM 关键词提取？</h5>
+        <p>相比传统分词，LLM 关键词提取的优势：</p>
+        <ul>
+            <li><strong>语义理解</strong>：能理解文档含义，提取核心概念而非表面词汇</li>
+            <li><strong>同义词关联</strong>：会提取"报销"同时联想"费用"、"发票"等相关词</li>
+            <li><strong>专业术语</strong>：能识别行业专有名词</li>
+            <li><strong>多语言支持</strong>：中英文混合文档无障碍处理</li>
+        </ul>
+    </div>
+
+    <h3>三、系统架构</h3>
+
+    <div class="arch-diagram">
+        <div class="arch-title">RAG 知识库系统架构</div>
+
+        <!-- 用户层 -->
+        <div class="arch-layer user-layer">
+            <span class="layer-title" style="color: #52c41a;">用户交互</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">知识问答</div>
+                    <div class="arch-box-desc">自然语言提问</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">文档管理</div>
+                    <div class="arch-box-desc">上传/删除/更新</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">知识库配置</div>
+                    <div class="arch-box-desc">创建/权限管理</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ REST API ↓</div>
+
+        <!-- 服务层 -->
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">RAG 服务层 (NestJS)</span>
+            <div class="layer-content" style="flex-direction: column; gap: 12px;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <div class="arch-box primary"><div class="arch-box-title">KnowledgeBaseModule</div><div class="arch-box-desc">知识库管理</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">DocumentModule</div><div class="arch-box-desc">文档处理</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">RetrievalModule</div><div class="arch-box-desc">检索服务</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">QAModule</div><div class="arch-box-desc">问答生成</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 核心组件 -->
+        <div class="arch-layer" style="background: linear-gradient(135deg, rgba(114, 46, 209, 0.1), rgba(235, 47, 150, 0.1));">
+            <span class="layer-title" style="color: #722ed1;">核心处理</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">TextSplitter</div><div class="arch-box-desc">文档分块</div></div>
+                <div class="arch-box"><div class="arch-box-title">KeywordExtractor</div><div class="arch-box-desc">LLM 关键词提取</div></div>
+                <div class="arch-box"><div class="arch-box-title">FullTextSearch</div><div class="arch-box-desc">全文检索</div></div>
+                <div class="arch-box"><div class="arch-box-title">AnswerGenerator</div><div class="arch-box-desc">答案生成</div></div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 存储层 -->
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #eb2f96;">数据存储</span>
+            <div class="layer-content">
+                <div class="arch-box success"><div class="arch-box-title">PostgreSQL</div><div class="arch-box-desc">全文索引 + 元数据</div></div>
+                <div class="arch-box"><div class="arch-box-title">MinIO</div><div class="arch-box-desc">原始文档存储</div></div>
+                <div class="arch-box"><div class="arch-box-title">Redis</div><div class="arch-box-desc">检索缓存</div></div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 外部服务 -->
+        <div class="arch-layer external-layer">
+            <span class="layer-title" style="color: #fa8c16;">外部服务</span>
+            <div class="layer-content">
+                <div class="arch-box warning"><div class="arch-box-title">DeepSeek Chat API</div><div class="arch-box-desc">关键词提取 + 答案生成</div></div>
+                <div class="arch-box"><div class="arch-box-title">IDP 服务</div><div class="arch-box-desc">文档解析</div></div>
+            </div>
+        </div>
+    </div>
+
+    <h4>3.1 RAG 处理流程</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">文档入库流程</div>
+        <div class="mermaid">
+flowchart LR
+    A[上传文档] --> B[文档解析]
+    B --> C[文本分块]
+    C --> D[LLM 提取关键词]
+    D --> E[存储入库]
+
+    B -->|PDF/Word| B1[IDP 服务]
+    B -->|TXT/MD| B2[直接读取]
+
+    C --> C1[chunk_size: 500]
+    C1 --> C2[chunk_overlap: 50]
+
+    D -->|DeepSeek API| D1[提取 10-20 个关键词]
+
+    E --> E1[PostgreSQL 全文索引]
+    E --> E2[关键词存储]
+    E --> E3[MinIO 原文件]
+        </div>
+    </div>
+
+    <div class="arch-diagram">
+        <div class="arch-title">知识问答流程</div>
+        <div class="mermaid">
+flowchart LR
+    A[用户提问] --> B[全文检索]
+    B --> C[获取相关文档块]
+    C --> D[构建 Prompt]
+    D --> E[LLM 生成回答]
+    E --> F[返回结果]
+
+    B -->|PostgreSQL| B1[to_tsvector + ts_rank]
+    B1 --> B2[关键词匹配]
+
+    C --> C1[Top 5 chunks]
+
+    D --> D1[System Prompt]
+    D --> D2[检索上下文]
+    D --> D3[用户问题]
+        </div>
+    </div>
+
+    <h3>四、数据库设计</h3>
+
+    <h4>4.1 核心数据表</h4>
+    <pre><code>-- 知识库表
+CREATE TABLE knowledge_bases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    chunk_size INT DEFAULT 500,
+    chunk_overlap INT DEFAULT 50,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 文档表
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_base_id UUID REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    file_type VARCHAR(20),
+    file_size BIGINT,
+    file_path VARCHAR(500),  -- MinIO 路径
+    content_hash VARCHAR(64),  -- 内容哈希，用于去重
+    chunk_count INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'pending',  -- pending, processing, completed, failed
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 文档块表（核心存储）
+CREATE TABLE document_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    knowledge_base_id UUID REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    chunk_index INT NOT NULL,
+    content TEXT NOT NULL,
+    content_length INT,
+    keywords TEXT[],  -- LLM 提取的关键词数组
+    keywords_text TEXT,  -- 关键词拼接文本，用于全文检索
+    search_vector tsvector,  -- PostgreSQL 全文检索向量
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 创建全文检索索引（GIN 索引，高性能）
+CREATE INDEX idx_chunks_search ON document_chunks USING GIN(search_vector);
+
+-- 创建关键词数组索引
+CREATE INDEX idx_chunks_keywords ON document_chunks USING GIN(keywords);
+
+-- 创建复合索引
+CREATE INDEX idx_chunks_kb ON document_chunks(knowledge_base_id);
+CREATE INDEX idx_documents_kb ON documents(knowledge_base_id);
+CREATE INDEX idx_documents_status ON documents(status);
+
+-- 创建触发器：自动更新 search_vector
+CREATE OR REPLACE FUNCTION update_search_vector()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search_vector :=
+        setweight(to_tsvector('simple', COALESCE(NEW.keywords_text, '')), 'A') ||
+        setweight(to_tsvector('simple', COALESCE(NEW.content, '')), 'B');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER chunks_search_vector_update
+    BEFORE INSERT OR UPDATE ON document_chunks
+    FOR EACH ROW EXECUTE FUNCTION update_search_vector();</code></pre>
+
+    <h4>4.2 检索查询示例</h4>
+    <pre><code>-- 全文检索（支持中文）
+SELECT
+    id,
+    content,
+    keywords,
+    ts_rank(search_vector, query) as rank
+FROM document_chunks,
+    plainto_tsquery('simple', '报销 流程') AS query
+WHERE knowledge_base_id = $1
+  AND search_vector @@ query
+ORDER BY rank DESC
+LIMIT 5;
+
+-- 关键词数组匹配（精确匹配）
+SELECT id, content, keywords
+FROM document_chunks
+WHERE knowledge_base_id = $1
+  AND keywords && ARRAY['报销', '费用', '发票']  -- 数组交集
+ORDER BY array_length(
+    ARRAY(SELECT unnest(keywords) INTERSECT SELECT unnest(ARRAY['报销', '费用', '发票'])),
+    1
+) DESC
+LIMIT 5;</code></pre>
+
+    <h3>五、API 设计</h3>
+
+    <h4>5.1 知识库管理 API</h4>
+    <table>
+        <thead><tr><th>接口</th><th>方法</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td>/api/knowledge-bases</td><td>POST</td><td>创建知识库</td></tr>
+            <tr><td>/api/knowledge-bases</td><td>GET</td><td>获取知识库列表</td></tr>
+            <tr><td>/api/knowledge-bases/:id</td><td>GET</td><td>获取知识库详情</td></tr>
+            <tr><td>/api/knowledge-bases/:id</td><td>PUT</td><td>更新知识库配置</td></tr>
+            <tr><td>/api/knowledge-bases/:id</td><td>DELETE</td><td>删除知识库</td></tr>
+        </tbody>
+    </table>
+
+    <h4>5.2 文档管理 API</h4>
+    <table>
+        <thead><tr><th>接口</th><th>方法</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td>/api/knowledge-bases/:kbId/documents</td><td>POST</td><td>上传文档（支持批量）</td></tr>
+            <tr><td>/api/knowledge-bases/:kbId/documents</td><td>GET</td><td>获取文档列表</td></tr>
+            <tr><td>/api/knowledge-bases/:kbId/documents/:docId</td><td>DELETE</td><td>删除文档</td></tr>
+            <tr><td>/api/knowledge-bases/:kbId/documents/:docId/reindex</td><td>POST</td><td>重新索引文档</td></tr>
+        </tbody>
+    </table>
+
+    <h4>5.3 检索问答 API</h4>
+    <table>
+        <thead><tr><th>接口</th><th>方法</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td>/api/knowledge-bases/:kbId/search</td><td>POST</td><td>全文检索（仅返回相关文档）</td></tr>
+            <tr><td>/api/knowledge-bases/:kbId/ask</td><td>POST</td><td>知识问答（检索 + 生成）</td></tr>
+            <tr><td>/api/knowledge-bases/:kbId/ask/stream</td><td>POST</td><td>流式知识问答</td></tr>
+        </tbody>
+    </table>
+
+    <h4>5.4 请求/响应示例</h4>
+    <pre><code>// POST /api/knowledge-bases/:kbId/ask
+// Request
+{
+    "question": "报销流程是什么？",
+    "top_k": 5,
+    "include_sources": true
+}
+
+// Response
+{
+    "answer": "根据公司财务制度，报销流程如下：\n1. 填写报销单...",
+    "sources": [
+        {
+            "document_id": "uuid",
+            "document_name": "财务管理制度.pdf",
+            "chunk_content": "...",
+            "keywords": ["报销", "费用", "发票", "审批"],
+            "relevance_score": 0.89
+        }
+    ],
+    "tokens_used": 1250
+}</code></pre>
+
+    <h3>六、NestJS 实现</h3>
+
+    <h4>6.1 模块结构</h4>
+    <pre><code>src/
+├── modules/
+│   └── rag/
+│       ├── rag.module.ts
+│       ├── controllers/
+│       │   ├── knowledge-base.controller.ts
+│       │   ├── document.controller.ts
+│       │   └── retrieval.controller.ts
+│       ├── services/
+│       │   ├── knowledge-base.service.ts
+│       │   ├── document.service.ts
+│       │   ├── keyword-extractor.service.ts  # LLM 关键词提取
+│       │   ├── retrieval.service.ts
+│       │   └── qa.service.ts
+│       ├── processors/
+│       │   └── document.processor.ts  # BullMQ 文档处理
+│       └── dto/
+│           ├── create-knowledge-base.dto.ts
+│           ├── upload-document.dto.ts
+│           └── ask-question.dto.ts</code></pre>
+
+    <h4>6.2 关键词提取服务</h4>
+    <pre><code>// keyword-extractor.service.ts
+import { Injectable } from '@nestjs/common';
+import { LlmService } from '@/modules/ai/llm.service';
+
+@Injectable()
+export class KeywordExtractorService {
+    constructor(private llm: LlmService) {}
+
+    /**
+     * 使用 LLM 从文本中提取关键词
+     */
+    async extractKeywords(text: string, maxKeywords: number = 15): Promise&lt;string[]&gt; {
+        const prompt = `请从以下文本中提取 ${maxKeywords} 个最重要的关键词/短语。
+要求：
+1. 提取能代表文本核心内容的词语
+2. 包含专业术语、人名、地名、产品名等专有名词
+3. 包含动作、流程相关的词语
+4. 输出格式：用逗号分隔的关键词列表，不要编号，不要解释
+
+文本内容：
+${text}
+
+关键词：`;
+
+        const response = await this.llm.chat({
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,  // 低温度保证稳定性
+            maxTokens: 200,
+        });
+
+        // 解析关键词
+        const keywords = response
+            .split(/[,，、\n]/)
+            .map(k => k.trim())
+            .filter(k => k.length > 0 && k.length < 20);
+
+        return keywords.slice(0, maxKeywords);
+    }
+
+    /**
+     * 批量提取关键词
+     */
+    async extractKeywordsBatch(texts: string[]): Promise&lt;string[][]&gt; {
+        // 并行处理，但限制并发数
+        const concurrency = 5;
+        const results: string[][] = [];
+
+        for (let i = 0; i < texts.length; i += concurrency) {
+            const batch = texts.slice(i, i + concurrency);
+            const batchResults = await Promise.all(
+                batch.map(text => this.extractKeywords(text))
+            );
+            results.push(...batchResults);
+        }
+
+        return results;
+    }
+}</code></pre>
+
+    <h4>6.3 检索服务</h4>
+    <pre><code>// retrieval.service.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@/prisma/prisma.service';
+
+interface SearchResult {
+    id: string;
+    content: string;
+    keywords: string[];
+    relevanceScore: number;
+    documentId: string;
+    documentName: string;
+}
+
+@Injectable()
+export class RetrievalService {
+    constructor(private prisma: PrismaService) {}
+
+    /**
+     * 全文检索
+     */
+    async search(
+        knowledgeBaseId: string,
+        query: string,
+        topK: number = 5,
+    ): Promise&lt;SearchResult[]&gt; {
+        // 构建搜索查询（支持中文分词）
+        const searchTerms = query
+            .split(/\s+/)
+            .filter(t => t.length > 0)
+            .join(' | ');  // OR 逻辑
+
+        const results = await this.prisma.$queryRaw&lt;any[]&gt;`
+            SELECT
+                dc.id,
+                dc.content,
+                dc.keywords,
+                d.id as "documentId",
+                d.filename as "documentName",
+                ts_rank(dc.search_vector, to_tsquery('simple', ${searchTerms})) as "relevanceScore"
+            FROM document_chunks dc
+            JOIN documents d ON dc.document_id = d.id
+            WHERE dc.knowledge_base_id = ${knowledgeBaseId}::uuid
+              AND dc.search_vector @@ to_tsquery('simple', ${searchTerms})
+            ORDER BY "relevanceScore" DESC
+            LIMIT ${topK}
+        `;
+
+        return results;
+    }
+
+    /**
+     * 混合检索：全文检索 + 关键词数组匹配
+     */
+    async hybridSearch(
+        knowledgeBaseId: string,
+        query: string,
+        topK: number = 5,
+    ): Promise&lt;SearchResult[]&gt; {
+        const queryKeywords = query.split(/\s+/).filter(t => t.length > 1);
+
+        const results = await this.prisma.$queryRaw&lt;any[]&gt;`
+            WITH full_text AS (
+                SELECT id, ts_rank(search_vector, plainto_tsquery('simple', ${query})) as score
+                FROM document_chunks
+                WHERE knowledge_base_id = ${knowledgeBaseId}::uuid
+                  AND search_vector @@ plainto_tsquery('simple', ${query})
+            ),
+            keyword_match AS (
+                SELECT id,
+                    array_length(ARRAY(
+                        SELECT unnest(keywords) INTERSECT SELECT unnest(${queryKeywords}::text[])
+                    ), 1)::float / ${queryKeywords.length}::float as score
+                FROM document_chunks
+                WHERE knowledge_base_id = ${knowledgeBaseId}::uuid
+                  AND keywords && ${queryKeywords}::text[]
+            ),
+            combined AS (
+                SELECT
+                    COALESCE(ft.id, km.id) as id,
+                    COALESCE(ft.score, 0) * 0.6 + COALESCE(km.score, 0) * 0.4 as combined_score
+                FROM full_text ft
+                FULL OUTER JOIN keyword_match km ON ft.id = km.id
+            )
+            SELECT
+                dc.id,
+                dc.content,
+                dc.keywords,
+                d.id as "documentId",
+                d.filename as "documentName",
+                c.combined_score as "relevanceScore"
+            FROM combined c
+            JOIN document_chunks dc ON c.id = dc.id
+            JOIN documents d ON dc.document_id = d.id
+            ORDER BY c.combined_score DESC
+            LIMIT ${topK}
+        `;
+
+        return results;
+    }
+}</code></pre>
+
+    <h4>6.4 问答服务</h4>
+    <pre><code>// qa.service.ts
+import { Injectable } from '@nestjs/common';
+import { RetrievalService } from './retrieval.service';
+import { LlmService } from '@/modules/ai/llm.service';
+
+@Injectable()
+export class QAService {
+    constructor(
+        private retrieval: RetrievalService,
+        private llm: LlmService,
+    ) {}
+
+    async ask(
+        knowledgeBaseId: string,
+        question: string,
+        options: { topK?: number; includeSources?: boolean } = {},
+    ) {
+        const { topK = 5, includeSources = true } = options;
+
+        // 1. 检索相关文档
+        const sources = await this.retrieval.hybridSearch(
+            knowledgeBaseId,
+            question,
+            topK,
+        );
+
+        if (sources.length === 0) {
+            return {
+                answer: '抱歉，知识库中没有找到相关内容，无法回答该问题。',
+                sources: [],
+            };
+        }
+
+        // 2. 构建 Prompt
+        const context = sources
+            .map((s, i) => `[${i + 1}] ${s.content}`)
+            .join('\n\n');
+
+        const systemPrompt = `你是一个企业知识助手。请根据以下参考资料回答用户问题。
+如果参考资料中没有相关信息，请如实说明。回答时请引用资料编号。
+
+参考资料：
+${context}`;
+
+        // 3. 调用 LLM 生成回答
+        const answer = await this.llm.chat({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: question },
+            ],
+        });
+
+        return {
+            answer,
+            sources: includeSources ? sources : undefined,
+        };
+    }
+}</code></pre>
+
+    <h4>6.5 文档处理器（BullMQ）</h4>
+    <pre><code>// document.processor.ts
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
+import { KeywordExtractorService } from '../services/keyword-extractor.service';
+import { PrismaService } from '@/prisma/prisma.service';
+
+@Processor('document-processing')
+export class DocumentProcessor extends WorkerHost {
+    constructor(
+        private prisma: PrismaService,
+        private keywordExtractor: KeywordExtractorService,
+    ) {
+        super();
+    }
+
+    async process(job: Job&lt;{ documentId: string; content: string; knowledgeBaseId: string }&gt;) {
+        const { documentId, content, knowledgeBaseId } = job.data;
+
+        try {
+            // 1. 更新状态为处理中
+            await this.prisma.document.update({
+                where: { id: documentId },
+                data: { status: 'processing' },
+            });
+
+            // 2. 文本分块
+            const chunks = this.splitText(content, 500, 50);
+
+            // 3. 批量提取关键词
+            const allKeywords = await this.keywordExtractor.extractKeywordsBatch(
+                chunks.map(c => c.text)
+            );
+
+            // 4. 构建入库数据
+            const chunkData = chunks.map((chunk, index) => ({
+                documentId,
+                knowledgeBaseId,
+                chunkIndex: index,
+                content: chunk.text,
+                contentLength: chunk.text.length,
+                keywords: allKeywords[index],
+                keywordsText: allKeywords[index].join(' '),  // 用于全文检索
+            }));
+
+            // 5. 批量入库
+            for (const chunk of chunkData) {
+                await this.prisma.$executeRaw`
+                    INSERT INTO document_chunks
+                    (document_id, knowledge_base_id, chunk_index, content, content_length, keywords, keywords_text)
+                    VALUES (
+                        ${chunk.documentId}::uuid,
+                        ${chunk.knowledgeBaseId}::uuid,
+                        ${chunk.chunkIndex},
+                        ${chunk.content},
+                        ${chunk.contentLength},
+                        ${chunk.keywords}::text[],
+                        ${chunk.keywordsText}
+                    )
+                `;
+
+                // 进度更新
+                await job.updateProgress((chunk.chunkIndex + 1) / chunkData.length * 100);
+            }
+
+            // 6. 更新文档状态
+            await this.prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    status: 'completed',
+                    chunkCount: chunkData.length,
+                },
+            });
+
+        } catch (error) {
+            await this.prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    status: 'failed',
+                    errorMessage: error.message,
+                },
+            });
+            throw error;
+        }
+    }
+
+    private splitText(text: string, chunkSize: number, overlap: number): { text: string }[] {
+        const chunks: { text: string }[] = [];
+        const separators = ['\n\n', '\n', '。', '！', '？', '；', ' '];
+
+        let start = 0;
+        while (start < text.length) {
+            let end = Math.min(start + chunkSize, text.length);
+
+            // 尝试在分隔符处断开
+            if (end < text.length) {
+                for (const sep of separators) {
+                    const lastSep = text.lastIndexOf(sep, end);
+                    if (lastSep > start + chunkSize / 2) {
+                        end = lastSep + sep.length;
+                        break;
+                    }
+                }
+            }
+
+            chunks.push({ text: text.slice(start, end).trim() });
+            start = end - overlap;
+        }
+
+        return chunks.filter(c => c.text.length > 0);
+    }
+}</code></pre>
+
+    <h3>七、与 IDP 集成</h3>
+
+    <div class="tip-box info">
+        <h5>IDP + RAG 联动</h5>
+        <p>对于 PDF、Word、扫描件等复杂文档，RAG 模块调用 IDP 服务进行解析：</p>
+    </div>
+
+    <pre><code>// document.service.ts
+async processDocument(documentId: string, filePath: string, fileType: string) {
+    let content: string;
+
+    // 根据文件类型选择解析方式
+    if (['pdf', 'docx', 'doc', 'xlsx', 'xls'].includes(fileType)) {
+        // 调用 IDP 服务解析
+        const idpResult = await this.idpService.parse(filePath, fileType);
+        content = idpResult.text;
+    } else if (['txt', 'md'].includes(fileType)) {
+        // 直接读取文本
+        content = await fs.readFile(filePath, 'utf-8');
+    } else {
+        throw new Error(`Unsupported file type: ${fileType}`);
+    }
+
+    // 加入处理队列
+    await this.documentQueue.add('process', {
+        documentId,
+        content,
+        knowledgeBaseId: document.knowledgeBaseId,
+    });
+}</code></pre>
+
+    <h3>八、环境配置</h3>
+
+    <h4>8.1 依赖安装</h4>
+    <pre><code># NestJS 相关
+npm install @nestjs/bullmq bullmq
+
+# 无需额外安装向量数据库相关依赖</code></pre>
+
+    <h4>8.2 环境变量</h4>
+    <pre><code># .env
+# RAG 配置
+RAG_CHUNK_SIZE=500
+RAG_CHUNK_OVERLAP=50
+RAG_DEFAULT_TOP_K=5
+RAG_MAX_KEYWORDS=15
+
+# DeepSeek API（复用现有配置）
+# 开发测试环境
+DEEPSEEK_API_URL=https://api.deepseek.com/v1
+DEEPSEEK_API_KEY=your_api_key
+
+# 生产环境（切换为公司内部 API）
+# DEEPSEEK_API_URL=http://internal-deepseek-api.company.com/v1
+# DEEPSEEK_API_KEY=internal_api_key</code></pre>
+
+    <h3>九、性能优化</h3>
+
+    <table>
+        <thead><tr><th>优化项</th><th>措施</th><th>效果</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>GIN 索引</strong></td>
+                <td>全文检索使用 GIN 索引</td>
+                <td>检索速度提升 10x+</td>
+            </tr>
+            <tr>
+                <td><strong>并行关键词提取</strong></td>
+                <td>5 并发调用 LLM</td>
+                <td>入库速度提升 5x</td>
+            </tr>
+            <tr>
+                <td><strong>检索缓存</strong></td>
+                <td>Redis 缓存高频查询结果</td>
+                <td>响应时间降低 80%</td>
+            </tr>
+            <tr>
+                <td><strong>异步处理</strong></td>
+                <td>BullMQ 队列处理文档</td>
+                <td>上传即返回，后台处理</td>
+            </tr>
+            <tr>
+                <td><strong>分区表</strong></td>
+                <td>按知识库 ID 分区</td>
+                <td>大规模数据查询优化</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>十、开发计划</h3>
+
+    <table>
+        <thead><tr><th>阶段</th><th>内容</th><th>交付物</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>阶段一</strong></td>
+                <td>基础 RAG 能力</td>
+                <td>知识库 CRUD、文档上传、LLM 关键词提取、基础问答</td>
+            </tr>
+            <tr>
+                <td><strong>阶段二</strong></td>
+                <td>检索优化</td>
+                <td>混合检索、多知识库、缓存机制</td>
+            </tr>
+            <tr>
+                <td><strong>阶段三</strong></td>
+                <td>IDP 集成</td>
+                <td>PDF/Word 解析、表格提取</td>
+            </tr>
+            <tr>
+                <td><strong>阶段四</strong></td>
+                <td>高级功能</td>
+                <td>权限管理、审计日志、多轮对话记忆</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>十一、总结</h3>
+
+    <div class="arch-diagram">
+        <div class="arch-title">RAG 知识库模块画像</div>
+        <table>
+            <tbody>
+                <tr><td><strong>技术方案</strong></td><td>LLM 关键词提取 + PostgreSQL 全文检索（参考 Dify 经济型模式）</td></tr>
+                <tr><td><strong>所需 API</strong></td><td>仅 DeepSeek Chat API（开发用官方 API，生产用公司 API）</td></tr>
+                <tr><td><strong>核心能力</strong></td><td>文档入库、智能检索、知识问答、多知识库</td></tr>
+                <tr><td><strong>集成方式</strong></td><td>NestJS 原生模块，复用现有 PostgreSQL</td></tr>
+                <tr><td><strong>IDP 联动</strong></td><td>PDF/Word 文档调用 IDP 服务解析</td></tr>
+                <tr><td><strong>额外依赖</strong></td><td>无（不需要 Embedding 模型、不需要向量数据库）</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

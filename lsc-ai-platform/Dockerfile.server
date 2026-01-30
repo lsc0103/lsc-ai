@@ -1,0 +1,74 @@
+# LSC-AI Platform - Backend Dockerfile
+# Build from parent directory: docker build -f lsc-ai-platform/Dockerfile.server -t lscai/server:latest .
+
+# ============== Build Stage ==============
+FROM node:20-alpine AS builder
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Copy localAI core package first
+COPY localAI/packages/core ./localAI/packages/core/
+
+# Copy lsc-ai-platform files
+COPY lsc-ai-platform/package.json lsc-ai-platform/pnpm-workspace.yaml ./lsc-ai-platform/
+COPY lsc-ai-platform/pnpm-lock.yaml* ./lsc-ai-platform/
+COPY lsc-ai-platform/tsconfig.base.json ./lsc-ai-platform/
+COPY lsc-ai-platform/prisma ./lsc-ai-platform/prisma/
+COPY lsc-ai-platform/packages/server ./lsc-ai-platform/packages/server/
+
+WORKDIR /app/lsc-ai-platform
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# Generate Prisma client
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
+
+# Build the server
+RUN pnpm --filter @lsc-ai/server run build
+
+# ============== Production Stage ==============
+FROM node:20-alpine AS production
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+# Copy entire workspace structure (preserves pnpm symlinks)
+WORKDIR /app/lsc-ai-platform
+
+# Copy prisma
+COPY --from=builder /app/lsc-ai-platform/prisma ./prisma
+
+# Copy built server
+COPY --from=builder /app/lsc-ai-platform/packages/server/dist ./packages/server/dist
+COPY --from=builder /app/lsc-ai-platform/packages/server/package.json ./packages/server/
+
+# Copy node_modules (entire workspace)
+COPY --from=builder /app/lsc-ai-platform/node_modules ./node_modules
+COPY --from=builder /app/lsc-ai-platform/packages/server/node_modules ./packages/server/node_modules
+
+# Set ownership
+RUN chown -R nestjs:nodejs /app
+USER nestjs
+
+WORKDIR /app/lsc-ai-platform/packages/server
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+CMD ["node", "dist/main.js"]

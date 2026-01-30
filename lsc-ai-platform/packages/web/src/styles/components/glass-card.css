@@ -1,0 +1,177 @@
+/**
+ * LSC-AI 设计系统 - 玻璃卡片
+ *
+ * 基于 glass-panel 的语义化卡片组件
+ */
+
+/* ===== 基础卡片 ===== */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg-medium);
+  backdrop-filter: blur(var(--glass-blur-lg)) var(--glass-saturate);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) var(--glass-saturate);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  overflow: hidden;
+  box-shadow: var(--glass-shadow-md);
+  color: var(--text-primary);
+}
+
+/* 顶部高光 */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: var(--glass-rim-gradient);
+  -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0) 20px);
+  mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0) 20px);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 渐变边框 */
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--glass-border-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ===== 卡片头部 ===== */
+.glass-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.glass-card-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.glass-card-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.glass-card-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ===== 卡片内容 ===== */
+.glass-card-body {
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* ===== 卡片底部 ===== */
+.glass-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+}
+
+/* ===== 尺寸变体 ===== */
+.glass-card-sm {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+}
+
+.glass-card-lg {
+  padding: var(--space-8);
+  border-radius: var(--radius-2xl);
+}
+
+/* ===== 可交互卡片 ===== */
+.glass-card-interactive {
+  cursor: pointer;
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal),
+    background-color var(--transition-fast);
+}
+
+.glass-card-interactive:hover {
+  transform: translateY(-2px);
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.glass-card-interactive:active {
+  transform: scale(0.99);
+  transition-duration: var(--duration-instant);
+}
+
+/* ===== 选中状态 ===== */
+.glass-card-selected {
+  border: 2px solid var(--accent-primary);
+}
+
+.glass-card-selected::after {
+  padding: 0;
+}
+
+/* ===== 无内边距卡片 ===== */
+.glass-card-flush {
+  padding: 0;
+}
+
+.glass-card-flush .glass-card-header {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  margin-bottom: 0;
+}
+
+.glass-card-flush .glass-card-body {
+  padding: var(--space-4) var(--space-6);
+}
+
+.glass-card-flush .glass-card-footer {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  margin-top: 0;
+}
+
+/* ===== 状态变体 ===== */
+.glass-card-success {
+  border-left: 3px solid var(--accent-success);
+}
+
+.glass-card-warning {
+  border-left: 3px solid var(--accent-warning);
+}
+
+.glass-card-error {
+  border-left: 3px solid var(--accent-error);
+}
+
+.glass-card-info {
+  border-left: 3px solid var(--accent-info);
+}

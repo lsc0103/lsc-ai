@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSC-AI 平台架构文档</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 侧边栏导航 -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>LSC-AI 架构文档</h1>
+            <div class="version">版本 2.0 (Mastra 升级) | 2026-01-28</div>
+        </div>
+        <ul class="nav-list">
+            <li><a class="nav-item" href="sections/00-Mastra框架升级方案.html" target="content-frame" style="background: #fffbe6; font-weight: 600;">
+                <span class="nav-num">00</span>Mastra 框架升级方案
+            </a></li>
+            <li><a class="nav-item active" href="sections/01-架构总览.html" target="content-frame">
+                <span class="nav-num">01</span>架构设计总览
+            </a></li>
+            <li><a class="nav-item" href="sections/02-功能清单.html" target="content-frame">
+                <span class="nav-num">02</span>功能清单
+            </a></li>
+            <li><a class="nav-item" href="sections/03-本地开发.html" target="content-frame">
+                <span class="nav-num">03</span>本地开发方案
+            </a></li>
+            <li><a class="nav-item" href="sections/04-数据存储.html" target="content-frame">
+                <span class="nav-num">04</span>数据存储设计
+            </a></li>
+            <li><a class="nav-item" href="sections/05-业务对接.html" target="content-frame">
+                <span class="nav-num">05</span>业务系统对接
+            </a></li>
+            <li><a class="nav-item" href="sections/06-RPA任务.html" target="content-frame">
+                <span class="nav-num">06</span>RPA与定时任务
+            </a></li>
+            <li><a class="nav-item" href="sections/07-安全权限.html" target="content-frame">
+                <span class="nav-num">07</span>安全与权限
+            </a></li>
+            <li><a class="nav-item" href="sections/08-部署方案.html" target="content-frame">
+                <span class="nav-num">08</span>部署方案
+            </a></li>
+            <li><a class="nav-item" href="sections/09-前端组件.html" target="content-frame">
+                <span class="nav-num">09</span>前端组件库
+            </a></li>
+            <li><a class="nav-item" href="sections/10-IDP智能文档.html" target="content-frame">
+                <span class="nav-num">10</span>IDP智能文档
+            </a></li>
+            <li><a class="nav-item" href="sections/11-RAG知识库.html" target="content-frame">
+                <span class="nav-num">11</span>RAG知识库
+            </a></li>
+            <li><a class="nav-item" href="sections/12-Workbench工作台.html" target="content-frame">
+                <span class="nav-num">12</span>Workbench工作台
+            </a></li>
+            <li><a class="nav-item" href="sections/13-前端UI设计规范.html" target="content-frame">
+                <span class="nav-num">13</span>前端UI设计规范
+            </a></li>
+            <li><a class="nav-item" href="sections/14-开发总进度.html" target="content-frame">
+                <span class="nav-num">14</span>开发总进度
+            </a></li>
+            <li><a class="nav-item" href="sections/15-Mastra迁移开发计划.html" target="content-frame" style="background: #fffbe6; font-weight: 600;">
+                <span class="nav-num">15</span>Mastra 迁移开发计划
+            </a></li>
+        </ul>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-frame">
+        <iframe name="content-frame" src="sections/01-架构总览.html"></iframe>
+    </main>
+
+    <script>
+        // 导航高亮
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+packages:
+  - 'packages/*'
+  # 引用 localAI 中的内核包
+  - '../localAI/packages/core'

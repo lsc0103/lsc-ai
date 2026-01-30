@@ -1,0 +1,869 @@
+/* 设计令牌 */
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/shadows.css';
+@import './tokens/motion.css';
+
+/* 主题背景 */
+@import './themes/default.css';
+@import './themes/spring-festival.css';
+@import './themes/mid-autumn.css';
+@import './themes/qingming.css';
+
+/* 玻璃组件 */
+@import './components/glass-panel.css';
+@import './components/glass-button.css';
+@import './components/glass-input.css';
+@import './components/glass-card.css';
+
+/* 工具类 */
+@import './utilities/animations.css';
+@import './utilities/helpers.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   基础样式重置
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: #0f172a;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 默认主题标记 */
+body {
+  --current-theme: default;
+}
+
+/* 原生按钮重置 - 移除默认白色背景 */
+button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+/* 原生输入框重置 */
+input,
+textarea {
+  background: transparent;
+  border: none;
+  outline: none;
+  font: inherit;
+  color: inherit;
+}
+
+/* ============================================
+   滚动条样式（深色主题适配）
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--glass-bg-medium);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--glass-bg-solid);
+}
+
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-bg-medium) transparent;
+}
+
+/* ============================================
+   选中文字样式
+   ============================================ */
+::selection {
+  background-color: rgba(0, 113, 227, 0.3);
+  color: inherit;
+}
+
+/* ============================================
+   聚焦样式
+   ============================================ */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: var(--glass-glow-focus);
+}
+
+/* ============================================
+   聊天界面特定样式
+   ============================================ */
+
+/* 消息气泡 - 玻璃化 */
+.message-bubble {
+  position: relative;
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-4);
+  max-width: 85%;
+  animation: fadeSlideIn var(--duration-normal) var(--ease-spring) forwards;
+  overflow: hidden;
+}
+
+.message-bubble.user {
+  background: var(--accent-primary);
+  color: #fff;
+  margin-left: auto;
+  box-shadow:
+    0 4px 16px rgba(0, 113, 227, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 用户消息顶部高光 */
+.message-bubble.user::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  -webkit-mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 4px);
+  mask: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 4px);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.message-bubble.assistant {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  color: var(--text-primary);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* 助手消息顶部细线高光 */
+.message-bubble.assistant::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.25) 70%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 打字指示器 */
+.typing-indicator {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-tertiary);
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.16s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.32s; }
+
+/* ============================================
+   代码块样式
+   ============================================ */
+.code-block {
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.code-block pre {
+  margin: 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+}
+
+.code-block code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+/* ============================================
+   隐藏滚动条（保持滚动功能）
+   ============================================ */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   Ant Design 覆盖样式（玻璃化适配）
+   ============================================ */
+
+/* 按钮玻璃化 */
+.ant-btn {
+  font-weight: var(--font-medium);
+  transition: var(--transition-all);
+  border: none;
+}
+
+.ant-btn-default {
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow-button);
+}
+
+.ant-btn-default:not(:disabled):hover {
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--glass-shadow-button-hover);
+}
+
+.ant-btn-primary {
+  background: var(--accent-primary);
+  box-shadow:
+    0 4px 16px rgba(0, 113, 227, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ant-btn-primary:not(:disabled):hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(0, 113, 227, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* 输入框玻璃化 */
+.ant-input,
+.ant-input-affix-wrapper {
+  background: var(--glass-bg-light);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transition: var(--transition-all);
+}
+
+.ant-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  background: var(--glass-bg-medium);
+  border-color: var(--accent-primary);
+  box-shadow: var(--glass-glow-focus);
+}
+
+.ant-input:hover:not(:focus) {
+  border-color: rgba(var(--glass-highlight-color), 0.4);
+  background: var(--glass-bg-medium);
+}
+
+/* Select 玻璃化 */
+.ant-select-selector {
+  background: var(--glass-bg-light) !important;
+  border-color: var(--border-default) !important;
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: var(--accent-primary) !important;
+  box-shadow: var(--glass-glow-focus) !important;
+}
+
+.ant-select-dropdown {
+  background: rgba(30, 41, 59, 0.88) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: none !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+}
+
+.ant-select-item {
+  color: var(--text-primary);
+}
+
+.ant-select-item-option-active {
+  background: var(--glass-bg-light);
+}
+
+.ant-select-item-option-selected {
+  background: var(--glass-bg-medium);
+}
+
+/* 卡片玻璃化 */
+.ant-card {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(var(--glass-blur-md)) var(--glass-saturate);
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) var(--glass-saturate);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow-sm);
+  transition: var(--transition-shadow);
+}
+
+.ant-card-head {
+  border-bottom-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.ant-card-head-title {
+  color: var(--text-primary);
+}
+
+/* 模态框玻璃化 - iOS 液态玻璃风格 */
+.ant-modal-content {
+  background: rgba(30, 41, 59, 0.88) !important;
+  backdrop-filter: blur(60px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(180%) !important;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+  border-radius: 20px !important;
+}
+
+.ant-modal-header {
+  background: transparent;
+  border-bottom-color: var(--border-light);
+}
+
+.ant-modal-title {
+  color: var(--text-primary);
+}
+
+.ant-modal-close {
+  color: var(--text-secondary);
+}
+
+.ant-modal-close:hover {
+  color: var(--text-primary);
+}
+
+/* 下拉菜单玻璃化 - iOS 液态玻璃风格 */
+.ant-dropdown-menu {
+  background: rgba(30, 41, 59, 0.88) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: none !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.ant-dropdown-menu-item {
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-dropdown-menu-item-divider {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 消息提示玻璃化 - iOS 液态玻璃风格 */
+.ant-message-notice-content {
+  background: rgba(30, 41, 59, 0.85) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  color: var(--text-primary) !important;
+  border-radius: 12px !important;
+}
+
+.ant-message-notice-content .ant-message-custom-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ant-message-notice-content .anticon {
+  font-size: 16px;
+}
+
+.ant-message-success .anticon {
+  color: var(--accent-success) !important;
+}
+
+.ant-message-error .anticon {
+  color: var(--accent-error) !important;
+}
+
+.ant-message-warning .anticon {
+  color: var(--accent-warning) !important;
+}
+
+.ant-message-info .anticon {
+  color: var(--accent-info) !important;
+}
+
+/* Tooltip 玻璃化 - iOS 风格 */
+.ant-tooltip-inner {
+  background: rgba(30, 41, 59, 0.9) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+.ant-tooltip-arrow::before {
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+/* 表格玻璃化 */
+.ant-table {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.ant-table-thead > tr > th {
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+  border-bottom-color: var(--border-light);
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom-color: var(--border-light);
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--glass-bg-subtle);
+}
+
+/* 菜单玻璃化 */
+.ant-menu {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.ant-menu-item {
+  color: var(--text-secondary);
+}
+
+.ant-menu-item:hover {
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+}
+
+.ant-menu-item-selected {
+  background: var(--glass-bg-medium) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 标签玻璃化 */
+.ant-tag {
+  background: var(--glass-bg-light);
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+
+/* 进度条 */
+.ant-progress-text {
+  color: var(--text-secondary);
+}
+
+/* 分割线 */
+.ant-divider {
+  border-color: var(--border-light);
+}
+
+.ant-divider-inner-text {
+  color: var(--text-tertiary);
+}
+
+/* 表单 */
+.ant-form-item-label > label {
+  color: var(--text-primary);
+}
+
+.ant-form-item-explain-error {
+  color: var(--accent-error);
+}
+
+/* 输入框 - 更强覆盖 */
+.ant-input,
+.ant-input-password,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-input-number-input {
+  background: var(--glass-bg-light) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+
+.ant-input-password .ant-input {
+  background: transparent !important;
+}
+
+.ant-input-affix-wrapper > input.ant-input {
+  background: transparent !important;
+}
+
+/* Spin 加载器 */
+.ant-spin-text {
+  color: var(--text-secondary);
+}
+
+/* 通知 - iOS 液态玻璃风格 */
+.ant-notification-notice {
+  background: rgba(30, 41, 59, 0.85) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  border-radius: 16px !important;
+}
+
+.ant-notification-notice-message {
+  color: var(--text-primary) !important;
+}
+
+.ant-notification-notice-description {
+  color: var(--text-secondary) !important;
+}
+
+.ant-notification-notice-close {
+  color: var(--text-tertiary) !important;
+}
+
+.ant-notification-notice-close:hover {
+  color: var(--text-primary) !important;
+}
+
+/* Alert */
+.ant-alert {
+  background: var(--glass-bg-light);
+  border-color: var(--border-light);
+}
+
+.ant-alert-message {
+  color: var(--text-primary);
+}
+
+.ant-alert-description {
+  color: var(--text-secondary);
+}
+
+/* Popover - iOS 液态玻璃风格 */
+.ant-popover-inner {
+  background: rgba(30, 41, 59, 0.88) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+}
+
+.ant-popover-arrow::before {
+  background: rgba(30, 41, 59, 0.88) !important;
+}
+
+.ant-popover-title {
+  color: var(--text-primary) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-popover-inner-content {
+  color: var(--text-secondary) !important;
+}
+
+/* Badge */
+.ant-badge-count {
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.8);
+}
+
+/* Avatar 组 */
+.ant-avatar {
+  background: var(--glass-bg-medium);
+  color: var(--text-primary);
+}
+
+/* Checkbox */
+.ant-checkbox-wrapper {
+  color: var(--text-primary);
+}
+
+.ant-checkbox-inner {
+  background: var(--glass-bg-light);
+  border-color: var(--border-default);
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+/* Radio */
+.ant-radio-wrapper {
+  color: var(--text-primary);
+}
+
+.ant-radio-wrapper span:not(.ant-radio) {
+  color: var(--text-primary);
+}
+
+.ant-radio-inner {
+  background: var(--glass-bg-light) !important;
+  border-color: var(--border-default) !important;
+}
+
+.ant-radio-checked .ant-radio-inner {
+  border-color: var(--accent-primary) !important;
+  background: var(--glass-bg-light) !important;
+}
+
+.ant-radio-checked .ant-radio-inner::after {
+  background: var(--accent-primary) !important;
+}
+
+.ant-radio-wrapper:hover .ant-radio-inner {
+  border-color: var(--accent-primary) !important;
+}
+
+/* Switch */
+.ant-switch {
+  background: var(--glass-bg-solid);
+}
+
+.ant-switch-checked {
+  background: var(--accent-primary);
+}
+
+/* Slider */
+.ant-slider-track {
+  background: var(--accent-primary);
+}
+
+.ant-slider-handle {
+  background: #fff;
+  border-color: var(--accent-primary);
+}
+
+.ant-slider-rail {
+  background: var(--glass-bg-solid);
+}
+
+/* Tabs */
+.ant-tabs {
+  color: var(--text-primary);
+}
+
+.ant-tabs-tab {
+  color: var(--text-secondary);
+}
+
+.ant-tabs-tab:hover {
+  color: var(--text-primary);
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--accent-primary);
+}
+
+.ant-tabs-ink-bar {
+  background: var(--accent-primary);
+}
+
+/* List 列表玻璃化 */
+.ant-list {
+  color: var(--text-primary);
+}
+
+.ant-list-bordered {
+  border-color: var(--border-light) !important;
+  background: transparent !important;
+}
+
+.ant-list-item {
+  border-color: var(--border-light) !important;
+  color: var(--text-primary);
+}
+
+.ant-list-item:hover {
+  background: var(--glass-bg-hover);
+}
+
+.ant-list-item-meta-title {
+  color: var(--text-primary) !important;
+}
+
+.ant-list-item-meta-description {
+  color: var(--text-secondary) !important;
+}
+
+/* Alert 增强 - 各类型背景 */
+.ant-alert-warning {
+  background: var(--status-warning-bg) !important;
+  border-color: var(--status-warning-border) !important;
+}
+
+.ant-alert-warning .ant-alert-message,
+.ant-alert-warning .ant-alert-description {
+  color: var(--text-primary) !important;
+}
+
+.ant-alert-info {
+  background: var(--status-info-bg) !important;
+  border-color: var(--status-info-border) !important;
+}
+
+.ant-alert-info .ant-alert-message,
+.ant-alert-info .ant-alert-description {
+  color: var(--text-primary) !important;
+}
+
+.ant-alert-success {
+  background: var(--status-success-bg) !important;
+  border-color: var(--status-success-border) !important;
+}
+
+.ant-alert-error {
+  background: var(--status-error-bg) !important;
+  border-color: var(--status-error-border) !important;
+}
+
+/* Popconfirm 确认框玻璃化 */
+.ant-popconfirm .ant-popover-inner {
+  background: rgba(30, 41, 59, 0.92) !important;
+}
+
+.ant-popconfirm-message-title {
+  color: var(--text-primary) !important;
+}
+
+.ant-popconfirm-description {
+  color: var(--text-secondary) !important;
+}
+
+/* Typography 文字颜色 */
+.ant-typography {
+  color: var(--text-primary);
+}
+
+.ant-typography.ant-typography-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.ant-typography strong {
+  color: var(--text-primary);
+}
+
+/* Breadcrumb */
+.ant-breadcrumb {
+  color: var(--text-tertiary);
+}
+
+.ant-breadcrumb a {
+  color: var(--text-secondary);
+}
+
+.ant-breadcrumb a:hover {
+  color: var(--text-primary);
+}
+
+/* Pagination */
+.ant-pagination-item {
+  background: var(--glass-bg-light);
+  border-color: var(--border-default);
+}
+
+.ant-pagination-item a {
+  color: var(--text-primary);
+}
+
+.ant-pagination-item-active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.ant-pagination-item-active a {
+  color: #fff;
+}
+
+/* Empty */
+.ant-empty-description {
+  color: var(--text-tertiary);
+}
+
+/* Skeleton */
+.ant-skeleton-content .ant-skeleton-title,
+.ant-skeleton-content .ant-skeleton-paragraph > li {
+  background: var(--glass-bg-medium);
+}

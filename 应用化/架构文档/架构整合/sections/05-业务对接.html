@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 - 业务系统对接方案</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body class="section-page">
+<div class="section-page">
+    <div class="section-header">
+        <h2>05 - 业务系统对接方案</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-19</div>
+    </div>
+
+    <h3>一、对接架构总览</h3>
+
+    <p>LSC-AI 作为企业级 AI 平台，需要与多个业务系统进行数据交互和流程集成。本文档详细说明各业务系统的对接方案。</p>
+
+    <div class="arch-diagram">
+        <div class="arch-title">LSC-AI 业务系统对接架构</div>
+
+        <!-- LSC-AI 核心 -->
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">LSC-AI 平台</span>
+            <div class="layer-content">
+                <div class="arch-box primary" style="min-width: 300px;">
+                    <div class="arch-box-title">LSC-AI Core</div>
+                    <div class="arch-box-desc">Agent 系统 | 对话引擎 | 任务调度</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ API / 数据库 / RPA / Sentinel ↓</div>
+
+        <!-- 集成适配层 -->
+        <div class="arch-layer gateway-layer">
+            <span class="layer-title" style="color: #faad14;">集成适配层</span>
+            <div class="layer-content">
+                <div class="arch-box warning"><div class="arch-box-title">API 网关</div><div class="arch-box-desc">REST/HTTP 调用</div></div>
+                <div class="arch-box warning"><div class="arch-box-title">数据库连接器</div><div class="arch-box-desc">直连查询</div></div>
+                <div class="arch-box warning"><div class="arch-box-title">RPA 引擎</div><div class="arch-box-desc">UI 自动化</div></div>
+                <div class="arch-box warning"><div class="arch-box-title">Sentinel Agent</div><div class="arch-box-desc">服务器监管</div></div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <!-- 业务系统层 -->
+        <div class="arch-layer external-layer">
+            <span class="layer-title" style="color: #eb2f96;">业务系统</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">MES 系统</div><div class="arch-box-desc">生产执行</div></div>
+                <div class="arch-box"><div class="arch-box-title">OA 系统</div><div class="arch-box-desc">办公自动化</div></div>
+                <div class="arch-box"><div class="arch-box-title">WMS 系统</div><div class="arch-box-desc">仓储管理</div></div>
+                <div class="arch-box"><div class="arch-box-title">QMS 系统</div><div class="arch-box-desc">质量管理</div></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>二、对接方式分类</h3>
+
+    <h4>2.1 对接方式对比</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>对接方式</th>
+                <th>适用场景</th>
+                <th>优点</th>
+                <th>缺点</th>
+                <th>推荐度</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>API 对接</strong></td>
+                <td>目标系统提供标准 REST/SOAP API</td>
+                <td>标准化、实时性好、可靠性高</td>
+                <td>需要目标系统支持</td>
+                <td><span class="priority p0">推荐</span></td>
+            </tr>
+            <tr>
+                <td><strong>数据库直连</strong></td>
+                <td>需要大批量数据查询/同步</td>
+                <td>性能高、灵活性强</td>
+                <td>耦合度高、需要数据库权限</td>
+                <td><span class="priority p1">次选</span></td>
+            </tr>
+            <tr>
+                <td><strong>RPA 自动化</strong></td>
+                <td>目标系统无 API、仅有 Web 界面</td>
+                <td>无需改造目标系统</td>
+                <td>稳定性较低、维护成本高</td>
+                <td><span class="priority p2">备选</span></td>
+            </tr>
+            <tr>
+                <td><strong>Sentinel Agent</strong></td>
+                <td>服务器监控、进程管理、日志采集</td>
+                <td>轻量级、实时监控</td>
+                <td>需要在目标服务器部署 Agent</td>
+                <td><span class="priority p0">监控专用</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>2.2 推荐对接策略决策树</h4>
+    <div class="mermaid">
+flowchart TD
+    A[开始评估对接方式] --> B{目标系统是否提供 API?}
+    B -->|是| C{API 是否满足需求?}
+    B -->|否| D{是否有数据库访问权限?}
+
+    C -->|是| E[采用 API 对接]
+    C -->|部分满足| F[API + 数据库混合]
+
+    D -->|是| G{数据需求类型?}
+    D -->|否| H[采用 RPA 对接]
+
+    G -->|只读查询| I[数据库直连查询]
+    G -->|需要写入| J[RPA 或申请 API]
+
+    E --> K[配置 API 适配器]
+    F --> K
+    I --> L[配置数据库连接器]
+    H --> M[开发 RPA 流程]
+    J --> M
+
+    style E fill:#f6ffed,stroke:#52c41a
+    style F fill:#e6f7ff,stroke:#1890ff
+    style I fill:#f9f0ff,stroke:#722ed1
+    style H fill:#fffbe6,stroke:#faad14
+    </div>
+
+    <h3>三、各业务系统对接方案</h3>
+
+    <h4>3.1 MES 系统对接</h4>
+    <p>MES (Manufacturing Execution System) 是生产执行系统，主要用于生产计划、工单管理、产量统计等。</p>
+
+    <h5>方案 A：API 对接（推荐）</h5>
+    <div class="tip-box info">
+        <strong>前置条件：</strong>MES 系统提供 REST API 接口
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>接口名称</th><th>接口路径</th><th>方法</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>获取工单列表</td><td>/api/mes/workorders</td><td>GET</td><td>查询生产工单</td></tr>
+            <tr><td>获取工单详情</td><td>/api/mes/workorders/{id}</td><td>GET</td><td>查询工单明细</td></tr>
+            <tr><td>查询产量数据</td><td>/api/mes/production/output</td><td>GET</td><td>产量统计报表</td></tr>
+            <tr><td>查询设备状态</td><td>/api/mes/equipment/status</td><td>GET</td><td>设备运行状态</td></tr>
+            <tr><td>查询物料消耗</td><td>/api/mes/materials/consumption</td><td>GET</td><td>物料使用情况</td></tr>
+        </tbody>
+    </table>
+
+    <h5>方案 B：数据库直连（备选）</h5>
+    <div class="tip-box warning">
+        <strong>适用场景：</strong>MES 无 API 或 API 不满足需求时，通过只读账号直连数据库查询
+    </div>
+
+    <pre><code>-- MES 数据库查询示例
+-- 查询今日工单完成情况
+SELECT
+    wo.order_no,
+    wo.product_code,
+    wo.plan_qty,
+    wo.complete_qty,
+    wo.status,
+    wo.start_time,
+    wo.end_time
+FROM work_orders wo
+WHERE DATE(wo.create_time) = CURDATE()
+ORDER BY wo.create_time DESC;
+
+-- 查询设备稼动率
+SELECT
+    e.equipment_code,
+    e.equipment_name,
+    ROUND(SUM(r.run_time) / SUM(r.total_time) * 100, 2) as utilization_rate
+FROM equipment e
+LEFT JOIN equipment_runtime r ON e.id = r.equipment_id
+WHERE r.record_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+GROUP BY e.id;</code></pre>
+
+    <h4>3.2 OA 系统对接</h4>
+    <p>OA (Office Automation) 系统主要用于流程审批、公文管理、通知公告等。</p>
+
+    <h5>API + RPA 混合对接方案</h5>
+    <table>
+        <thead>
+            <tr><th>功能</th><th>对接方式</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>待办事项查询</td><td>API</td><td>调用 OA 待办接口获取列表</td></tr>
+            <tr><td>审批流程查询</td><td>API</td><td>调用流程状态查询接口</td></tr>
+            <tr><td>发起审批流程</td><td>RPA</td><td>OA 无创建 API，通过 RPA 模拟操作</td></tr>
+            <tr><td>公文签收</td><td>RPA</td><td>模拟用户点击签收操作</td></tr>
+            <tr><td>通知公告查询</td><td>API</td><td>调用公告列表接口</td></tr>
+        </tbody>
+    </table>
+
+    <h5>RPA 流程示例：发起请假审批</h5>
+    <div class="mermaid">
+sequenceDiagram
+    participant User as 用户
+    participant LSC as LSC-AI
+    participant RPA as RPA 引擎
+    participant OA as OA 系统
+
+    User->>LSC: "帮我提交请假申请，12月25日到27日，事假"
+    LSC->>LSC: 解析请假信息
+    LSC->>RPA: 触发 RPA 任务
+    RPA->>OA: 打开 OA 登录页
+    RPA->>OA: 输入用户凭证登录
+    RPA->>OA: 导航到请假申请页面
+    RPA->>OA: 填写请假表单
+    RPA->>OA: 点击提交按钮
+    OA-->>RPA: 返回提交结果
+    RPA-->>LSC: 返回执行结果
+    LSC-->>User: "已为您提交请假申请，流程编号：OA2024122501"
+    </div>
+
+    <h4>3.3 WMS 系统对接</h4>
+    <p>WMS (Warehouse Management System) 是仓储管理系统，用于库存管理、出入库操作等。</p>
+
+    <h5>API + 数据库混合对接</h5>
+    <table>
+        <thead>
+            <tr><th>功能</th><th>对接方式</th><th>接口/表</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>库存查询</td><td>API</td><td>GET /api/wms/inventory</td><td>实时库存数据</td></tr>
+            <tr><td>入库单查询</td><td>API</td><td>GET /api/wms/inbound</td><td>入库记录</td></tr>
+            <tr><td>出库单查询</td><td>API</td><td>GET /api/wms/outbound</td><td>出库记录</td></tr>
+            <tr><td>库存报表</td><td>数据库</td><td>inventory_report 视图</td><td>复杂统计报表</td></tr>
+            <tr><td>库龄分析</td><td>数据库</td><td>stock_age_analysis</td><td>库龄统计分析</td></tr>
+        </tbody>
+    </table>
+
+    <h4>3.4 QMS 系统对接</h4>
+    <p>QMS (Quality Management System) 是质量管理系统，用于质检管理、不良品追踪等。</p>
+
+    <h5>API 对接方案</h5>
+    <table>
+        <thead>
+            <tr><th>接口名称</th><th>接口路径</th><th>方法</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>质检任务列表</td><td>/api/qms/inspections</td><td>GET</td><td>获取待检任务</td></tr>
+            <tr><td>质检结果查询</td><td>/api/qms/inspections/{id}/result</td><td>GET</td><td>查询检验结果</td></tr>
+            <tr><td>不良品统计</td><td>/api/qms/defects/statistics</td><td>GET</td><td>不良率统计</td></tr>
+            <tr><td>质量报表</td><td>/api/qms/reports</td><td>GET</td><td>质量分析报告</td></tr>
+            <tr><td>创建质检任务</td><td>/api/qms/inspections</td><td>POST</td><td>发起检验任务</td></tr>
+        </tbody>
+    </table>
+
+    <h3>四、服务器监管对接 - Sentinel Agent</h3>
+
+    <h4>4.1 Sentinel Agent 架构</h4>
+    <p>Sentinel Agent 是部署在业务服务器上的轻量级监控代理，用于服务器状态监控、日志采集、进程管理等。</p>
+
+    <div class="arch-diagram">
+        <div class="arch-title">Sentinel Agent 部署架构</div>
+
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">LSC-AI 服务器</span>
+            <div class="layer-content">
+                <div class="arch-box primary" style="min-width: 250px;">
+                    <div class="arch-box-title">Sentinel Manager</div>
+                    <div class="arch-box-desc">Agent 管理 | 指令下发 | 数据汇总</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↑ WebSocket 双向通信 ↓</div>
+
+        <div class="arch-layer external-layer">
+            <span class="layer-title" style="color: #eb2f96;">业务服务器集群</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">Sentinel Agent</div>
+                    <div class="arch-box-desc">MES 服务器</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Sentinel Agent</div>
+                    <div class="arch-box-desc">OA 服务器</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Sentinel Agent</div>
+                    <div class="arch-box-desc">WMS 服务器</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Sentinel Agent</div>
+                    <div class="arch-box-desc">数据库服务器</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.2 Sentinel Agent 功能</h4>
+    <table>
+        <thead>
+            <tr><th>功能类别</th><th>功能项</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td rowspan="4"><strong>系统监控</strong></td><td>CPU 使用率</td><td>实时采集 CPU 负载</td></tr>
+            <tr><td>内存使用</td><td>内存占用和可用空间</td></tr>
+            <tr><td>磁盘空间</td><td>各磁盘分区使用情况</td></tr>
+            <tr><td>网络流量</td><td>网卡收发流量统计</td></tr>
+            <tr><td rowspan="3"><strong>进程管理</strong></td><td>进程列表</td><td>查看运行中的进程</td></tr>
+            <tr><td>进程启停</td><td>启动/停止/重启指定进程</td></tr>
+            <tr><td>进程监控</td><td>监控关键进程状态</td></tr>
+            <tr><td rowspan="2"><strong>日志采集</strong></td><td>日志读取</td><td>读取指定日志文件内容</td></tr>
+            <tr><td>日志搜索</td><td>在日志中搜索关键字</td></tr>
+            <tr><td rowspan="2"><strong>命令执行</strong></td><td>Shell 命令</td><td>执行受限的 Shell 命令</td></tr>
+            <tr><td>脚本执行</td><td>执行预定义的运维脚本</td></tr>
+        </tbody>
+    </table>
+
+    <h4>4.3 Sentinel Agent 部署</h4>
+    <pre><code># 下载并安装 Sentinel Agent
+curl -fsSL https://lsc-ai.example.com/sentinel/install.sh | bash
+
+# 或手动安装
+wget https://lsc-ai.example.com/sentinel/sentinel-agent-linux-amd64.tar.gz
+tar -xzf sentinel-agent-linux-amd64.tar.gz
+cd sentinel-agent
+./install.sh
+
+# 启动 Agent
+systemctl start sentinel-agent
+systemctl enable sentinel-agent</code></pre>
+
+    <h4>4.4 Sentinel Agent 配置</h4>
+    <pre><code>{
+  "server": {
+    "host": "lsc-ai.example.com",
+    "port": 8443,
+    "protocol": "wss"
+  },
+  "agent": {
+    "id": "sentinel-mes-01",
+    "name": "MES主服务器",
+    "token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  },
+  "monitor": {
+    "interval": 30,
+    "metrics": ["cpu", "memory", "disk", "network"]
+  },
+  "logs": {
+    "paths": [
+      "/var/log/mes/*.log",
+      "/opt/mes/logs/*.log"
+    ],
+    "maxLines": 1000
+  },
+  "commands": {
+    "allowlist": [
+      "systemctl status mes",
+      "systemctl restart mes",
+      "tail -n 100 /var/log/mes/error.log"
+    ]
+  }
+}</code></pre>
+
+    <h3>五、集成适配器设计</h3>
+
+    <h4>5.1 适配器接口定义</h4>
+    <pre><code>// TypeScript 接口定义
+
+interface ISystemAdapter {
+  // 系统标识
+  systemId: string;
+  systemName: string;
+
+  // 连接管理
+  connect(): Promise&lt;void&gt;;
+  disconnect(): Promise&lt;void&gt;;
+  isConnected(): boolean;
+
+  // 数据查询
+  query(operation: string, params: Record&lt;string, any&gt;): Promise&lt;QueryResult&gt;;
+
+  // 数据写入（如果支持）
+  execute?(operation: string, params: Record&lt;string, any&gt;): Promise&lt;ExecuteResult&gt;;
+
+  // 健康检查
+  healthCheck(): Promise&lt;HealthStatus&gt;;
+}
+
+interface QueryResult {
+  success: boolean;
+  data: any;
+  total?: number;
+  error?: string;
+}
+
+interface ExecuteResult {
+  success: boolean;
+  affectedRows?: number;
+  insertId?: string;
+  error?: string;
+}
+
+interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  latency: number;
+  lastCheck: Date;
+  details?: string;
+}</code></pre>
+
+    <h4>5.2 MES 适配器示例</h4>
+    <pre><code>// MES 系统适配器实现示例
+
+import { Injectable } from '@nestjs/common';
+import axios, { AxiosInstance } from 'axios';
+
+@Injectable()
+export class MESAdapter implements ISystemAdapter {
+  systemId = 'mes';
+  systemName = 'MES生产执行系统';
+
+  private client: AxiosInstance;
+  private connected = false;
+
+  constructor(private config: MESConfig) {
+    this.client = axios.create({
+      baseURL: config.baseUrl,
+      timeout: 30000,
+      headers: {
+        'Authorization': `Bearer ${config.apiToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  async connect(): Promise&lt;void&gt; {
+    const health = await this.healthCheck();
+    if (health.status !== 'unhealthy') {
+      this.connected = true;
+    } else {
+      throw new Error('MES system is not available');
+    }
+  }
+
+  async disconnect(): Promise&lt;void&gt; {
+    this.connected = false;
+  }
+
+  isConnected(): boolean {
+    return this.connected;
+  }
+
+  async query(operation: string, params: Record&lt;string, any&gt;): Promise&lt;QueryResult&gt; {
+    try {
+      switch (operation) {
+        case 'getWorkOrders':
+          return this.getWorkOrders(params);
+        case 'getProductionOutput':
+          return this.getProductionOutput(params);
+        case 'getEquipmentStatus':
+          return this.getEquipmentStatus(params);
+        default:
+          throw new Error(`Unknown operation: ${operation}`);
+      }
+    } catch (error) {
+      return { success: false, data: null, error: error.message };
+    }
+  }
+
+  private async getWorkOrders(params: any): Promise&lt;QueryResult&gt; {
+    const response = await this.client.get('/api/mes/workorders', { params });
+    return {
+      success: true,
+      data: response.data.items,
+      total: response.data.total
+    };
+  }
+
+  private async getProductionOutput(params: any): Promise&lt;QueryResult&gt; {
+    const response = await this.client.get('/api/mes/production/output', { params });
+    return {
+      success: true,
+      data: response.data
+    };
+  }
+
+  private async getEquipmentStatus(params: any): Promise&lt;QueryResult&gt; {
+    const response = await this.client.get('/api/mes/equipment/status', { params });
+    return {
+      success: true,
+      data: response.data
+    };
+  }
+
+  async healthCheck(): Promise&lt;HealthStatus&gt; {
+    const start = Date.now();
+    try {
+      await this.client.get('/api/health');
+      return {
+        status: 'healthy',
+        latency: Date.now() - start,
+        lastCheck: new Date()
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        latency: Date.now() - start,
+        lastCheck: new Date(),
+        details: error.message
+      };
+    }
+  }
+}</code></pre>
+
+    <h4>5.3 适配器配置</h4>
+    <pre><code>{
+  "adapters": {
+    "mes": {
+      "type": "api",
+      "enabled": true,
+      "config": {
+        "baseUrl": "http://mes.internal.company.com:8080",
+        "apiToken": "${MES_API_TOKEN}",
+        "timeout": 30000,
+        "retries": 3
+      }
+    },
+    "oa": {
+      "type": "mixed",
+      "enabled": true,
+      "config": {
+        "api": {
+          "baseUrl": "http://oa.internal.company.com:8080",
+          "apiToken": "${OA_API_TOKEN}"
+        },
+        "rpa": {
+          "loginUrl": "http://oa.company.com/login",
+          "username": "${OA_RPA_USER}",
+          "password": "${OA_RPA_PASS}"
+        }
+      }
+    },
+    "wms": {
+      "type": "mixed",
+      "enabled": true,
+      "config": {
+        "api": {
+          "baseUrl": "http://wms.internal.company.com:8080",
+          "apiToken": "${WMS_API_TOKEN}"
+        },
+        "database": {
+          "host": "wms-db.internal.company.com",
+          "port": 3306,
+          "database": "wms_report",
+          "user": "${WMS_DB_USER}",
+          "password": "${WMS_DB_PASS}",
+          "readonly": true
+        }
+      }
+    },
+    "qms": {
+      "type": "api",
+      "enabled": true,
+      "config": {
+        "baseUrl": "http://qms.internal.company.com:8080",
+        "apiToken": "${QMS_API_TOKEN}",
+        "timeout": 30000
+      }
+    }
+  }
+}</code></pre>
+
+    <h3>六、安全考虑</h3>
+
+    <h4>6.1 访问控制矩阵</h4>
+    <table>
+        <thead>
+            <tr><th>系统</th><th>读取权限</th><th>写入权限</th><th>认证方式</th><th>网络限制</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>MES</td>
+                <td>工单、产量、设备状态</td>
+                <td>无</td>
+                <td>API Token</td>
+                <td>内网 IP 白名单</td>
+            </tr>
+            <tr>
+                <td>OA</td>
+                <td>待办、流程状态、公告</td>
+                <td>发起流程（RPA）</td>
+                <td>API Token + 用户凭证</td>
+                <td>内网访问</td>
+            </tr>
+            <tr>
+                <td>WMS</td>
+                <td>库存、出入库记录</td>
+                <td>无</td>
+                <td>API Token + DB 只读账号</td>
+                <td>内网 IP 白名单</td>
+            </tr>
+            <tr>
+                <td>QMS</td>
+                <td>质检结果、不良统计</td>
+                <td>创建质检任务</td>
+                <td>API Token</td>
+                <td>内网访问</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>6.2 凭证安全</h4>
+    <div class="tip-box warning">
+        <strong>凭证管理要点：</strong>
+        <ul>
+            <li>所有 API Token 和数据库密码使用环境变量或密钥管理系统存储</li>
+            <li>禁止在代码或配置文件中硬编码凭证</li>
+            <li>RPA 用户凭证使用专用服务账号，定期轮换密码</li>
+            <li>数据库连接使用只读账号，限制查询表范围</li>
+            <li>定期审计 API 调用日志，检测异常访问</li>
+        </ul>
+    </div>
+
+    <h4>6.3 审计日志</h4>
+    <div class="tip-box info">
+        <strong>审计日志记录内容：</strong>
+        <ul>
+            <li>所有外部系统 API 调用记录（时间、接口、参数、响应状态）</li>
+            <li>数据库查询记录（SQL 语句、执行时间、返回行数）</li>
+            <li>RPA 操作记录（步骤、截图、结果）</li>
+            <li>Sentinel Agent 命令执行记录</li>
+            <li>异常和错误日志</li>
+        </ul>
+    </div>
+
+    <h3>七、对接清单与待确认事项</h3>
+
+    <table>
+        <thead>
+            <tr><th>系统</th><th>对接方式</th><th>状态</th><th>待确认事项</th><th>负责人</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>MES</td>
+                <td>API 优先</td>
+                <td><span class="status-tag">待确认</span></td>
+                <td>确认 API 接口文档；申请 API Token；确认 IP 白名单配置</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>OA</td>
+                <td>API + RPA</td>
+                <td><span class="status-tag">待确认</span></td>
+                <td>确认可用 API 列表；申请 RPA 服务账号；确认需要自动化的流程</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>WMS</td>
+                <td>API + DB</td>
+                <td><span class="status-tag">待确认</span></td>
+                <td>确认 API 接口；申请数据库只读账号；确认可访问的表/视图</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>QMS</td>
+                <td>API</td>
+                <td><span class="status-tag">待确认</span></td>
+                <td>确认 API 接口文档；确认是否支持创建质检任务</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>服务器监控</td>
+                <td>Sentinel Agent</td>
+                <td><span class="status-tag">待确认</span></td>
+                <td>确认需要监控的服务器列表；确认允许执行的命令白名单</td>
+                <td>-</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="tip-box success">
+        <strong>下一步行动：</strong>
+        <ol>
+            <li>与各业务系统负责人对接，确认 API 接口可用性</li>
+            <li>申请必要的系统账号和权限</li>
+            <li>搭建测试环境进行对接联调</li>
+            <li>编写各系统适配器代码</li>
+            <li>进行集成测试和安全审计</li>
+        </ol>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

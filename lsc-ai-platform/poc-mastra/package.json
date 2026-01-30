@@ -1,0 +1,30 @@
+{
+  "name": "poc-mastra",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test:basic": "tsx src/tests/test-basic.ts",
+    "test:workbench": "tsx src/tests/test-workbench.ts",
+    "test:memory": "tsx src/tests/test-memory.ts",
+    "test:integration": "tsx src/tests/test-integration.ts",
+    "test:all": "npm run test:basic && npm run test:workbench && npm run test:memory && npm run test:integration"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ai-sdk/deepseek": "^2.0.11",
+    "@ai-sdk/openai": "^3.0.19",
+    "@mastra/core": "^1.0.4",
+    "@mastra/libsql": "^1.0.0",
+    "@mastra/memory": "^1.0.0",
+    "@types/node": "^25.0.10",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "zod": "^3.25.76"
+  }
+}

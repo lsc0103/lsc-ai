@@ -1,0 +1,22 @@
+/**
+ * LSC-AI 设计系统 - 中秋主题
+ *
+ * 月色金黄，温馨雅致
+ * 触发时间：农历八月十五前后
+ */
+
+[data-theme="mid-autumn"] .theme-background {
+  background:
+    /* 右上月亮光晕 */
+    radial-gradient(circle at 75% 25%, rgba(251, 191, 36, 0.25) 0%, transparent 40%),
+    /* 左下暖色光晕 */
+    radial-gradient(ellipse at 25% 75%, rgba(180, 83, 9, 0.15) 0%, transparent 50%),
+    /* 深褐基调 */
+    linear-gradient(135deg, #1c1917 0%, #292524 100%);
+}
+
+/* 覆盖高光色为暖金色调 */
+[data-theme="mid-autumn"] {
+  --glass-highlight-color: 255, 220, 180;
+  --accent-primary: #fbbf24;
+}

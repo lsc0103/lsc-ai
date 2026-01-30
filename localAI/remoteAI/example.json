@@ -1,0 +1,106 @@
+{
+    "response_mode": "streaming",
+    "conversation_id": "",
+    "files": [],
+    "query": "1",
+    "inputs": {},
+    "model_config": {
+        "pre_prompt": "你是由大连中远海运川崎船舶工程有限公司基于 DeepSeek V3 模型驱动的智能助手，运行于 Dify 平台，服务于企业内部运营与外部客户支持。请始终保持专业、准确、合规的响应风格。在交互中，你需要：\n理解并尊重用户意图，提供清晰、有条理的回答；\n遵循事实性原则，不编造信息，不确定时应明确说明；\n保护数据隐私与企业安全，不泄露敏感信息，不执行高风险操作；\n使用简洁、正式且友好的语言，避免冗余和模糊表达；\n支持中文为主，必要时可使用英文辅助表达；\n在涉及技术、流程或政策问题时，优先参考 DACKS 内部知识库（如有）；\n若请求超出权限或能力范围，请礼貌引导用户联系相关人员或系统。\n所有回答的内容尽量准确，禁止引用没有可靠来源的依据。\n你的目标是成为 DACKS 数字化生态中可信赖、高效率的 AI 协同伙伴。",
+        "prompt_type": "simple",
+        "chat_prompt_config": {},
+        "completion_prompt_config": {},
+        "user_input_form": [],
+        "dataset_query_variable": "",
+        "opening_statement": "",
+        "more_like_this": {
+            "enabled": false
+        },
+        "suggested_questions": [],
+        "suggested_questions_after_answer": {
+            "enabled": false
+        },
+        "text_to_speech": {
+            "enabled": false,
+            "voice": "",
+            "language": ""
+        },
+        "speech_to_text": {
+            "enabled": false
+        },
+        "retriever_resource": {
+            "enabled": true
+        },
+        "sensitive_word_avoidance": {
+            "enabled": false,
+            "type": "",
+            "configs": []
+        },
+        "agent_mode": {
+            "enabled": false,
+            "max_iteration": 5,
+            "strategy": "react",
+            "tools": []
+        },
+        "dataset_configs": {
+            "retrieval_model": "multiple",
+            "top_k": 4,
+            "reranking_enable": false,
+            "datasets": {
+                "datasets": []
+            }
+        },
+        "file_upload": {
+            "image": {
+                "detail": "high",
+                "enabled": false,
+                "number_limits": 3,
+                "transfer_methods": [
+                    "remote_url",
+                    "local_file"
+                ]
+            },
+            "enabled": false,
+            "allowed_file_types": [],
+            "allowed_file_extensions": [
+                ".JPG",
+                ".JPEG",
+                ".PNG",
+                ".GIF",
+                ".WEBP",
+                ".SVG",
+                ".MP4",
+                ".MOV",
+                ".MPEG",
+                ".WEBM"
+            ],
+            "allowed_file_upload_methods": [
+                "remote_url",
+                "local_file"
+            ],
+            "number_limits": 3,
+            "fileUploadConfig": {
+                "file_size_limit": 15,
+                "batch_count_limit": 5,
+                "image_file_size_limit": 10,
+                "video_file_size_limit": 100,
+                "audio_file_size_limit": 50,
+                "workflow_file_upload_limit": 10
+            }
+        },
+        "annotation_reply": {
+            "enabled": false
+        },
+        "supportAnnotation": true,
+        "appId": "b1e6fe08-90bc-40d2-8621-4752a09d94c8",
+        "supportCitationHitInfo": true,
+        "model": {
+            "provider": "langgenius/openai_api_compatible/openai_api_compatible",
+            "name": "DeepSeek-V3",
+            "mode": "chat",
+            "completion_params": {
+                "stop": []
+            }
+        }
+    },
+    "parent_message_id": null
+}

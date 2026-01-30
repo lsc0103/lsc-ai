@@ -1,0 +1,410 @@
+// LSC-AI Platform 数据库模型
+// 基于架构文档 04-数据存储.html 设计
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户与权限 ====================
+
+// 用户表
+model User {
+  id              String    @id @default(uuid())
+  username        String    @unique @db.VarChar(50)
+  password        String    @db.VarChar(255)
+  email           String?   @db.VarChar(100)
+  displayName     String?   @map("display_name") @db.VarChar(100)
+  avatar          String?   @db.VarChar(500)
+  status          String    @default("active") @db.VarChar(20) // active, inactive, locked
+  loginFailCount  Int       @default(0) @map("login_fail_count")
+  lastLoginAt     DateTime? @map("last_login_at")
+  lastLoginFailAt DateTime? @map("last_login_fail_at")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  userRoles       UserRole[]
+  userPermissions UserPermission[]
+  sessions        Session[]
+  projects        Project[]
+  scheduledTasks  ScheduledTask[]
+  rpaFlows        RpaFlow[]
+  credentials     Credential[]
+  clientAgents    ClientAgent[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+// 角色表
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  permissions Json     @default("[]") // 权限列表
+  isSystem    Boolean  @default(false) @map("is_system")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+// 用户角色关联表
+model UserRole {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// 用户权限表（个别授权/禁用）
+model UserPermission {
+  id         String @id @default(uuid())
+  userId     String @map("user_id")
+  permission String @db.VarChar(100)
+  effect     String @default("allow") @db.VarChar(10) // allow, deny
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@map("user_permissions")
+}
+
+// ==================== 文件存储 ====================
+
+// 文件表
+model File {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  sessionId   String?  @map("session_id")
+  filename    String   @db.VarChar(255)
+  originalName String  @map("original_name") @db.VarChar(255)
+  mimeType    String   @map("mime_type") @db.VarChar(100)
+  size        Int      // 文件大小（字节）
+  bucket      String   @db.VarChar(100)
+  objectKey   String   @map("object_key") @db.VarChar(500)
+  url         String?  @db.VarChar(1000)
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("files")
+}
+
+// ==================== 会话与消息 ====================
+
+// 会话表
+model Session {
+  id           String  @id @default(uuid())
+  userId       String  @map("user_id")
+  projectId    String? @map("project_id")
+  title        String  @db.VarChar(200)
+  workingDir   String? @map("working_dir") @db.VarChar(500)
+  agentContext Json?   @map("agent_context") // Agent 快照
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ==================== 项目管理 ====================
+
+// 项目表
+model Project {
+  id          String  @id @default(uuid())
+  userId      String  @map("user_id")
+  name        String  @db.VarChar(200)
+  description String? @db.VarChar(1000)
+  workingDir  String? @map("working_dir") @db.VarChar(500)
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+// ==================== 定时任务与RPA ====================
+
+// 定时任务表
+model ScheduledTask {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(200)
+  description String?  @db.VarChar(1000)
+  cronExpr    String   @map("cron_expr") @db.VarChar(100)
+  taskType    String   @map("task_type") @db.VarChar(50) // prompt, rpa
+  taskConfig  Json     @map("task_config")
+  status      String   @default("active") @db.VarChar(20) // active, paused, disabled
+  lastRunAt   DateTime? @map("last_run_at")
+  nextRunAt   DateTime? @map("next_run_at")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskLogs TaskLog[]
+
+  @@index([userId])
+  @@map("scheduled_tasks")
+}
+
+// 任务执行日志
+model TaskLog {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  status    String   @db.VarChar(20) // running, success, failed
+  startedAt DateTime @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+  result    Json?
+  error     String?  @db.Text
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  task ScheduledTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_logs")
+}
+
+// RPA 流程表
+model RpaFlow {
+  id          String  @id @default(uuid())
+  userId      String  @map("user_id")
+  name        String  @db.VarChar(200)
+  description String? @db.VarChar(1000)
+  flowData    Json    @map("flow_data") // 流程定义
+  status      String  @default("draft") @db.VarChar(20) // draft, active, disabled
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("rpa_flows")
+}
+
+// ==================== 凭证管理 ====================
+
+// 凭证表（加密存储）
+model Credential {
+  id              String  @id @default(uuid())
+  userId          String  @map("user_id")
+  name            String  @db.VarChar(200)
+  type            String  @db.VarChar(50) // database, api, ssh, etc.
+  encryptedData   String  @map("encrypted_data") @db.Text
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("credentials")
+}
+
+// ==================== Agent 管理 ====================
+
+// Client Agent 表
+model ClientAgent {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  deviceId     String   @unique @map("device_id") @db.VarChar(200)
+  deviceName   String   @map("device_name") @db.VarChar(200)
+  hostname     String?  @db.VarChar(200)
+  platform     String?  @db.VarChar(50)
+  agentVersion String?  @map("agent_version") @db.VarChar(50)
+  token        String?  @db.VarChar(500) // 认证 Token
+  status       String   @default("offline") @db.VarChar(20) // online, offline, busy
+  lastSeen     DateTime @default(now()) @map("last_seen")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("client_agents")
+}
+
+// Sentinel Agent 表
+model SentinelAgent {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(200)
+  hostname     String   @db.VarChar(200)
+  ipAddress    String   @map("ip_address") @db.VarChar(50)
+  platform     String   @db.VarChar(50)
+  agentVersion String   @map("agent_version") @db.VarChar(50)
+  status       String   @default("offline") @db.VarChar(20)
+  capabilities Json     @default("[]") // 支持的功能
+  lastSeenAt   DateTime @map("last_seen_at")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("sentinel_agents")
+}
+
+// ==================== 审计日志 ====================
+
+// 审计日志表
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  username     String?  @db.VarChar(50)
+  action       String   @db.VarChar(100)
+  resourceType String?  @map("resource_type") @db.VarChar(50)
+  resourceId   String?  @map("resource_id") @db.VarChar(100)
+  details      Json?
+  ipAddress    String?  @map("ip_address") @db.VarChar(50)
+  userAgent    String?  @map("user_agent") @db.VarChar(500)
+  success      Boolean  @default(true)
+  errorMessage String?  @map("error_message") @db.Text
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

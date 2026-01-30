@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>03 - 本地开发方案 - Client Agent 架构</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body class="section-page">
+<div class="section-page">
+    <div class="section-header">
+        <h2>03 - 本地开发方案 - Client Agent 架构</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-19</div>
+    </div>
+
+    <h3>一、问题背景</h3>
+
+    <h4>1.1 核心挑战</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">问题描述</div>
+        <div class="grid-2" style="align-items: center;">
+            <div class="arch-layer" style="border-color: #1890ff;">
+                <span class="layer-title" style="color: #1890ff;">LSC-AI 服务器</span>
+                <div style="padding: 20px; text-align: center;">
+                    <div class="arch-box primary">
+                        <div class="arch-box-title">LSC-AI Platform</div>
+                        <div class="arch-box-desc">AI 服务</div>
+                    </div>
+                </div>
+            </div>
+            <div class="arch-layer" style="border-color: #52c41a;">
+                <span class="layer-title" style="color: #52c41a;">用户电脑</span>
+                <div style="padding: 20px; text-align: center;">
+                    <div class="arch-box success">
+                        <div class="arch-box-title">本地代码 / 文件</div>
+                        <div class="arch-box-desc">用户工作目录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="connector" style="font-size: 24px;">?</div>
+        <div class="tip-box warning" style="margin-top: 16px;">
+            <h5>问题：</h5>
+            <ul>
+                <li>服务器无法直接访问用户电脑文件系统</li>
+                <li>用户电脑通常没有公网 IP，服务器无法主动连接</li>
+                <li>用户希望 AI 能帮助在本地进行代码开发</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>1.2 用户场景</h4>
+    <div class="grid-4">
+        <div class="feature-card">
+            <h5>本地代码开发</h5>
+            <p>用户让 AI 帮忙在本地写代码、修改文件</p>
+        </div>
+        <div class="feature-card">
+            <h5>本地项目分析</h5>
+            <p>AI 读取本地项目文件进行分析</p>
+        </div>
+        <div class="feature-card">
+            <h5>本地命令执行</h5>
+            <p>AI 在用户电脑执行 npm、git 等命令</p>
+        </div>
+        <div class="feature-card">
+            <h5>本地文件操作</h5>
+            <p>创建、编辑、删除本地文件</p>
+        </div>
+    </div>
+
+    <h3>二、解决方案：Client Agent</h3>
+
+    <h4>2.1 方案概述</h4>
+    <p>在用户电脑上运行一个轻量级的 <strong>Client Agent</strong>，主动连接到 LSC-AI 服务器，建立双向通信通道。</p>
+
+    <div class="arch-diagram">
+        <div class="arch-title">Client Agent 架构</div>
+        <div class="grid-2" style="gap: 24px;">
+            <!-- 用户电脑 -->
+            <div class="arch-layer user-layer">
+                <span class="layer-title" style="color: #52c41a;">用户电脑</span>
+                <div style="padding: 20px;">
+                    <div class="arch-box success" style="margin-bottom: 16px;">
+                        <div class="arch-box-title">Client Agent</div>
+                        <div class="arch-box-desc">文件读写 | 命令执行 | 状态上报</div>
+                    </div>
+                    <div class="connector" style="font-size: 16px;">|</div>
+                    <div class="arch-box" style="margin-top: 8px;">
+                        <div class="arch-box-title">本地文件 / Shell</div>
+                    </div>
+                </div>
+            </div>
+            <!-- LSC-AI 服务器 -->
+            <div class="arch-layer app-layer">
+                <span class="layer-title" style="color: #1890ff;">LSC-AI 服务器</span>
+                <div style="padding: 20px;">
+                    <div class="arch-box primary" style="margin-bottom: 16px;">
+                        <div class="arch-box-title">Agent Manager</div>
+                        <div class="arch-box-desc">连接管理 | 指令下发 | 结果接收</div>
+                    </div>
+                    <div class="connector" style="font-size: 16px;">|</div>
+                    <div class="arch-box primary" style="margin-top: 8px;">
+                        <div class="arch-box-title">LSC-AI Core (AI 决策)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin: 20px 0; font-size: 14px; color: var(--text-secondary);">
+            <span style="background: #e6f7ff; padding: 8px 16px; border-radius: 20px; border: 1px solid #91d5ff;">
+                WebSocket (用户主动连接 / 服务器下发指令)
+            </span>
+        </div>
+        <div class="tip-box success">
+            <h5>关键点：</h5>
+            <ul style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <li>用户电脑主动连接服务器（无需公网 IP）</li>
+                <li>WebSocket 保持长连接</li>
+                <li>服务器通过 WebSocket 下发指令</li>
+                <li>Agent 在本地执行并返回结果</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>2.2 工作流程时序图</h4>
+    <div class="mermaid">
+sequenceDiagram
+    participant Browser as 用户浏览器
+    participant Server as LSC-AI 服务器
+    participant Agent as Client Agent
+    participant Local as 本地文件
+
+    Browser->>Server: 1. 选择工作路径
+    Server-->>Browser: 2. 提示安装/启动 Client Agent
+    Agent->>Server: 3. WebSocket 连接
+    Agent->>Server: 4. 认证 (Token)
+    Server-->>Browser: 5. 连接成功
+    Browser->>Server: 6. 发送消息: "帮我创建一个 React 项目"
+    Note over Server: 7. AI 决策: 需要执行 npx 命令
+    Server->>Agent: 8. 下发指令: {type: "bash", cmd: "npx..."}
+    Agent->>Local: 9. 执行命令
+    Local-->>Agent: 10. 返回结果
+    Agent->>Server: 11. 返回执行结果
+    Server-->>Browser: 12. 流式展示 AI 处理过程
+    </div>
+
+    <h3>三、Client Agent 设计</h3>
+
+    <h4>3.1 功能列表</h4>
+    <table>
+        <thead><tr><th>功能</th><th>描述</th></tr></thead>
+        <tbody>
+            <tr><td>文件读取</td><td>读取本地文件内容（文本）</td></tr>
+            <tr><td>二进制文件读取</td><td>读取二进制文件（Office 文档、图片等，base64 返回）</td></tr>
+            <tr><td>文件写入</td><td>创建或覆盖本地文件（文本）</td></tr>
+            <tr><td>二进制文件写入</td><td>写入二进制文件（Office 文档、图片等）</td></tr>
+            <tr><td>文件编辑</td><td>差异化编辑文件</td></tr>
+            <tr><td>目录列表</td><td>列出目录内容</td></tr>
+            <tr><td>文件搜索</td><td>Glob 模式搜索文件</td></tr>
+            <tr><td>内容搜索</td><td>Grep 搜索文件内容</td></tr>
+            <tr><td>命令执行</td><td>执行 Shell 命令</td></tr>
+            <tr><td>Git 操作</td><td>Git 相关命令</td></tr>
+            <tr><td>进程管理</td><td>启动/停止本地进程</td></tr>
+            <tr><td>文件打开</td><td>使用系统默认程序打开文件</td></tr>
+        </tbody>
+    </table>
+
+    <h4>3.2 通信协议</h4>
+    <pre><code>// 指令类型定义
+interface AgentCommand {
+  id: string;           // 指令唯一ID
+  type: CommandType;    // 指令类型
+  payload: any;         // 指令参数
+  timeout?: number;     // 超时时间(ms)
+}
+
+type CommandType =
+  | 'file:read'         // 读取文件（文本）
+  | 'file:read:binary'  // 读取二进制文件（返回base64）
+  | 'file:write'        // 写入文件（文本）
+  | 'file:write:binary' // 写入二进制文件（base64编码）
+  | 'file:edit'         // 编辑文件
+  | 'file:delete'       // 删除文件
+  | 'file:open'         // 使用系统默认程序打开文件
+  | 'dir:list'          // 列出目录
+  | 'dir:create'        // 创建目录
+  | 'search:glob'       // Glob 搜索
+  | 'search:grep'       // Grep 搜索
+  | 'bash:execute'      // 执行命令
+  | 'bash:background'   // 后台执行
+  | 'bash:kill'         // 终止进程
+  | 'system:info'       // 系统信息
+  | 'heartbeat';        // 心跳
+
+// 响应类型定义
+interface AgentResponse {
+  id: string;           // 对应指令ID
+  success: boolean;     // 是否成功
+  data?: any;           // 返回数据
+  error?: string;       // 错误信息
+}</code></pre>
+
+    <h4>3.3 安全机制</h4>
+    <div class="grid-2">
+        <div class="tip-box info">
+            <h5>1. 认证机制</h5>
+            <ul>
+                <li>Client Agent 启动时生成配对 Token</li>
+                <li>用户在 Web 端输入 Token 完成配对</li>
+                <li>Token 绑定到用户账号</li>
+            </ul>
+        </div>
+        <div class="tip-box info">
+            <h5>2. 工作目录限制</h5>
+            <ul>
+                <li>只能在用户指定的工作目录内操作</li>
+                <li>禁止访问系统敏感目录</li>
+                <li>路径遍历攻击防护</li>
+            </ul>
+        </div>
+        <div class="tip-box warning">
+            <h5>3. 命令白名单</h5>
+            <ul>
+                <li>只允许执行预定义的安全命令</li>
+                <li>危险命令需要用户二次确认</li>
+                <li>禁止执行 rm -rf / 等危险命令</li>
+            </ul>
+        </div>
+        <div class="tip-box warning">
+            <h5>4. 用户确认</h5>
+            <ul>
+                <li>敏感操作需要用户在 Web 端确认</li>
+                <li>文件写入/删除需要确认</li>
+                <li>命令执行需要确认（可配置自动确认）</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>四、实现方案</h3>
+
+    <h4>4.1 技术选型</h4>
+    <table>
+        <thead><tr><th>组件</th><th>技术选型</th><th>理由</th></tr></thead>
+        <tbody>
+            <tr><td>运行时</td><td><strong>Node.js</strong></td><td>与 LSC-AI 技术栈一致</td></tr>
+            <tr><td>通信</td><td><strong>Socket.io-client</strong></td><td>成熟稳定，自动重连</td></tr>
+            <tr><td>打包</td><td><strong>pkg 或 electron</strong></td><td>打包为可执行文件</td></tr>
+            <tr><td>安装</td><td><strong>npm 全局安装</strong></td><td>简单便捷</td></tr>
+        </tbody>
+    </table>
+
+    <h4>4.2 代码结构</h4>
+    <pre><code>lsc-ai-client/
+├── src/
+│   ├── index.ts              # 入口
+│   ├── connection/
+│   │   ├── socket.ts         # WebSocket 连接管理
+│   │   └── auth.ts           # 认证逻辑
+│   ├── handlers/
+│   │   ├── file.ts           # 文件操作处理
+│   │   ├── bash.ts           # 命令执行处理
+│   │   ├── search.ts         # 搜索处理
+│   │   └── system.ts         # 系统信息
+│   ├── security/
+│   │   ├── validator.ts      # 路径/命令验证
+│   │   └── sandbox.ts        # 沙箱限制
+│   └── utils/
+│       ├── logger.ts         # 日志
+│       └── config.ts         # 配置
+├── package.json
+└── README.md</code></pre>
+
+    <h4>4.3 核心代码示例</h4>
+    <pre><code>// src/index.ts
+import { io, Socket } from 'socket.io-client';
+import os from 'os';
+import { handleCommand } from './handlers';
+import { validatePath, validateCommand } from './security/validator';
+import { loadConfig } from './utils/config';
+
+class ClientAgent {
+  private socket: Socket;
+  private config: AgentConfig;
+
+  constructor(serverUrl: string, token: string) {
+    this.config = loadConfig();  // 加载允许的目录列表等配置
+
+    this.socket = io(serverUrl, {
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+    });
+
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers() {
+    this.socket.on('connect', () => {
+      console.log('Connected to LSC-AI server');
+      // 注册时上报允许访问的目录列表，供浏览器端显示
+      this.socket.emit('agent:register', {
+        allowedPaths: this.config.allowedPaths,
+        platform: process.platform,
+        hostname: os.hostname(),
+        version: '1.0.0',
+      });
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    // 接收服务器指令（指令中包含完整路径）
+    this.socket.on('command', async (cmd: AgentCommand) => {
+      console.log(`Received command: ${cmd.type}`);
+
+      try {
+        // 安全验证：检查路径是否在允许范围内
+        if (cmd.type.startsWith('file:') || cmd.type.startsWith('dir:')) {
+          validatePath(cmd.payload.path, this.config.allowedPaths);
+        }
+        if (cmd.type === 'bash:execute') {
+          validateCommand(cmd.payload.command, this.config.commandBlacklist);
+        }
+
+        // 执行指令
+        const result = await handleCommand(cmd);
+
+        // 返回结果
+        this.socket.emit('command:result', {
+          id: cmd.id,
+          success: true,
+          data: result,
+        });
+      } catch (error) {
+        this.socket.emit('command:result', {
+          id: cmd.id,
+          success: false,
+          error: error.message,
+        });
+      }
+    });
+
+    // 心跳
+    setInterval(() => {
+      this.socket.emit('heartbeat', { timestamp: Date.now() });
+    }, 30000);
+  }
+}
+
+// 配置接口
+interface AgentConfig {
+  allowedPaths: string[];      // 允许访问的目录列表
+  commandBlacklist: string[];  // 禁止的命令列表
+}
+
+// 默认配置：允许用户主目录
+function loadConfig(): AgentConfig {
+  return {
+    allowedPaths: [os.homedir()],  // 默认允许用户主目录
+    commandBlacklist: ['rm -rf /', 'format', 'mkfs'],
+  };
+}
+
+// 启动 Agent（不绑定固定工作目录）
+const agent = new ClientAgent(
+  process.env.LSC_AI_SERVER || 'https://lsc-ai.company.com',
+  process.env.LSC_AI_TOKEN
+);</code></pre>
+
+    <h3>五、用户使用流程</h3>
+
+    <h4>5.1 设计原则</h4>
+    <div class="tip-box info">
+        <h5>核心理念：一次安装，持续运行</h5>
+        <ul>
+            <li>Client Agent 作为<strong>常驻服务</strong>运行，不绑定固定工作路径</li>
+            <li>用户在浏览器中选择工作路径，服务器动态下发到 Agent</li>
+            <li>切换项目无需重启 Agent，在浏览器中切换即可</li>
+        </ul>
+    </div>
+
+    <h4>5.2 首次安装</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">首次安装流程（仅一次）</div>
+        <ol style="padding-left: 24px; line-height: 2;">
+            <li>用户在聊天界面点击输入框左侧【+】→【选择工作路径】</li>
+            <li>用户选择【本地电脑】，系统检测到没有 Client Agent 连接</li>
+            <li>弹出安装引导对话框（见下方）</li>
+        </ol>
+    </div>
+
+    <h4>5.3 安装引导对话框设计</h4>
+    <div class="arch-diagram" style="background: #fff; border: 2px solid var(--primary-color);">
+        <div class="arch-title" style="font-size: 18px;">安装 LSC-AI Client Agent</div>
+
+        <div class="tip-box info" style="margin: 16px 0; text-align: left;">
+            <h5 style="margin-bottom: 8px;">为什么需要安装？</h5>
+            <p>由于浏览器安全限制，AI 无法直接访问您电脑上的文件。<br/>
+            安装 Client Agent 后，AI 就能在您的本地电脑上进行文件操作。</p>
+        </div>
+
+        <div class="grid-2" style="gap: 16px; margin: 16px 0; text-align: left;">
+            <div class="tip-box success">
+                <h5>安装后可以做什么？</h5>
+                <ul style="margin-top: 8px; font-size: 13px;">
+                    <li>本地代码开发（读写文件、执行命令）</li>
+                    <li>本地项目分析（读取代码、搜索）</li>
+                    <li>本地 Git 操作</li>
+                    <li>本地 Office 文档生成并保存</li>
+                    <li>启动/管理本地开发服务器</li>
+                </ul>
+            </div>
+            <div class="tip-box warning">
+                <h5>不安装也能使用的功能</h5>
+                <ul style="margin-top: 8px; font-size: 13px;">
+                    <li>RPA 浏览器自动化（服务器执行）</li>
+                    <li>定时任务调度（服务器执行）</li>
+                    <li>跨服务器监管（Sentinel Agent）</li>
+                    <li>查询业务系统数据（API 调用）</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+            <p style="margin-bottom: 12px;"><strong>检测到您的操作系统：Windows 11</strong></p>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 16px 0;">
+                <div class="arch-box primary" style="cursor: pointer; min-width: 200px;">
+                    <div class="arch-box-title">📥 下载 Windows 版本</div>
+                    <div class="arch-box-desc">lsc-ai-client-1.0.0-win.exe</div>
+                </div>
+            </div>
+
+            <p style="font-size: 12px; color: var(--text-secondary);">
+                其他版本：<a href="#">macOS (.dmg)</a> | <a href="#">Linux (.deb)</a> | <a href="#">Linux (.rpm)</a> | <a href="#">npm 安装</a>
+            </p>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px; text-align: left;">
+            <h5>安装步骤：</h5>
+            <ol style="font-size: 13px; padding-left: 20px; margin-top: 8px;">
+                <li>下载上方安装包</li>
+                <li>双击运行安装程序，按提示完成安装</li>
+                <li>安装完成后会自动启动，并显示配对码</li>
+                <li>在下方输入配对码完成绑定</li>
+            </ol>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+            <p><strong>输入配对码：</strong></p>
+            <div style="display: flex; gap: 12px; justify-content: center; align-items: center; margin-top: 12px;">
+                <input type="text" placeholder="请输入 6 位配对码" style="padding: 8px 16px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; width: 200px; text-align: center; letter-spacing: 4px;">
+                <button style="padding: 8px 24px; background: var(--primary-color); color: #fff; border: none; border-radius: 4px; cursor: pointer;">确认绑定</button>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">配对码显示在 Client Agent 启动后的窗口中</p>
+        </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+        <ol start="4" style="padding-left: 24px; line-height: 2;">
+            <li>用户下载安装包，双击安装（自动设置开机自启）</li>
+            <li>安装完成后 Agent 自动启动，显示 6 位配对码</li>
+            <li>用户在对话框中输入配对码，完成绑定</li>
+            <li>绑定成功，弹出本地文件夹选择器，选择工作路径后开始使用</li>
+        </ol>
+    </div>
+
+    <h4>5.4 日常使用</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">日常使用流程</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 20px 0;">
+            <div class="arch-box success" style="min-width: 140px;">
+                <div class="arch-box-title">Client Agent</div>
+                <div class="arch-box-desc">后台持续运行<br/>（开机自启）</div>
+            </div>
+            <div class="connector">←连接→</div>
+            <div class="arch-box primary" style="min-width: 140px;">
+                <div class="arch-box-title">LSC-AI 服务器</div>
+                <div class="arch-box-desc">WebSocket 长连接</div>
+            </div>
+            <div class="connector">←→</div>
+            <div class="arch-box" style="min-width: 140px;">
+                <div class="arch-box-title">用户浏览器</div>
+                <div class="arch-box-desc">选择工作路径<br/>发送任务指令</div>
+            </div>
+        </div>
+        <div class="tip-box success">
+            <h5>用户只需在浏览器中操作：</h5>
+            <ol>
+                <li>点击输入框左侧【+】→【选择工作路径】→【本地电脑】</li>
+                <li>选择本地文件夹（如 <code>D:\projects\my-app</code>）</li>
+                <li>开始对话："帮我分析这个项目的代码结构"</li>
+                <li>切换项目？重新选择工作路径即可，无需重启 Agent</li>
+            </ol>
+        </div>
+    </div>
+
+    <h4>5.5 指令中的路径处理</h4>
+    <pre><code>// 服务器下发的指令包含完整路径
+{
+  id: "cmd_456",
+  type: "file:read",
+  payload: {
+    path: "D:\\projects\\my-app\\src\\index.ts"  // 完整绝对路径
+  }
+}
+
+// Client Agent 验证路径合法性
+function validatePath(targetPath: string, allowedPaths: string[]) {
+  const normalized = path.resolve(targetPath);
+
+  // 检查是否在用户允许的目录范围内
+  const isAllowed = allowedPaths.some(allowed =>
+    normalized.startsWith(path.resolve(allowed))
+  );
+
+  if (!isAllowed) {
+    throw new Error(`路径不在允许范围内: ${targetPath}`);
+  }
+
+  // 防止路径遍历攻击
+  if (normalized.includes('..')) {
+    throw new Error('禁止路径遍历');
+  }
+}</code></pre>
+
+    <h4>5.6 安全：允许访问的目录</h4>
+    <div class="grid-2">
+        <div class="tip-box info">
+            <h5>默认允许</h5>
+            <ul>
+                <li>用户主目录下的所有文件夹</li>
+                <li>如 <code>C:\Users\张三\*</code></li>
+                <li>如 <code>/home/zhangsan/*</code></li>
+            </ul>
+        </div>
+        <div class="tip-box warning">
+            <h5>默认禁止</h5>
+            <ul>
+                <li>系统目录 (<code>C:\Windows</code>, <code>/etc</code>)</li>
+                <li>其他用户目录</li>
+                <li>敏感配置文件</li>
+            </ul>
+        </div>
+    </div>
+    <p>用户可在 Client Agent 配置中自定义允许/禁止的目录列表。</p>
+
+    <h4>5.7 界面状态指示</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">Web 界面状态指示</div>
+        <div class="grid-2" style="gap: 24px; margin-top: 16px;">
+            <div class="feature-card" style="border: 2px solid #52c41a;">
+                <h5>已连接状态</h5>
+                <p style="margin-top: 12px;">模式: <strong>本地模式</strong></p>
+                <p>工作路径: <code>D:\projects\my-app</code> <span style="color: var(--primary-color); cursor: pointer;">[切换]</span></p>
+                <p>状态: <span class="status-tag online">Agent 已连接</span></p>
+            </div>
+            <div class="feature-card" style="border: 2px solid #ff4d4f;">
+                <h5>未连接状态</h5>
+                <p style="margin-top: 12px;">模式: <strong>本地模式</strong></p>
+                <p>工作路径: <code>D:\projects\my-app</code></p>
+                <p>状态: <span class="status-tag offline">Agent 未连接</span> <span style="color: var(--primary-color); cursor: pointer;">[安装指引]</span></p>
+            </div>
+        </div>
+    </div>
+
+    <h3>六、通信架构</h3>
+
+    <h4>6.1 整体架构</h4>
+    <div class="tip-box warning" style="margin-bottom: 16px;">
+        <h5>核心原则</h5>
+        <ul>
+            <li>浏览器和 Client Agent 之间<strong>没有直接连接</strong></li>
+            <li>所有通信都通过 LSC-AI 服务器<strong>中转</strong></li>
+            <li>Client Agent <strong>主动连接</strong>服务器（用户电脑通常没有公网 IP）</li>
+        </ul>
+    </div>
+
+    <div class="arch-diagram">
+        <div class="arch-title">通信架构图</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 20px 0;">
+            <div class="arch-box" style="min-width: 120px;">
+                <div class="arch-box-title">用户浏览器</div>
+                <div class="arch-box-desc">已登录用户</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 12px; color: var(--text-secondary);">WebSocket</span>
+                <span>←―――→</span>
+            </div>
+            <div class="arch-box primary" style="min-width: 140px;">
+                <div class="arch-box-title">LSC-AI 服务器</div>
+                <div class="arch-box-desc">中转 / 协调 / AI决策</div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 12px; color: var(--text-secondary);">WebSocket</span>
+                <span>←―――→</span>
+            </div>
+            <div class="arch-box success" style="min-width: 120px;">
+                <div class="arch-box-title">Client Agent</div>
+                <div class="arch-box-desc">主动连接服务器</div>
+            </div>
+        </div>
+    </div>
+
+    <h4>6.2 配对机制</h4>
+    <p>配对码用于将 Client Agent 与用户账号安全绑定。因为 Agent 运行在用户本地电脑，不知道用户身份，需要通过配对码完成关联。</p>
+
+    <div class="mermaid">
+sequenceDiagram
+    participant Agent as Client Agent<br/>(用户电脑)
+    participant Server as LSC-AI 服务器
+    participant Browser as 用户浏览器<br/>(已登录：张三)
+
+    Agent->>Server: 1. 首次连接，请求配对码
+    Server->>Server: 2. 生成 6 位配对码 847291
+    Server-->>Agent: 3. 返回配对码
+    Note over Agent: 显示：配对码 847291
+
+    Browser->>Server: 4. 用户输入配对码 847291
+    Server->>Server: 5. 匹配：847291 → Agent<br/>绑定到用户"张三"
+    Server->>Agent: 6. 下发持久 Token
+    Server-->>Browser: 7. 配对成功
+
+    Note over Agent,Browser: ✅ 配对完成，后续 Agent 使用 Token 自动认证
+    </div>
+
+    <h4>6.3 配对后的交互流程</h4>
+    <div class="mermaid">
+sequenceDiagram
+    participant Browser as 用户浏览器
+    participant Server as LSC-AI 服务器
+    participant Core as LSC-AI Core
+    participant Agent as Client Agent
+
+    Browser->>Server: 1. "帮我读取 src/index.ts"
+    Server->>Core: 2. AI 决策
+    Core-->>Server: 3. 需要调用 file:read
+    Server->>Server: 4. 查找用户的 Agent 连接
+    Server->>Agent: 5. 下发指令 file:read
+    Agent->>Agent: 6. 读取本地文件
+    Agent-->>Server: 7. 返回文件内容
+    Server-->>Browser: 8. 展示结果
+    </div>
+
+    <h4>6.4 服务器端 Agent 管理</h4>
+    <pre><code>// 服务器端维护的 Agent 连接映射
+class AgentManager {
+  // 存储：用户ID → Agent Socket 连接
+  private agentConnections = new Map&lt;string, Socket&gt;();
+
+  // Agent 连接时注册
+  registerAgent(userId: string, socket: Socket) {
+    this.agentConnections.set(userId, socket);
+    console.log(`Agent registered for user: ${userId}`);
+  }
+
+  // 向用户的 Agent 发送指令
+  async sendCommand(userId: string, command: AgentCommand): Promise&lt;any&gt; {
+    const socket = this.agentConnections.get(userId);
+
+    if (!socket) {
+      throw new Error('用户的 Client Agent 未连接');
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Agent 响应超时'));
+      }, command.timeout || 30000);
+
+      // 发送指令
+      socket.emit('command', command);
+
+      // 监听结果
+      socket.once(`command:result:${command.id}`, (result) => {
+        clearTimeout(timeout);
+        if (result.success) {
+          resolve(result.data);
+        } else {
+          reject(new Error(result.error));
+        }
+      });
+    });
+  }
+
+  // 检查用户的 Agent 是否在线
+  isAgentOnline(userId: string): boolean {
+    return this.agentConnections.has(userId);
+  }
+}</code></pre>
+
+    <h4>6.5 唤起机制</h4>
+    <table>
+        <thead><tr><th>Agent 状态</th><th>处理方式</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>已运行且已连接</strong></td>
+                <td>直接通过已有 WebSocket 连接下发指令</td>
+            </tr>
+            <tr>
+                <td><strong>已安装但未运行</strong></td>
+                <td>
+                    1. 尝试通过 <code>lsc-ai://start</code> 协议唤起<br/>
+                    2. 等待 Agent 连接服务器<br/>
+                    3. 超时则提示用户手动启动
+                </td>
+            </tr>
+            <tr>
+                <td><strong>未安装</strong></td>
+                <td>显示安装引导对话框</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <pre><code>// 浏览器端尝试唤起 Agent
+async function tryWakeUpAgent(): Promise&lt;boolean&gt; {
+  // 1. 尝试通过自定义协议唤起
+  window.location.href = 'lsc-ai://start';
+
+  // 2. 等待 Agent 连接（轮询检查）
+  for (let i = 0; i < 10; i++) {
+    await sleep(1000);
+    const isOnline = await checkAgentStatus();
+    if (isOnline) return true;
+  }
+
+  // 3. 唤起失败
+  return false;
+}</code></pre>
+
+    <h3>七、内核集成</h3>
+
+    <h4>7.1 FileSystemRouter</h4>
+    <p>需要在 LSC-AI 内核中新增一个 <code>RemoteFileSystem</code> 工具适配器，当工作路径是远程（用户本地）时，将文件操作路由到 Client Agent。</p>
+    <pre><code>// 内核中的工具路由逻辑
+class FileSystemRouter {
+  async read(path: string): Promise&lt;string&gt; {
+    if (this.isRemotePath(path)) {
+      // 通过 Client Agent 读取
+      return this.clientAgent.execute({
+        type: 'file:read',
+        payload: { path }
+      });
+    } else {
+      // 本地读取（服务器上的文件）
+      return fs.readFile(path, 'utf-8');
+    }
+  }
+
+  async write(path: string, content: string): Promise&lt;void&gt; {
+    if (this.isRemotePath(path)) {
+      // 通过 Client Agent 写入
+      return this.clientAgent.execute({
+        type: 'file:write',
+        payload: { path, content }
+      });
+    } else {
+      // 本地写入
+      return fs.writeFile(path, content);
+    }
+  }
+}</code></pre>
+
+    <h4>7.2 SessionContext 接口</h4>
+    <pre><code>// 会话中记录工作模式
+interface SessionContext {
+  workMode: 'server' | 'client';  // 服务器本地 或 用户本地
+  workDir: string;                 // 工作目录
+  clientAgentId?: string;          // Client Agent ID
+}</code></pre>
+
+    <h3>八、与其他功能的关系</h3>
+
+    <div class="arch-diagram">
+        <div class="arch-title">Client Agent 能力范围</div>
+        <div class="grid-2" style="gap: 24px;">
+            <div class="tip-box success">
+                <h5>支持的场景</h5>
+                <ul>
+                    <li>本地代码开发（读写文件、执行命令）</li>
+                    <li>本地项目分析（读取代码、搜索）</li>
+                    <li>本地 Git 操作</li>
+                    <li>本地 Office 文档生成（保存到本地）</li>
+                    <li>本地开发服务器启动/管理</li>
+                </ul>
+            </div>
+            <div class="tip-box warning">
+                <h5>不通过 Client Agent 的场景</h5>
+                <ul>
+                    <li>RPA 浏览器自动化（在服务器执行）</li>
+                    <li>定时任务（在服务器执行）</li>
+                    <li>跨服务器监管（通过 Sentinel Agent）</li>
+                    <li>查询业务系统数据（直接 API 调用）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h3>九、Office 办公本地支持</h3>
+
+    <h4>9.1 设计原则</h4>
+    <p>Office 文档生成能力（Word、Excel、PPT）保留在服务器端 LSC-AI Core 中，通过 Client Agent 的<strong>二进制文件写入</strong>能力将生成的文档保存到用户本地。</p>
+    <div class="tip-box info">
+        <h5>为什么不在 Client Agent 中集成 Office 生成能力？</h5>
+        <ul>
+            <li><strong>保持轻量</strong>：Client Agent 保持小巧，无需安装 docx/exceljs/pptxgenjs 等依赖</li>
+            <li><strong>统一升级</strong>：Office 工具升级只需更新服务器，无需用户重装 Client</li>
+            <li><strong>能力集中</strong>：所有 AI 能力集中在服务器，便于管理和监控</li>
+        </ul>
+    </div>
+
+    <h4>9.2 工作流程</h4>
+    <div class="mermaid">
+sequenceDiagram
+    participant User as 用户浏览器
+    participant Server as LSC-AI 服务器
+    participant Core as LSC-AI Core
+    participant Agent as Client Agent
+    participant Local as 本地文件系统
+
+    User->>Server: "帮我生成一个销售报表 Excel，保存到桌面"
+    Server->>Core: 调用 CreateExcelTool
+    Note over Core: 在内存中生成 Excel 文件<br/>(不落盘到服务器)
+    Core-->>Server: 返回 Buffer
+    Server->>Server: Base64 编码
+    Server->>Agent: file:write:binary 指令
+    Note right of Agent: payload: {<br/>  path: "C:/Users/xxx/Desktop/销售报表.xlsx",<br/>  content: "base64...",<br/>  openAfterWrite: true<br/>}
+    Agent->>Local: 解码并写入文件
+    Agent->>Local: 调用系统打开文件
+    Local-->>User: Excel 自动打开
+    Agent-->>Server: 写入成功
+    Server-->>User: "已在您的桌面生成并打开 销售报表.xlsx"
+    </div>
+
+    <h4>9.3 指令格式</h4>
+    <pre><code>// 二进制文件写入指令
+{
+  id: "cmd_123",
+  type: "file:write:binary",
+  payload: {
+    path: "C:/Users/张三/Desktop/销售报表.xlsx",
+    content: "UEsDBBQAAAAIAM...",  // Base64 编码的文件内容
+    openAfterWrite: true           // 写入后自动打开（可选）
+  }
+}
+
+// Client Agent 处理逻辑
+async function handleWriteBinary(payload) {
+  const buffer = Buffer.from(payload.content, 'base64');
+  await fs.writeFile(payload.path, buffer);
+
+  if (payload.openAfterWrite) {
+    // 使用系统默认程序打开
+    const { exec } = require('child_process');
+    if (process.platform === 'win32') {
+      exec(`start "" "${payload.path}"`);
+    } else if (process.platform === 'darwin') {
+      exec(`open "${payload.path}"`);
+    } else {
+      exec(`xdg-open "${payload.path}"`);
+    }
+  }
+
+  return { success: true, path: payload.path };
+}</code></pre>
+
+    <h4>9.4 支持的 Office 操作</h4>
+    <table>
+        <thead><tr><th>操作</th><th>服务器端</th><th>Client Agent</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td>创建 Word</td><td>CreateWordTool 生成</td><td>file:write:binary 写入</td><td>支持</td></tr>
+            <tr><td>创建 Excel</td><td>CreateExcelTool 生成</td><td>file:write:binary 写入</td><td>支持</td></tr>
+            <tr><td>创建 PPT</td><td>CreatePPTTool 生成</td><td>file:write:binary 写入</td><td>支持</td></tr>
+            <tr><td>编辑 Excel</td><td>EditExcelTool 处理</td><td>file:read + file:write:binary</td><td>支持</td></tr>
+            <tr><td>编辑 Word</td><td>EditWordTool 处理</td><td>file:read + file:write:binary</td><td>支持</td></tr>
+            <tr><td>打开文件</td><td>-</td><td>file:open</td><td>支持</td></tr>
+        </tbody>
+    </table>
+
+    <h4>9.5 编辑现有文档的流程</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">编辑用户本地 Excel 的流程</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            <div class="arch-box" style="min-width: 120px;">
+                <div class="arch-box-title">1. 读取</div>
+                <div class="arch-box-desc">file:read:binary<br/>从本地读取 Excel</div>
+            </div>
+            <div class="connector">→</div>
+            <div class="arch-box primary" style="min-width: 120px;">
+                <div class="arch-box-title">2. 上传</div>
+                <div class="arch-box-desc">Base64 传输到服务器</div>
+            </div>
+            <div class="connector">→</div>
+            <div class="arch-box warning" style="min-width: 120px;">
+                <div class="arch-box-title">3. 编辑</div>
+                <div class="arch-box-desc">EditExcelTool<br/>在服务器修改</div>
+            </div>
+            <div class="connector">→</div>
+            <div class="arch-box success" style="min-width: 120px;">
+                <div class="arch-box-title">4. 写回</div>
+                <div class="arch-box-desc">file:write:binary<br/>保存回本地</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>十、开发计划</h3>
+
+    <table>
+        <thead><tr><th>阶段</th><th>内容</th><th>预计周期</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Phase 1</strong></td><td>基础通信框架、文件读写</td><td>1-2 周</td></tr>
+            <tr><td><strong>Phase 2</strong></td><td>命令执行、搜索功能</td><td>1 周</td></tr>
+            <tr><td><strong>Phase 3</strong></td><td>安全机制、用户确认</td><td>1 周</td></tr>
+            <tr><td><strong>Phase 4</strong></td><td>二进制文件支持、Office 集成</td><td>1 周</td></tr>
+            <tr><td><strong>Phase 5</strong></td><td>打包分发、安装引导</td><td>1 周</td></tr>
+            <tr><td><strong>Phase 6</strong></td><td>内核集成、测试</td><td>1-2 周</td></tr>
+        </tbody>
+    </table>
+    <p style="margin-top: 16px; text-align: center; color: var(--text-secondary);"><strong>总计：约 6-8 周</strong></p>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+/**
+ * LSC-AI 设计系统 - 玻璃输入框
+ *
+ * iOS 风格玻璃输入框，带有聚焦发光效果
+ */
+
+/* ===== 基础玻璃输入框 ===== */
+.glass-input {
+  display: block;
+  width: 100%;
+  position: relative;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: var(--control-height-md);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-family: inherit;
+  outline: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.glass-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+/* 悬浮状态 */
+.glass-input:hover:not(:disabled):not(:focus) {
+  border-color: rgba(var(--glass-highlight-color), 0.4);
+  background: var(--glass-bg-medium);
+}
+
+/* 聚焦状态 */
+.glass-input:focus {
+  border-color: var(--accent-primary);
+  background: var(--glass-bg-medium);
+  box-shadow: var(--glass-glow-focus);
+}
+
+/* 禁用状态 */
+.glass-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--glass-bg-subtle);
+}
+
+/* 只读状态 */
+.glass-input:read-only {
+  background: var(--glass-bg-subtle);
+}
+
+/* 错误状态 */
+.glass-input-error {
+  border-color: var(--accent-error);
+}
+
+.glass-input-error:focus {
+  box-shadow: var(--glass-glow-error);
+}
+
+/* 成功状态 */
+.glass-input-success {
+  border-color: var(--accent-success);
+}
+
+.glass-input-success:focus {
+  box-shadow: var(--glass-glow-success);
+}
+
+/* ===== 尺寸变体 ===== */
+.glass-input-sm {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+}
+
+.glass-input-lg {
+  height: var(--control-height-lg);
+  padding: 0 var(--space-4);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* ===== 多行文本框 ===== */
+.glass-textarea {
+  display: block;
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: var(--space-3);
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-family: inherit;
+  line-height: var(--leading-normal);
+  outline: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.glass-textarea::placeholder {
+  color: var(--text-placeholder);
+}
+
+.glass-textarea:hover:not(:disabled):not(:focus) {
+  border-color: rgba(var(--glass-highlight-color), 0.4);
+  background: var(--glass-bg-medium);
+}
+
+.glass-textarea:focus {
+  border-color: var(--accent-primary);
+  background: var(--glass-bg-medium);
+  box-shadow: var(--glass-glow-focus);
+}
+
+.glass-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== 输入框组 ===== */
+.glass-input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.glass-input-group .glass-input {
+  flex: 1;
+  border-radius: 0;
+}
+
+.glass-input-group .glass-input:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.glass-input-group .glass-input:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.glass-input-group .glass-btn {
+  border-radius: 0;
+}
+
+.glass-input-group .glass-btn:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* ===== 带图标输入框 ===== */
+.glass-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.glass-input-wrapper .glass-input {
+  padding-left: calc(var(--space-3) + 20px + var(--space-2));
+}
+
+.glass-input-wrapper .glass-input-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.glass-input-wrapper .glass-input:focus + .glass-input-icon,
+.glass-input-wrapper .glass-input:focus ~ .glass-input-icon {
+  color: var(--accent-primary);
+}
+
+/* 后缀图标 */
+.glass-input-wrapper.has-suffix .glass-input {
+  padding-right: calc(var(--space-3) + 20px + var(--space-2));
+}
+
+.glass-input-wrapper .glass-input-suffix {
+  position: absolute;
+  right: var(--space-3);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== 搜索框 ===== */
+.glass-search {
+  border-radius: var(--radius-full);
+}
+
+.glass-search-wrapper .glass-input {
+  border-radius: var(--radius-full);
+}

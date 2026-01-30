@@ -1,0 +1,11 @@
+/**
+ * LSC-AI 设计系统 - CSS 变量入口
+ *
+ * 统一导入所有设计令牌
+ */
+
+@import './colors.css';
+@import './typography.css';
+@import './spacing.css';
+@import './shadows.css';
+@import './motion.css';

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10 - IDP智能文档处理</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>10 - IDP 智能文档处理</h2>
+        <div class="meta">文档版本：1.1 | 更新日期：2026-01-21 | 部署环境：Ubuntu Server</div>
+    </div>
+
+    <h3>一、模块概述</h3>
+
+    <h4>1.1 什么是 IDP</h4>
+    <p>IDP（Intelligent Document Processing）智能文档处理是结合 OCR、NLP 的文档自动化处理技术，用于从非结构化文档中自动提取和处理数据。</p>
+
+    <div class="tip-box info">
+        <h5>IDP 核心能力</h5>
+        <ul>
+            <li><strong>OCR 文字识别</strong>：图片、扫描件、PDF 转文本</li>
+            <li><strong>版面分析</strong>：识别标题、段落、表格、图表布局</li>
+            <li><strong>表格提取</strong>：结构化提取表格数据</li>
+            <li><strong>要素抽取</strong>：合同要素、关键信息自动识别（结合 LLM）</li>
+            <li><strong>文档比对</strong>：多版本差异对比</li>
+            <li><strong>手写体识别</strong>：手写内容 OCR</li>
+        </ul>
+    </div>
+
+    <h4>1.2 为什么需要 IDP</h4>
+    <p>根据对 41 个 AI 应用场景的分析，以下场景需要 IDP 能力：</p>
+    <table>
+        <thead><tr><th>序号</th><th>场景</th><th>IDP 需求</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td>入职信息审核与录入自动化</td><td>身份证、体检表 OCR 识别</td></tr>
+            <tr><td>17</td><td>合同一致性审查</td><td>合同要素抽取、比对</td></tr>
+            <tr><td>18</td><td>违约条款智能抽取</td><td>条款识别、风险提示</td></tr>
+            <tr><td>28</td><td>出入涂清单信息提取</td><td>PDF 表格数据提取</td></tr>
+            <tr><td>30</td><td>工程物料尺寸单据手写体抽取</td><td>手写体 OCR</td></tr>
+        </tbody>
+    </table>
+
+    <h3>二、技术选型</h3>
+
+    <div class="tip-box warning">
+        <h5>重要说明</h5>
+        <p>IDP 模块分为两层能力，使用不同的技术实现：</p>
+        <ul>
+            <li><strong>OCR 层</strong>：使用开源 OCR 引擎（PaddleOCR），负责图像转文本</li>
+            <li><strong>智能理解层</strong>：复用现有 DeepSeek LLM，负责文本分析、要素抽取</li>
+        </ul>
+        <p>不引入额外的 LLM 模型，充分复用现有技术栈。</p>
+    </div>
+
+    <h4>2.1 OCR 引擎对比</h4>
+    <table>
+        <thead><tr><th>工具</th><th>开源协议</th><th>中文效果</th><th>Ubuntu 支持</th><th>特点</th><th>推荐度</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>PaddleOCR</strong></td>
+                <td>Apache 2.0</td>
+                <td>优秀</td>
+                <td>完全支持</td>
+                <td>百度开源，中文识别最佳，轻量高效</td>
+                <td style="color: #52c41a; font-weight: bold;">推荐</td>
+            </tr>
+            <tr>
+                <td>Tesseract</td>
+                <td>Apache 2.0</td>
+                <td>一般</td>
+                <td>完全支持</td>
+                <td>Google 开源，多语言支持，需训练中文</td>
+                <td style="color: #8c8c8c;">备选</td>
+            </tr>
+            <tr>
+                <td>EasyOCR</td>
+                <td>Apache 2.0</td>
+                <td>良好</td>
+                <td>完全支持</td>
+                <td>简单易用，80+语言</td>
+                <td style="color: #8c8c8c;">备选</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>2.2 推荐方案：PaddleOCR + DeepSeek LLM</h4>
+    <div class="tip-box success">
+        <h5>技术架构</h5>
+        <table style="margin-top: 12px;">
+            <tr>
+                <td style="width: 120px;"><strong>OCR 引擎</strong></td>
+                <td><strong>PaddleOCR</strong> - 百度开源，中文 OCR 效果业界领先，支持 CPU/GPU</td>
+            </tr>
+            <tr>
+                <td><strong>智能分析</strong></td>
+                <td><strong>DeepSeek LLM</strong> - 复用现有 LLM，进行合同要素抽取、风险分析</td>
+            </tr>
+            <tr>
+                <td><strong>PDF 解析</strong></td>
+                <td><strong>PyMuPDF (fitz)</strong> - 开源 PDF 解析库，提取文本和图片</td>
+            </tr>
+            <tr>
+                <td><strong>表格识别</strong></td>
+                <td><strong>PaddleOCR PP-Structure</strong> - 表格结构化识别</td>
+            </tr>
+        </table>
+    </div>
+
+    <h4>2.3 PaddleOCR 介绍</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">PaddleOCR 能力矩阵</div>
+        <div class="grid-4" style="margin: 20px 0;">
+            <div class="arch-box">
+                <div class="arch-box-title">PP-OCRv4</div>
+                <div class="arch-box-desc">通用文字识别<br/>中英文混合</div>
+            </div>
+            <div class="arch-box">
+                <div class="arch-box-title">PP-Structure</div>
+                <div class="arch-box-desc">版面分析<br/>表格识别</div>
+            </div>
+            <div class="arch-box">
+                <div class="arch-box-title">PP-ChatOCR</div>
+                <div class="arch-box-desc">关键信息抽取<br/>结合 LLM</div>
+            </div>
+            <div class="arch-box">
+                <div class="arch-box-title">手写体识别</div>
+                <div class="arch-box-desc">手写中文<br/>手写数字</div>
+            </div>
+        </div>
+        <p style="text-align: center; color: var(--text-secondary);">
+            GitHub: <a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank">github.com/PaddlePaddle/PaddleOCR</a> | Star: 40k+
+        </p>
+    </div>
+
+    <h3>三、系统架构</h3>
+
+    <h4>3.1 整体架构</h4>
+    <p>IDP 模块采用 <strong>Python 微服务</strong> 方式部署，与 NestJS 主服务通过 HTTP 通信：</p>
+
+    <div class="arch-diagram">
+        <div class="arch-title">IDP 微服务架构（Ubuntu 部署）</div>
+
+        <div class="arch-layer app-layer">
+            <span class="layer-title" style="color: #1890ff;">LSC-AI 主服务 (NestJS / Node.js)</span>
+            <div class="layer-content">
+                <div class="arch-box primary">
+                    <div class="arch-box-title">IdpModule</div>
+                    <div class="arch-box-desc">IDP 服务调用客户端</div>
+                </div>
+                <div class="arch-box primary">
+                    <div class="arch-box-title">ChatModule</div>
+                    <div class="arch-box-desc">对话中调用 IDP</div>
+                </div>
+                <div class="arch-box primary">
+                    <div class="arch-box-title">KnowledgeModule</div>
+                    <div class="arch-box-desc">知识库文档处理</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ HTTP REST API ↓</div>
+
+        <div class="arch-layer" style="border-color: #722ed1; background: linear-gradient(135deg, #f9f0ff 0%, #d3adf7 100%);">
+            <span class="layer-title" style="color: #722ed1;">IDP Service (Python FastAPI)</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">PaddleOCR</div>
+                    <div class="arch-box-desc">文字识别引擎</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">PP-Structure</div>
+                    <div class="arch-box-desc">版面/表格分析</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">PyMuPDF</div>
+                    <div class="arch-box-desc">PDF 解析</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓ 文本分析请求 ↓</div>
+
+        <div class="arch-layer" style="border-color: #1890ff; background: linear-gradient(135deg, #e6f7ff 0%, #91d5ff 100%);">
+            <span class="layer-title" style="color: #1890ff;">DeepSeek LLM (现有服务)</span>
+            <div class="layer-content">
+                <div class="arch-box primary">
+                    <div class="arch-box-title">合同要素抽取</div>
+                    <div class="arch-box-desc">Prompt 工程</div>
+                </div>
+                <div class="arch-box primary">
+                    <div class="arch-box-title">风险分析</div>
+                    <div class="arch-box-desc">规则+LLM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">↓</div>
+
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #722ed1;">存储</span>
+            <div class="layer-content">
+                <div class="arch-box"><div class="arch-box-title">MinIO</div><div class="arch-box-desc">原始文档存储</div></div>
+                <div class="arch-box"><div class="arch-box-title">PostgreSQL</div><div class="arch-box-desc">解析结果存储</div></div>
+            </div>
+        </div>
+    </div>
+
+    <h4>3.2 IDP Service API 设计</h4>
+    <table>
+        <thead><tr><th>接口</th><th>方法</th><th>描述</th><th>输入</th><th>输出</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><code>/api/v1/ocr</code></td>
+                <td>POST</td>
+                <td>通用 OCR 识别</td>
+                <td>图片/PDF 文件</td>
+                <td>识别文本</td>
+            </tr>
+            <tr>
+                <td><code>/api/v1/table</code></td>
+                <td>POST</td>
+                <td>表格提取</td>
+                <td>图片/PDF 文件</td>
+                <td>JSON 表格数据</td>
+            </tr>
+            <tr>
+                <td><code>/api/v1/layout</code></td>
+                <td>POST</td>
+                <td>版面分析</td>
+                <td>图片/PDF 文件</td>
+                <td>版面结构 JSON</td>
+            </tr>
+            <tr>
+                <td><code>/api/v1/contract</code></td>
+                <td>POST</td>
+                <td>合同要素抽取</td>
+                <td>合同文件</td>
+                <td>结构化合同要素</td>
+            </tr>
+            <tr>
+                <td><code>/api/v1/compare</code></td>
+                <td>POST</td>
+                <td>文档比对</td>
+                <td>两个文档</td>
+                <td>差异列表</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>3.3 NestJS 集成代码</h4>
+    <pre><code class="language-typescript">// idp.service.ts
+import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
+import * as FormData from 'form-data';
+
+@Injectable()
+export class IdpService {
+  private readonly idpServiceUrl: string;
+
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
+    this.idpServiceUrl = this.configService.get('IDP_SERVICE_URL', 'http://localhost:8001');
+  }
+
+  /**
+   * 通用 OCR 识别
+   */
+  async ocr(fileBuffer: Buffer, filename: string): Promise&lt;OcrResult&gt; {
+    const formData = new FormData();
+    formData.append('file', fileBuffer, { filename });
+
+    const response = await firstValueFrom(
+      this.httpService.post(`${this.idpServiceUrl}/api/v1/ocr`, formData, {
+        headers: formData.getHeaders(),
+      })
+    );
+
+    return response.data;
+  }
+
+  /**
+   * 表格提取
+   */
+  async extractTable(fileBuffer: Buffer, filename: string): Promise&lt;TableResult&gt; {
+    const formData = new FormData();
+    formData.append('file', fileBuffer, { filename });
+
+    const response = await firstValueFrom(
+      this.httpService.post(`${this.idpServiceUrl}/api/v1/table`, formData, {
+        headers: formData.getHeaders(),
+      })
+    );
+
+    return response.data;
+  }
+
+  /**
+   * 合同要素抽取（OCR + LLM 分析）
+   */
+  async analyzeContract(fileBuffer: Buffer, filename: string): Promise&lt;ContractResult&gt; {
+    const formData = new FormData();
+    formData.append('file', fileBuffer, { filename });
+
+    const response = await firstValueFrom(
+      this.httpService.post(`${this.idpServiceUrl}/api/v1/contract`, formData, {
+        headers: formData.getHeaders(),
+      })
+    );
+
+    return response.data;
+  }
+}
+
+interface OcrResult {
+  text: string;
+  confidence: number;
+  regions: Array&lt;{ text: string; bbox: number[]; confidence: number }&gt;;
+}
+
+interface TableResult {
+  tables: Array&lt;{
+    cells: Array&lt;{ row: number; col: number; text: string }&gt;;
+    html: string;
+  }&gt;;
+}
+
+interface ContractResult {
+  parties: Array&lt;{ name: string; role: string }&gt;;
+  amount: { value: number; currency: string; text: string };
+  duration: { start: string; end: string };
+  paymentTerms: string;
+  risks: Array&lt;{ level: string; description: string }&gt;;
+}</code></pre>
+
+    <h3>四、IDP Service 实现</h3>
+
+    <h4>4.1 Python FastAPI 服务</h4>
+    <pre><code class="language-python"># idp_service/main.py
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from pydantic import BaseModel
+from paddleocr import PaddleOCR, PPStructure
+import fitz  # PyMuPDF
+import numpy as np
+from PIL import Image
+import io
+import httpx
+import os
+
+app = FastAPI(title="LSC-AI IDP Service", version="1.0.0")
+
+# 初始化 PaddleOCR（支持 CPU，生产环境可启用 GPU）
+ocr_engine = PaddleOCR(
+    use_angle_cls=True,  # 启用方向分类
+    lang='ch',           # 中文
+    use_gpu=False,       # 生产环境可改为 True
+    show_log=False
+)
+
+# 初始化表格识别引擎
+table_engine = PPStructure(
+    table=True,
+    ocr=True,
+    show_log=False
+)
+
+# DeepSeek LLM API 配置
+DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/v1/chat/completions")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+
+
+class OcrResponse(BaseModel):
+    text: str
+    confidence: float
+    regions: list
+
+
+class TableResponse(BaseModel):
+    tables: list
+
+
+@app.post("/api/v1/ocr", response_model=OcrResponse)
+async def ocr(file: UploadFile = File(...)):
+    """通用 OCR 识别"""
+    try:
+        content = await file.read()
+
+        # 判断文件类型
+        if file.filename.lower().endswith('.pdf'):
+            images = pdf_to_images(content)
+        else:
+            images = [Image.open(io.BytesIO(content))]
+
+        all_text = []
+        all_regions = []
+        total_confidence = 0
+        count = 0
+
+        for img in images:
+            img_array = np.array(img)
+            result = ocr_engine.ocr(img_array, cls=True)
+
+            for line in result[0]:
+                bbox, (text, confidence) = line
+                all_text.append(text)
+                all_regions.append({
+                    "text": text,
+                    "bbox": bbox,
+                    "confidence": confidence
+                })
+                total_confidence += confidence
+                count += 1
+
+        return OcrResponse(
+            text="\n".join(all_text),
+            confidence=total_confidence / count if count > 0 else 0,
+            regions=all_regions
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/table", response_model=TableResponse)
+async def extract_table(file: UploadFile = File(...)):
+    """表格提取"""
+    try:
+        content = await file.read()
+
+        if file.filename.lower().endswith('.pdf'):
+            images = pdf_to_images(content)
+        else:
+            images = [Image.open(io.BytesIO(content))]
+
+        tables = []
+        for img in images:
+            img_array = np.array(img)
+            result = table_engine(img_array)
+
+            for item in result:
+                if item['type'] == 'table':
+                    tables.append({
+                        "html": item.get('res', {}).get('html', ''),
+                        "cells": parse_table_cells(item)
+                    })
+
+        return TableResponse(tables=tables)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/contract")
+async def analyze_contract(file: UploadFile = File(...)):
+    """合同要素抽取（OCR + LLM）"""
+    try:
+        # 1. 先进行 OCR
+        content = await file.read()
+        file.file.seek(0)  # 重置文件指针
+
+        ocr_result = await ocr(file)
+        contract_text = ocr_result.text
+
+        # 2. 调用 DeepSeek LLM 进行要素抽取
+        elements = await extract_contract_elements_with_llm(contract_text)
+
+        return elements
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def extract_contract_elements_with_llm(text: str) -> dict:
+    """使用 DeepSeek LLM 抽取合同要素"""
+    prompt = f"""请从以下合同文本中提取关键要素，以 JSON 格式返回：
+
+合同文本：
+{text[:8000]}  # 限制长度
+
+请提取以下要素：
+1. parties: 合同双方信息，包含 name（名称）和 role（甲方/乙方）
+2. amount: 合同金额，包含 value（数值）、currency（币种）、text（原文）
+3. duration: 合同期限，包含 start（开始日期）和 end（结束日期）
+4. paymentTerms: 付款条款描述
+5. risks: 风险提示数组，每项包含 level（高/中/低）和 description
+
+只返回 JSON，不要其他内容。"""
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            DEEPSEEK_API_URL,
+            headers={
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1
+            },
+            timeout=60.0
+        )
+
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
+
+        # 解析 JSON
+        import json
+        # 尝试提取 JSON 部分
+        try:
+            return json.loads(content)
+        except:
+            # 如果直接解析失败，尝试提取 ```json ``` 块
+            import re
+            match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+            if match:
+                return json.loads(match.group(1))
+            return {"error": "Failed to parse LLM response", "raw": content}
+
+
+def pdf_to_images(pdf_bytes: bytes) -> list:
+    """将 PDF 转换为图片列表"""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
+    for page in doc:
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x 放大提高识别率
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
+    return images
+
+
+def parse_table_cells(table_item: dict) -> list:
+    """解析表格单元格"""
+    # 简化实现，实际需要根据 PP-Structure 输出格式解析
+    return []
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "ocr_engine": "PaddleOCR"}</code></pre>
+
+    <h4>4.2 依赖配置</h4>
+    <pre><code class="language-text"># requirements.txt
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+paddlepaddle==2.6.0        # CPU 版本
+# paddlepaddle-gpu==2.6.0  # GPU 版本（需要 CUDA）
+paddleocr==2.7.0
+PyMuPDF==1.23.8
+Pillow==10.2.0
+numpy==1.26.3
+httpx==0.26.0
+pydantic==2.5.3</code></pre>
+
+    <h4>4.3 Docker 部署配置</h4>
+    <pre><code class="language-dockerfile"># Dockerfile.idp
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# 安装系统依赖（Ubuntu 基础镜像）
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 Python 依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制应用代码
+COPY . .
+
+# 预下载 PaddleOCR 模型（加速首次启动）
+RUN python -c "from paddleocr import PaddleOCR; PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)"
+
+EXPOSE 8001
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]</code></pre>
+
+    <pre><code class="language-yaml"># docker-compose.yml 中添加 IDP 服务
+services:
+  idp-service:
+    build:
+      context: ./idp-service
+      dockerfile: Dockerfile.idp
+    ports:
+      - "8001:8001"
+    environment:
+      - DEEPSEEK_API_URL=${DEEPSEEK_API_URL}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    volumes:
+      - ./data/ocr-models:/root/.paddleocr  # 模型缓存
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+    # GPU 版本配置（可选）
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]</code></pre>
+
+    <h3>五、合同审核功能</h3>
+
+    <h4>5.1 处理流程</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">合同审核处理流程</div>
+        <div class="mermaid">
+flowchart LR
+    A[上传合同] --> B[PDF/图片解析]
+    B --> C[PaddleOCR 识别]
+    C --> D[文本提取]
+    D --> E[DeepSeek LLM 分析]
+    E --> F[要素抽取]
+    E --> G[风险识别]
+    F --> H[生成审核报告]
+    G --> H
+    H --> I[Workbench 展示]
+        </div>
+    </div>
+
+    <h4>5.2 合同七大要素</h4>
+    <div class="grid-4">
+        <div class="feature-card">
+            <h5>合同主体</h5>
+            <p>甲方、乙方信息</p>
+        </div>
+        <div class="feature-card">
+            <h5>合同金额</h5>
+            <p>总金额、币种</p>
+        </div>
+        <div class="feature-card">
+            <h5>合同期限</h5>
+            <p>起止日期</p>
+        </div>
+        <div class="feature-card">
+            <h5>付款条款</h5>
+            <p>付款方式、账期</p>
+        </div>
+        <div class="feature-card">
+            <h5>违约条款</h5>
+            <p>违约责任</p>
+        </div>
+        <div class="feature-card">
+            <h5>争议解决</h5>
+            <p>仲裁/诉讼</p>
+        </div>
+        <div class="feature-card">
+            <h5>签章信息</h5>
+            <p>签名、印章、日期</p>
+        </div>
+    </div>
+
+    <h4>5.3 风险识别规则</h4>
+    <table>
+        <thead><tr><th>风险类型</th><th>检测规则</th><th>风险等级</th></tr></thead>
+        <tbody>
+            <tr><td>主体信息缺失</td><td>缺少甲方/乙方名称、地址、联系方式</td><td style="color: #ff4d4f;">高</td></tr>
+            <tr><td>金额不一致</td><td>大小写金额不匹配</td><td style="color: #ff4d4f;">高</td></tr>
+            <tr><td>期限异常</td><td>起始日期晚于结束日期</td><td style="color: #ff4d4f;">高</td></tr>
+            <tr><td>违约条款不清晰</td><td>缺少违约责任具体条款</td><td style="color: #faad14;">中</td></tr>
+            <tr><td>付款账期过长</td><td>账期超过 90 天</td><td style="color: #faad14;">中</td></tr>
+            <tr><td>缺少签章</td><td>未检测到签名或印章</td><td style="color: #faad14;">中</td></tr>
+        </tbody>
+    </table>
+
+    <h3>六、部署说明</h3>
+
+    <h4>6.1 环境要求</h4>
+    <table>
+        <thead><tr><th>环境</th><th>配置</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>生产环境</strong></td>
+                <td>Ubuntu 20.04/22.04 LTS</td>
+                <td>推荐 Docker 部署</td>
+            </tr>
+            <tr>
+                <td><strong>开发环境</strong></td>
+                <td>Windows 10/11</td>
+                <td>Docker Desktop 或 WSL2</td>
+            </tr>
+            <tr>
+                <td><strong>Python</strong></td>
+                <td>3.9 - 3.11</td>
+                <td>PaddleOCR 依赖</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>6.2 硬件要求</h4>
+    <div class="grid-2">
+        <div class="tip-box info">
+            <h5>CPU 部署（推荐）</h5>
+            <ul>
+                <li>CPU: 4 核以上</li>
+                <li>内存: 8GB 以上</li>
+                <li>硬盘: 10GB（含模型）</li>
+                <li>处理速度: ~1-2 秒/页</li>
+            </ul>
+            <p style="margin-top: 8px; color: #52c41a;"><strong>适合大多数场景</strong></p>
+        </div>
+        <div class="tip-box warning">
+            <h5>GPU 部署（高性能）</h5>
+            <ul>
+                <li>NVIDIA GPU (CUDA 11.2+)</li>
+                <li>显存: 4GB 以上</li>
+                <li>内存: 16GB 以上</li>
+                <li>处理速度: ~0.1-0.3 秒/页</li>
+            </ul>
+            <p style="margin-top: 8px; color: #faad14;"><strong>高并发/批量处理场景</strong></p>
+        </div>
+    </div>
+
+    <h3>七、开发计划</h3>
+
+    <table>
+        <thead><tr><th>阶段</th><th>内容</th><th>技术栈</th><th>状态</th></tr></thead>
+        <tbody>
+            <tr><td>Phase 1</td><td>IDP Service 基础架构</td><td>FastAPI + PaddleOCR</td><td>未开始</td></tr>
+            <tr><td>Phase 2</td><td>通用 OCR 接口</td><td>PaddleOCR PP-OCRv4</td><td>未开始</td></tr>
+            <tr><td>Phase 3</td><td>表格提取接口</td><td>PP-Structure</td><td>未开始</td></tr>
+            <tr><td>Phase 4</td><td>合同要素抽取</td><td>OCR + DeepSeek LLM</td><td>未开始</td></tr>
+            <tr><td>Phase 5</td><td>NestJS 集成</td><td>HttpModule</td><td>未开始</td></tr>
+            <tr><td>Phase 6</td><td>Workbench 展示组件</td><td>React 组件</td><td>未开始</td></tr>
+        </tbody>
+    </table>
+
+    <h3>八、技术总结</h3>
+
+    <div class="arch-diagram">
+        <div class="arch-title">IDP 模块技术方案</div>
+        <table>
+            <tbody>
+                <tr><td style="width: 150px;"><strong>OCR 引擎</strong></td><td>PaddleOCR（百度开源，Apache 2.0）</td></tr>
+                <tr><td><strong>智能分析</strong></td><td>DeepSeek LLM（复用现有服务）</td></tr>
+                <tr><td><strong>PDF 解析</strong></td><td>PyMuPDF</td></tr>
+                <tr><td><strong>服务框架</strong></td><td>Python FastAPI</td></tr>
+                <tr><td><strong>部署方式</strong></td><td>Docker 容器（Ubuntu 基础镜像）</td></tr>
+                <tr><td><strong>集成方式</strong></td><td>HTTP REST API</td></tr>
+                <tr><td><strong>新增依赖</strong></td><td>无新 LLM 模型，复用现有 DeepSeek</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+API endpoint URL:
+http://10.18.55.233:30069/embedding/chi/v1/embeddings
+
+API Key:
+a818c61b-21cf-4ee1-962b-55fe2c773db2
+

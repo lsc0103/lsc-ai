@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 - 数据存储设计</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+</head>
+<body class="section-page">
+<div class="section-page">
+    <div class="section-header">
+        <h2>04 - 数据存储设计</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-19</div>
+    </div>
+
+    <h3>一、存储架构总览</h3>
+
+    <p>LSC-AI 平台采用四层存储架构，各层职责明确，协同工作：</p>
+
+    <div class="arch-diagram">
+        <div class="arch-title">LSC-AI 数据存储架构</div>
+
+        <!-- PostgreSQL 主数据库 -->
+        <div class="arch-layer data-layer">
+            <span class="layer-title" style="color: #722ed1;">PostgreSQL 主数据库（含全文检索）</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">用户数据</div>
+                    <div class="arch-box-desc">users, roles, permissions</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">会话数据</div>
+                    <div class="arch-box-desc">sessions, messages</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">项目数据</div>
+                    <div class="arch-box-desc">projects, files</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">任务数据</div>
+                    <div class="arch-box-desc">scheduled_tasks, task_logs</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">RPA数据</div>
+                    <div class="arch-box-desc">rpa_flows, credentials</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Agent数据</div>
+                    <div class="arch-box-desc">client_agents, sentinel_agents</div>
+                </div>
+                <div class="arch-box" style="border-color: #722ed1; background: rgba(114,46,209,0.1);">
+                    <div class="arch-box-title">知识库数据</div>
+                    <div class="arch-box-desc">knowledge_bases, documents, document_chunks (全文检索)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">||</div>
+
+        <!-- Redis 缓存层 -->
+        <div class="arch-layer" style="border-color: #f5222d; background: linear-gradient(135deg, #fff1f0 0%, #ffa39e 100%);">
+            <span class="layer-title" style="color: #f5222d;">Redis 缓存层</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">Session Cache</div>
+                    <div class="arch-box-desc">会话缓存</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Token Store</div>
+                    <div class="arch-box-desc">JWT Token</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Agent Status</div>
+                    <div class="arch-box-desc">在线状态</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">Distributed Lock</div>
+                    <div class="arch-box-desc">分布式锁</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">BullMQ Queue</div>
+                    <div class="arch-box-desc">任务队列</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">||</div>
+
+        <!-- MinIO 对象存储 -->
+        <div class="arch-layer" style="border-color: #13c2c2; background: linear-gradient(135deg, #e6fffb 0%, #87e8de 100%);">
+            <span class="layer-title" style="color: #13c2c2;">MinIO 对象存储</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">lsc-uploads</div>
+                    <div class="arch-box-desc">用户上传文件</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">lsc-attachments</div>
+                    <div class="arch-box-desc">消息附件</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">lsc-exports</div>
+                    <div class="arch-box-desc">导出文件</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">lsc-backups</div>
+                    <div class="arch-box-desc">备份文件</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connector">||</div>
+
+        <!-- Elasticsearch 检索 -->
+        <div class="arch-layer" style="border-color: #fadb14; background: linear-gradient(135deg, #feffe6 0%, #fffb8f 100%);">
+            <span class="layer-title" style="color: #d48806;">Elasticsearch 检索 (可选)</span>
+            <div class="layer-content">
+                <div class="arch-box">
+                    <div class="arch-box-title">messages-index</div>
+                    <div class="arch-box-desc">消息全文检索</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">audit-logs-index</div>
+                    <div class="arch-box-desc">审计日志检索</div>
+                </div>
+                <div class="arch-box">
+                    <div class="arch-box-title">task-logs-index</div>
+                    <div class="arch-box-desc">任务日志检索</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3>二、PostgreSQL 数据库设计</h3>
+
+    <h4>2.1 ER 实体关系图</h4>
+    <div class="tip-box info" style="margin-bottom: 12px; font-size: 13px;">
+        <strong>注：</strong>所有表均包含预留扩展字段 <code>expand_1~5 VARCHAR(500)</code> + <code>extra_data JSONB</code>，图中省略显示。
+    </div>
+    <div class="mermaid">
+erDiagram
+    users ||--o{ user_roles : has
+    users ||--o{ user_permissions : has
+    users ||--o{ sessions : creates
+    users ||--o{ projects : owns
+    users ||--o{ scheduled_tasks : creates
+    users ||--o{ rpa_flows : creates
+    users ||--o{ client_agents : registers
+    users ||--o{ audit_logs : generates
+
+    roles ||--o{ user_roles : assigned_to
+
+    sessions ||--o{ messages : contains
+
+    scheduled_tasks ||--o{ task_logs : produces
+
+    rpa_flows ||--o{ credentials : uses
+
+    users {
+        uuid id PK
+        string username
+        string email
+        string password_hash
+        string display_name
+        string avatar
+        string expand_1 "工号-预留"
+        string expand_2 "职位-预留"
+        string expand_3 "部门-预留"
+        json extra_data "扩展JSON"
+        boolean is_active
+        datetime last_login
+        datetime created_at
+    }
+
+    roles {
+        uuid id PK
+        string name
+        string description
+        json permissions
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    user_roles {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    user_permissions {
+        uuid id PK
+        uuid user_id FK
+        string resource
+        string action
+        string effect "allow/deny"
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    sessions {
+        uuid id PK
+        uuid user_id FK
+        string title
+        string session_type
+        json metadata
+        json extra_data "扩展JSON"
+        datetime created_at
+        datetime updated_at
+    }
+
+    messages {
+        uuid id PK
+        uuid session_id FK
+        string role
+        text content
+        json tool_calls
+        json attachments
+        integer token_count
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    projects {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string description
+        string path
+        json settings
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    scheduled_tasks {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string cron_expression
+        string task_type
+        json payload
+        boolean is_active
+        datetime next_run
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    task_logs {
+        uuid id PK
+        uuid task_id FK
+        string status
+        text output
+        text error
+        integer duration_ms
+        json extra_data "扩展JSON"
+        datetime started_at
+        datetime completed_at
+    }
+
+    rpa_flows {
+        uuid id PK
+        uuid user_id FK
+        string name
+        json steps
+        boolean is_active
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    credentials {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string service_type
+        text encrypted_data
+        datetime expires_at
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    client_agents {
+        uuid id PK
+        uuid user_id FK
+        string agent_name
+        string machine_id
+        string os_type
+        string status
+        datetime last_heartbeat
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    sentinel_agents {
+        uuid id PK
+        string server_name
+        string server_ip
+        string status
+        json capabilities
+        datetime last_heartbeat
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    audit_logs {
+        uuid id PK
+        uuid user_id FK
+        string action
+        string resource
+        json details
+        string ip_address
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    knowledge_bases ||--o{ documents : contains
+    documents ||--o{ document_chunks : splits_into
+    users ||--o{ knowledge_bases : creates
+
+    knowledge_bases {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string description
+        int chunk_size
+        int chunk_overlap
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    documents {
+        uuid id PK
+        uuid knowledge_base_id FK
+        string filename
+        string file_type
+        string status
+        int chunk_count
+        json extra_data "扩展JSON"
+        datetime created_at
+    }
+
+    document_chunks {
+        uuid id PK
+        uuid document_id FK
+        uuid knowledge_base_id FK
+        int chunk_index
+        text content
+        text_array keywords "LLM提取关键词"
+        tsvector search_vector "全文检索向量"
+        json metadata
+        datetime created_at
+    }
+    </div>
+
+    <h4>2.2 扩展字段设计原则</h4>
+    <div class="tip-box info">
+        <h5>每张表预留以下扩展字段：</h5>
+        <table style="margin-top: 8px; font-size: 13px;">
+            <tr><td><code>expand_1 ~ expand_5</code></td><td>VARCHAR(500)</td><td>简单扩展字段，可存储字符串、数字等</td></tr>
+            <tr><td><code>extra_data</code></td><td>JSONB</td><td>复杂扩展，可存储任意 JSON 结构（如部门信息、组织架构等）</td></tr>
+        </table>
+        <p style="margin-top: 12px; font-size: 13px;"><strong>使用示例：</strong></p>
+        <ul style="font-size: 13px;">
+            <li>简单扩展：<code>UPDATE users SET expand_1 = '部门A', expand_2 = '科长' WHERE id = ?</code></li>
+            <li>复杂扩展：<code>UPDATE users SET extra_data = '{"department": {"id": 1, "name": "技术部", "path": "集团/技术中心/技术部"}}' WHERE id = ?</code></li>
+        </ul>
+    </div>
+
+    <h4>2.3 核心表结构</h4>
+
+    <h5>users - 用户表</h5>
+    <pre><code class="language-sql">CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100),
+    avatar VARCHAR(500),
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),  -- 可用于：工号
+    expand_2 VARCHAR(500),  -- 可用于：职位
+    expand_3 VARCHAR(500),  -- 可用于：部门名称
+    expand_4 VARCHAR(500),  -- 预留
+    expand_5 VARCHAR(500),  -- 预留
+    extra_data JSONB DEFAULT '{}',  -- 复杂扩展（如组织架构信息）
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_is_active ON users(is_active);
+CREATE INDEX idx_users_extra_data ON users USING GIN(extra_data);  -- JSON 索引</code></pre>
+
+    <h5>roles - 角色表</h5>
+    <pre><code class="language-sql">CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    permissions JSONB DEFAULT '[]',
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 预设角色
+INSERT INTO roles (name, description, permissions) VALUES
+('admin', '超级管理员', '["*"]'),
+('user', '普通用户', '["chat:*", "project:own", "task:own"]'),
+('viewer', '只读用户', '["chat:read", "project:read"]');</code></pre>
+
+    <h5>user_roles - 用户角色关联表</h5>
+    <pre><code class="language-sql">CREATE TABLE user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, role_id)
+);
+
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);</code></pre>
+
+    <h5>user_permissions - 用户权限表</h5>
+    <pre><code class="language-sql">CREATE TABLE user_permissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resource VARCHAR(100) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    effect VARCHAR(10) DEFAULT 'allow',  -- allow, deny (支持 grant/deny 模式)
+    conditions JSONB DEFAULT '{}',
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, resource, action)
+);
+
+CREATE INDEX idx_user_permissions_user_id ON user_permissions(user_id);
+CREATE INDEX idx_user_permissions_effect ON user_permissions(effect);</code></pre>
+
+    <h5>sessions - 会话表</h5>
+    <pre><code class="language-sql">CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) DEFAULT '新对话',
+    session_type VARCHAR(50) DEFAULT 'chat',  -- chat, rpa, task
+    project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+    metadata JSONB DEFAULT '{}',
+    is_archived BOOLEAN DEFAULT false,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_created_at ON sessions(created_at DESC);
+CREATE INDEX idx_sessions_type ON sessions(session_type);</code></pre>
+
+    <h5>messages - 消息表</h5>
+    <pre><code class="language-sql">CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL,  -- user, assistant, system, tool
+    content TEXT,
+    tool_calls JSONB,           -- AI 调用的工具
+    tool_results JSONB,         -- 工具执行结果
+    attachments JSONB DEFAULT '[]',
+    token_count INTEGER DEFAULT 0,
+    model VARCHAR(50),
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_messages_session_id ON messages(session_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_messages_role ON messages(role);</code></pre>
+
+    <h5>projects - 项目表</h5>
+    <pre><code class="language-sql">CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    path VARCHAR(500),          -- 项目路径（用于 Client Agent）
+    agent_id UUID REFERENCES client_agents(id),
+    settings JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_projects_user_id ON projects(user_id);
+CREATE INDEX idx_projects_name ON projects(name);</code></pre>
+
+    <h5>scheduled_tasks - 定时任务表</h5>
+    <pre><code class="language-sql">CREATE TABLE scheduled_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    cron_expression VARCHAR(100) NOT NULL,
+    task_type VARCHAR(50) NOT NULL,  -- prompt, rpa, script, http
+    payload JSONB NOT NULL,          -- 任务参数
+    is_active BOOLEAN DEFAULT true,
+    next_run TIMESTAMP WITH TIME ZONE,
+    last_run TIMESTAMP WITH TIME ZONE,
+    run_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_scheduled_tasks_user_id ON scheduled_tasks(user_id);
+CREATE INDEX idx_scheduled_tasks_next_run ON scheduled_tasks(next_run);
+CREATE INDEX idx_scheduled_tasks_is_active ON scheduled_tasks(is_active);</code></pre>
+
+    <h5>task_logs - 任务执行日志表</h5>
+    <pre><code class="language-sql">CREATE TABLE task_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES scheduled_tasks(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL,  -- pending, running, success, failed
+    output TEXT,
+    error TEXT,
+    duration_ms INTEGER,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_task_logs_task_id ON task_logs(task_id);
+CREATE INDEX idx_task_logs_status ON task_logs(status);
+CREATE INDEX idx_task_logs_created_at ON task_logs(created_at DESC);</code></pre>
+
+    <h5>rpa_flows - RPA 流程表</h5>
+    <pre><code class="language-sql">CREATE TABLE rpa_flows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    steps JSONB NOT NULL,           -- 流程步骤定义
+    trigger_type VARCHAR(50),       -- manual, scheduled, webhook
+    is_active BOOLEAN DEFAULT true,
+    run_count INTEGER DEFAULT 0,
+    last_run TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_rpa_flows_user_id ON rpa_flows(user_id);
+CREATE INDEX idx_rpa_flows_is_active ON rpa_flows(is_active);</code></pre>
+
+    <h5>credentials - 凭证存储表</h5>
+    <pre><code class="language-sql">CREATE TABLE credentials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    service_type VARCHAR(50) NOT NULL,  -- database, api, ssh, browser
+    encrypted_data TEXT NOT NULL,        -- AES-256 加密
+    expires_at TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_credentials_user_id ON credentials(user_id);
+CREATE INDEX idx_credentials_service_type ON credentials(service_type);</code></pre>
+
+    <h5>audit_logs - 审计日志表</h5>
+    <pre><code class="language-sql">CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL,
+    resource VARCHAR(100),
+    resource_id UUID,
+    details JSONB DEFAULT '{}',
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+
+-- 分区表（按月分区，用于大数据量场景）
+-- CREATE TABLE audit_logs_partition ... PARTITION BY RANGE (created_at);</code></pre>
+
+    <h5>knowledge_bases - 知识库表 (RAG)</h5>
+    <pre><code class="language-sql">-- 知识库表（使用 LLM 关键词提取 + PostgreSQL 全文检索，无需 pgvector）
+
+CREATE TABLE knowledge_bases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    chunk_size INT DEFAULT 500,
+    chunk_overlap INT DEFAULT 50,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_knowledge_bases_user_id ON knowledge_bases(user_id);</code></pre>
+
+    <h5>documents - 文档表 (RAG)</h5>
+    <pre><code class="language-sql">CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_base_id UUID NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    file_type VARCHAR(20),
+    file_size BIGINT,
+    file_path VARCHAR(500),  -- MinIO 路径
+    content_hash VARCHAR(64),  -- 内容哈希，用于去重
+    chunk_count INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'pending',  -- pending, processing, completed, failed
+    error_message TEXT,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_documents_kb ON documents(knowledge_base_id);
+CREATE INDEX idx_documents_status ON documents(status);</code></pre>
+
+    <h5>document_chunks - 文档块表 (RAG 全文检索)</h5>
+    <pre><code class="language-sql">CREATE TABLE document_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    knowledge_base_id UUID NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    chunk_index INT NOT NULL,
+    content TEXT NOT NULL,
+    content_length INT,
+    keywords TEXT[],           -- LLM 提取的关键词数组
+    keywords_text TEXT,        -- 关键词拼接文本，用于全文检索
+    search_vector tsvector,    -- PostgreSQL 全文检索向量
+    metadata JSONB,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 创建全文检索索引（GIN 索引，高性能）
+CREATE INDEX idx_chunks_search ON document_chunks USING GIN(search_vector);
+
+-- 创建关键词数组索引
+CREATE INDEX idx_chunks_keywords ON document_chunks USING GIN(keywords);
+
+CREATE INDEX idx_chunks_document ON document_chunks(document_id);
+CREATE INDEX idx_chunks_kb ON document_chunks(knowledge_base_id);
+
+-- 自动更新 search_vector 的触发器
+CREATE OR REPLACE FUNCTION update_search_vector()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search_vector :=
+        setweight(to_tsvector('simple', COALESCE(NEW.keywords_text, '')), 'A') ||
+        setweight(to_tsvector('simple', COALESCE(NEW.content, '')), 'B');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER chunks_search_vector_update
+    BEFORE INSERT OR UPDATE ON document_chunks
+    FOR EACH ROW EXECUTE FUNCTION update_search_vector();
+
+-- 全文检索查询示例
+-- SELECT id, content, keywords, ts_rank(search_vector, query) as rank
+-- FROM document_chunks,
+--     plainto_tsquery('simple', '报销 流程') AS query
+-- WHERE knowledge_base_id = $1
+--   AND search_vector @@ query
+-- ORDER BY rank DESC
+-- LIMIT 5;</code></pre>
+
+    <h5>client_agents - Client Agent 表</h5>
+    <pre><code class="language-sql">CREATE TABLE client_agents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    agent_name VARCHAR(100) NOT NULL,
+    machine_id VARCHAR(100) NOT NULL,
+    os_type VARCHAR(20),            -- windows, macos, linux
+    os_version VARCHAR(50),
+    hostname VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'offline',  -- online, offline, busy
+    capabilities JSONB DEFAULT '[]',
+    last_heartbeat TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, machine_id)
+);
+
+CREATE INDEX idx_client_agents_user_id ON client_agents(user_id);
+CREATE INDEX idx_client_agents_status ON client_agents(status);
+CREATE INDEX idx_client_agents_machine_id ON client_agents(machine_id);</code></pre>
+
+    <h5>sentinel_agents - Sentinel Agent 表</h5>
+    <pre><code class="language-sql">CREATE TABLE sentinel_agents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    server_name VARCHAR(100) NOT NULL,
+    server_ip VARCHAR(45) NOT NULL,
+    server_type VARCHAR(50),        -- mes, oa, wms, qms
+    status VARCHAR(20) DEFAULT 'offline',
+    capabilities JSONB DEFAULT '[]',
+    config JSONB DEFAULT '{}',
+    last_heartbeat TIMESTAMP WITH TIME ZONE,
+
+    -- 预留扩展字段
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sentinel_agents_status ON sentinel_agents(status);
+CREATE INDEX idx_sentinel_agents_server_type ON sentinel_agents(server_type);</code></pre>
+
+    <h4>2.4 初始数据</h4>
+    <div class="tip-box warning">
+        <h5>开发阶段初始账户</h5>
+        <p>系统初始化时自动创建超级管理员账户，拥有所有权限：</p>
+    </div>
+    <pre><code class="language-sql">-- 初始管理员账户（密码需要 bcrypt 加密）
+-- 默认密码: Admin@123
+INSERT INTO users (id, username, email, password_hash, display_name, is_active) VALUES
+(gen_random_uuid(), 'admin', 'admin@lsc-ai.com',
+ '$2b$10$xxxxx...', -- bcrypt hash of 'Admin@123'
+ '系统管理员', true);
+
+-- 为 admin 分配超级管理员角色
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r
+WHERE u.username = 'admin' AND r.name = 'admin';</code></pre>
+
+    <div class="tip-box info" style="margin-top: 16px;">
+        <h5>后期扩展：组织架构</h5>
+        <p>当需要支持部门/科室等组织架构时，可通过以下方式扩展：</p>
+        <ol style="font-size: 13px; margin-top: 8px;">
+            <li>新建 <code>departments</code> 表（支持树形结构）</li>
+            <li>使用 <code>users.expand_1</code> 存储部门ID，或使用 <code>extra_data</code> 存储完整部门信息</li>
+            <li>现有代码无需修改，只需新增部门相关的 API</li>
+        </ol>
+        <pre style="margin-top: 8px;"><code>-- 后期扩展示例：部门表
+CREATE TABLE departments (
+    id UUID PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50),
+    parent_id UUID REFERENCES departments(id),
+    leader_id UUID REFERENCES users(id),
+    sort_order INT DEFAULT 0,
+    expand_1 VARCHAR(500),
+    expand_2 VARCHAR(500),
+    expand_3 VARCHAR(500),
+    expand_4 VARCHAR(500),
+    expand_5 VARCHAR(500),
+    extra_data JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);</code></pre>
+    </div>
+
+    <h3>三、Redis 数据结构</h3>
+
+    <h4>3.1 Key 命名规范</h4>
+    <table>
+        <thead>
+            <tr><th>类型</th><th>Key 模式</th><th>示例</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>用户 Token</td><td><code>auth:token:{token}</code></td><td><code>auth:token:eyJhbGc...</code></td><td>JWT Token 存储</td></tr>
+            <tr><td>会话缓存</td><td><code>session:{sessionId}</code></td><td><code>session:550e8400-e29b...</code></td><td>会话元数据缓存</td></tr>
+            <tr><td>Agent 连接</td><td><code>agent:conn:{agentId}</code></td><td><code>agent:conn:abc123</code></td><td>Agent 连接状态</td></tr>
+            <tr><td>用户在线 Agent</td><td><code>user:agents:{userId}</code></td><td><code>user:agents:user-001</code></td><td>用户的在线 Agent 列表 (Set)</td></tr>
+            <tr><td>分布式锁</td><td><code>lock:{resource}:{id}</code></td><td><code>lock:task:task-001</code></td><td>分布式锁</td></tr>
+            <tr><td>限流计数</td><td><code>ratelimit:{userId}:{action}</code></td><td><code>ratelimit:user-001:chat</code></td><td>API 限流</td></tr>
+            <tr><td>任务队列</td><td><code>bull:{queueName}:*</code></td><td><code>bull:scheduler:waiting</code></td><td>BullMQ 队列数据</td></tr>
+        </tbody>
+    </table>
+
+    <h4>3.2 用户会话 Token</h4>
+    <pre><code class="language-typescript">// 存储 JWT Token
+await redis.set(
+  `auth:token:${token}`,
+  JSON.stringify({
+    userId: 'user-uuid',
+    username: 'zhangsan',
+    roles: ['user'],
+    issuedAt: Date.now(),
+  }),
+  'EX', 86400 * 7  // 7天过期
+);
+
+// 验证 Token
+const tokenData = await redis.get(`auth:token:${token}`);
+if (!tokenData) throw new UnauthorizedException();</code></pre>
+
+    <h4>3.3 会话缓存</h4>
+    <pre><code class="language-typescript">// 缓存会话信息（减少数据库查询）
+await redis.hset(`session:${sessionId}`, {
+  id: sessionId,
+  userId: 'user-uuid',
+  title: '项目开发讨论',
+  messageCount: 15,
+  lastMessage: Date.now(),
+});
+await redis.expire(`session:${sessionId}`, 3600);  // 1小时</code></pre>
+
+    <h4>3.4 Client Agent 连接状态</h4>
+    <pre><code class="language-typescript">// Agent 上线
+await redis.hset(`agent:conn:${agentId}`, {
+  userId: 'user-uuid',
+  socketId: 'socket-123',
+  machineId: 'machine-abc',
+  status: 'online',
+  connectedAt: Date.now(),
+  lastHeartbeat: Date.now(),
+});
+await redis.sadd(`user:agents:${userId}`, agentId);
+
+// Agent 下线
+await redis.del(`agent:conn:${agentId}`);
+await redis.srem(`user:agents:${userId}`, agentId);
+
+// 获取用户所有在线 Agent
+const agentIds = await redis.smembers(`user:agents:${userId}`);</code></pre>
+
+    <h4>3.5 分布式锁</h4>
+    <pre><code class="language-typescript">// 获取锁（防止任务重复执行）
+const lockKey = `lock:task:${taskId}`;
+const acquired = await redis.set(lockKey, 'locked', 'NX', 'EX', 60);
+
+if (acquired) {
+  try {
+    // 执行任务
+    await executeTask(taskId);
+  } finally {
+    // 释放锁
+    await redis.del(lockKey);
+  }
+} else {
+  console.log('任务正在执行中，跳过');
+}</code></pre>
+
+    <h3>四、MinIO 对象存储</h3>
+
+    <h4>4.1 Bucket 规划</h4>
+    <table>
+        <thead>
+            <tr><th>Bucket 名称</th><th>用途</th><th>访问策略</th><th>生命周期</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>lsc-uploads</code></td><td>用户上传文件</td><td>私有</td><td>永久保留</td></tr>
+            <tr><td><code>lsc-attachments</code></td><td>聊天消息附件</td><td>私有</td><td>永久保留</td></tr>
+            <tr><td><code>lsc-exports</code></td><td>导出文件（报表等）</td><td>私有</td><td>30天自动删除</td></tr>
+            <tr><td><code>lsc-temp</code></td><td>临时文件</td><td>私有</td><td>7天自动删除</td></tr>
+            <tr><td><code>lsc-backups</code></td><td>数据库备份</td><td>私有</td><td>按策略保留</td></tr>
+            <tr><td><code>lsc-avatars</code></td><td>用户头像</td><td>公开读</td><td>永久保留</td></tr>
+        </tbody>
+    </table>
+
+    <h4>4.2 文件路径规范</h4>
+    <pre><code class="language-plaintext"># 用户上传文件
+lsc-uploads/{userId}/{year}/{month}/{day}/{uuid}_{filename}
+例：lsc-uploads/user-001/2026/01/19/abc123_report.xlsx
+
+# 消息附件
+lsc-attachments/{sessionId}/{messageId}/{uuid}_{filename}
+例：lsc-attachments/session-001/msg-002/def456_screenshot.png
+
+# 导出文件
+lsc-exports/{userId}/{type}/{timestamp}_{filename}
+例：lsc-exports/user-001/report/1705660800_monthly-report.pdf
+
+# 用户头像
+lsc-avatars/{userId}/avatar_{timestamp}.{ext}
+例：lsc-avatars/user-001/avatar_1705660800.jpg</code></pre>
+
+    <h4>4.3 生命周期策略配置</h4>
+    <pre><code class="language-json">{
+  "Rules": [
+    {
+      "ID": "DeleteTempFiles",
+      "Filter": {
+        "Prefix": ""
+      },
+      "Status": "Enabled",
+      "Expiration": {
+        "Days": 7
+      }
+    }
+  ]
+}</code></pre>
+
+    <div class="tip-box info">
+        <strong>生命周期策略说明：</strong>
+        <ul>
+            <li><code>lsc-temp</code> Bucket：7天自动清理</li>
+            <li><code>lsc-exports</code> Bucket：30天自动清理</li>
+            <li><code>lsc-backups</code> Bucket：保留最近30个全量备份 + 90天增量备份</li>
+        </ul>
+    </div>
+
+    <h3>五、数据备份策略</h3>
+
+    <h4>5.1 PostgreSQL 备份</h4>
+
+    <div class="grid-2">
+        <div class="feature-card">
+            <h5>全量备份</h5>
+            <p>每日 02:00 执行 pg_dump</p>
+            <p>保留最近 30 个备份</p>
+        </div>
+        <div class="feature-card">
+            <h5>增量备份 (WAL)</h5>
+            <p>持续归档 WAL 日志</p>
+            <p>支持时间点恢复 (PITR)</p>
+        </div>
+    </div>
+
+    <pre><code class="language-bash"># 全量备份脚本
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="lsc_ai_full_${DATE}.sql.gz"
+
+pg_dump -h localhost -U lsc_ai -d lsc_ai_db | gzip > /backup/${BACKUP_FILE}
+
+# 上传到 MinIO
+mc cp /backup/${BACKUP_FILE} minio/lsc-backups/postgresql/full/
+
+# 保留最近30个备份
+ls -t /backup/lsc_ai_full_*.sql.gz | tail -n +31 | xargs rm -f
+
+# WAL 归档配置 (postgresql.conf)
+# archive_mode = on
+# archive_command = 'mc cp %p minio/lsc-backups/postgresql/wal/%f'</code></pre>
+
+    <h4>5.2 Redis 备份</h4>
+
+    <div class="grid-2">
+        <div class="feature-card">
+            <h5>RDB 快照</h5>
+            <p>每小时自动快照</p>
+            <p>dump.rdb 同步到 MinIO</p>
+        </div>
+        <div class="feature-card">
+            <h5>AOF 持久化</h5>
+            <p>appendonly yes</p>
+            <p>每秒 fsync</p>
+        </div>
+    </div>
+
+    <pre><code class="language-bash"># redis.conf 配置
+save 3600 1      # 1小时至少1个key变更则快照
+save 300 100     # 5分钟至少100个key变更则快照
+save 60 10000    # 1分钟至少10000个key变更则快照
+
+appendonly yes
+appendfsync everysec
+
+# 备份脚本
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+redis-cli BGSAVE
+sleep 5
+cp /var/lib/redis/dump.rdb /backup/redis_${DATE}.rdb
+mc cp /backup/redis_${DATE}.rdb minio/lsc-backups/redis/</code></pre>
+
+    <h3>六、Prisma Schema 定义</h3>
+
+    <pre><code class="language-typescript">// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户与权限 ====================
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique @db.VarChar(50)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  displayName  String?   @map("display_name") @db.VarChar(100)
+  avatar       String?   @db.VarChar(500)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  userRoles       UserRole[]
+  userPermissions UserPermission[]
+  sessions        Session[]
+  projects        Project[]
+  scheduledTasks  ScheduledTask[]
+  rpaFlows        RpaFlow[]
+  credentials     Credential[]
+  clientAgents    ClientAgent[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  permissions Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model UserPermission {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  resource   String   @db.VarChar(100)
+  action     String   @db.VarChar(50)
+  conditions Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resource, action])
+  @@map("user_permissions")
+}
+
+// ==================== 会话与消息 ====================
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String   @default("新对话") @db.VarChar(255)
+  sessionType String   @default("chat") @map("session_type") @db.VarChar(50)
+  projectId   String?  @map("project_id")
+  metadata    Json     @default("{}")
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("sessions")
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  role        String   @db.VarChar(20)
+  content     String?  @db.Text
+  toolCalls   Json?    @map("tool_calls")
+  toolResults Json?    @map("tool_results")
+  attachments Json     @default("[]")
+  tokenCount  Int      @default(0) @map("token_count")
+  model       String?  @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ==================== 项目管理 ====================
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  path        String?  @db.VarChar(500)
+  agentId     String?  @map("agent_id")
+  settings    Json     @default("{}")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    ClientAgent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  sessions Session[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+// ==================== 定时任务 ====================
+
+model ScheduledTask {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  name           String    @db.VarChar(100)
+  description    String?   @db.Text
+  cronExpression String    @map("cron_expression") @db.VarChar(100)
+  taskType       String    @map("task_type") @db.VarChar(50)
+  payload        Json
+  isActive       Boolean   @default(true) @map("is_active")
+  nextRun        DateTime? @map("next_run")
+  lastRun        DateTime? @map("last_run")
+  runCount       Int       @default(0) @map("run_count")
+  failureCount   Int       @default(0) @map("failure_count")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskLogs TaskLog[]
+
+  @@index([userId])
+  @@index([nextRun])
+  @@index([isActive])
+  @@map("scheduled_tasks")
+}
+
+model TaskLog {
+  id          String    @id @default(uuid())
+  taskId      String    @map("task_id")
+  status      String    @db.VarChar(20)
+  output      String?   @db.Text
+  error       String?   @db.Text
+  durationMs  Int?      @map("duration_ms")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  task ScheduledTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("task_logs")
+}
+
+// ==================== RPA 流程 ====================
+
+model RpaFlow {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  steps       Json
+  triggerType String?   @map("trigger_type") @db.VarChar(50)
+  isActive    Boolean   @default(true) @map("is_active")
+  runCount    Int       @default(0) @map("run_count")
+  lastRun     DateTime? @map("last_run")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("rpa_flows")
+}
+
+// ==================== 凭证存储 ====================
+
+model Credential {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  name          String    @db.VarChar(100)
+  serviceType   String    @map("service_type") @db.VarChar(50)
+  encryptedData String    @map("encrypted_data") @db.Text
+  expiresAt     DateTime? @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([serviceType])
+  @@map("credentials")
+}
+
+// ==================== Agent 管理 ====================
+
+model ClientAgent {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  agentName     String    @map("agent_name") @db.VarChar(100)
+  machineId     String    @map("machine_id") @db.VarChar(100)
+  osType        String?   @map("os_type") @db.VarChar(20)
+  osVersion     String?   @map("os_version") @db.VarChar(50)
+  hostname      String?   @db.VarChar(100)
+  status        String    @default("offline") @db.VarChar(20)
+  capabilities  Json      @default("[]")
+  lastHeartbeat DateTime? @map("last_heartbeat")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+
+  @@unique([userId, machineId])
+  @@index([userId])
+  @@index([status])
+  @@map("client_agents")
+}
+
+model SentinelAgent {
+  id            String    @id @default(uuid())
+  serverName    String    @map("server_name") @db.VarChar(100)
+  serverIp      String    @map("server_ip") @db.VarChar(45)
+  serverType    String?   @map("server_type") @db.VarChar(50)
+  status        String    @default("offline") @db.VarChar(20)
+  capabilities  Json      @default("[]")
+  config        Json      @default("{}")
+  lastHeartbeat DateTime? @map("last_heartbeat")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([serverType])
+  @@map("sentinel_agents")
+}
+
+// ==================== 审计日志 ====================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String   @db.VarChar(100)
+  resource   String?  @db.VarChar(100)
+  resourceId String?  @map("resource_id")
+  details    Json     @default("{}")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}</code></pre>
+
+    <div class="tip-box success">
+        <strong>Prisma 使用提示：</strong>
+        <ul>
+            <li>使用 <code>npx prisma migrate dev</code> 生成数据库迁移</li>
+            <li>使用 <code>npx prisma generate</code> 生成 Prisma Client</li>
+            <li>使用 <code>npx prisma studio</code> 可视化查看数据</li>
+            <li>Schema 变更后务必创建迁移文件，避免直接修改生产数据库</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        er: {
+            diagramPadding: 20,
+            layoutDirection: 'TB',
+            minEntityWidth: 100,
+            minEntityHeight: 75,
+            entityPadding: 15
+        }
+    });
+</script>
+</body>
+</html>

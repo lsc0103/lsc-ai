@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 - Workbench 万能工作台</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../assets/mermaid.min.js"></script>
+    <style>
+        .scenario-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .scenario-card h5 {
+            margin: 0 0 8px 0;
+            color: #1890ff;
+            font-size: 16px;
+        }
+        .scenario-card .user-query {
+            color: #666;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #f6f8fa;
+            border-radius: 8px;
+            border-left: 3px solid #1890ff;
+        }
+        /* 真实界面模拟 */
+        .wb-mock {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1a1a2e;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .wb-titlebar {
+            background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #3d3d5c;
+        }
+        .wb-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .wb-dot.red { background: #ff5f57; }
+        .wb-dot.yellow { background: #febc2e; }
+        .wb-dot.green { background: #28c840; }
+        .wb-title {
+            flex: 1;
+            text-align: center;
+            color: #a0a0b0;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .wb-content {
+            display: flex;
+            min-height: 320px;
+        }
+        .wb-sidebar {
+            width: 200px;
+            background: #252538;
+            border-right: 1px solid #3d3d5c;
+            padding: 12px 0;
+        }
+        .wb-sidebar-title {
+            color: #8080a0;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 8px 16px;
+            letter-spacing: 0.5px;
+        }
+        .wb-file-tree {
+            padding: 0 8px;
+        }
+        .wb-file {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            color: #c0c0d0;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .wb-file:hover { background: #3d3d5c; }
+        .wb-file.active { background: #1890ff20; color: #1890ff; }
+        .wb-file-icon { font-size: 14px; }
+        .wb-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .wb-tabs {
+            display: flex;
+            background: #2d2d44;
+            border-bottom: 1px solid #3d3d5c;
+        }
+        .wb-tab {
+            padding: 10px 20px;
+            color: #8080a0;
+            font-size: 13px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+        .wb-tab.active {
+            color: #fff;
+            background: #1a1a2e;
+            border-bottom-color: #1890ff;
+        }
+        .wb-panel {
+            flex: 1;
+            padding: 16px;
+            overflow: auto;
+        }
+        .wb-code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #d4d4d4;
+        }
+        .wb-code .keyword { color: #c586c0; }
+        .wb-code .string { color: #ce9178; }
+        .wb-code .function { color: #dcdcaa; }
+        .wb-code .variable { color: #9cdcfe; }
+        .wb-code .comment { color: #6a9955; }
+        .wb-code .tag { color: #569cd6; }
+        .wb-code .attr { color: #9cdcfe; }
+        /* 数据表格样式 */
+        .wb-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .wb-table th {
+            background: #2d2d44;
+            color: #a0a0b0;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 500;
+            border-bottom: 1px solid #3d3d5c;
+        }
+        .wb-table td {
+            padding: 10px 12px;
+            color: #d4d4d4;
+            border-bottom: 1px solid #3d3d5c;
+        }
+        .wb-table tr:hover td { background: #252538; }
+        /* 统计卡片 */
+        .wb-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .wb-stat-card {
+            flex: 1;
+            background: #252538;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .wb-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1890ff;
+        }
+        .wb-stat-value.success { color: #52c41a; }
+        .wb-stat-value.warning { color: #faad14; }
+        .wb-stat-value.error { color: #ff4d4f; }
+        .wb-stat-label {
+            font-size: 12px;
+            color: #8080a0;
+            margin-top: 4px;
+        }
+        .wb-stat-trend {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .wb-stat-trend.up { color: #52c41a; }
+        .wb-stat-trend.down { color: #ff4d4f; }
+        /* 图表区域 */
+        .wb-chart {
+            background: #252538;
+            border-radius: 8px;
+            padding: 16px;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            justify-content: center;
+        }
+        .wb-bar {
+            width: 40px;
+            background: linear-gradient(180deg, #1890ff 0%, #096dd9 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+        }
+        .wb-bar::after {
+            content: attr(data-value);
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #a0a0b0;
+            font-size: 12px;
+        }
+        .wb-bar-label {
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #8080a0;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        /* 终端输出 */
+        .wb-terminal {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+        .wb-terminal .prompt { color: #58a6ff; }
+        .wb-terminal .success { color: #3fb950; }
+        .wb-terminal .error { color: #f85149; }
+        .wb-terminal .warning { color: #d29922; }
+        /* 按钮组 */
+        .wb-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #3d3d5c;
+        }
+        .wb-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wb-btn.primary {
+            background: #1890ff;
+            color: #fff;
+        }
+        .wb-btn.default {
+            background: #3d3d5c;
+            color: #d4d4d4;
+        }
+        /* 告警提示 */
+        .wb-alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .wb-alert.warning {
+            background: #faad1420;
+            border: 1px solid #faad1450;
+            color: #faad14;
+        }
+        .wb-alert.error {
+            background: #ff4d4f20;
+            border: 1px solid #ff4d4f50;
+            color: #ff4d4f;
+        }
+        .wb-alert.success {
+            background: #52c41a20;
+            border: 1px solid #52c41a50;
+            color: #52c41a;
+        }
+        .wb-alert.info {
+            background: #1890ff20;
+            border: 1px solid #1890ff50;
+            color: #1890ff;
+        }
+        /* 进度条 */
+        .wb-progress {
+            height: 8px;
+            background: #3d3d5c;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        .wb-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1890ff 0%, #52c41a 100%);
+            border-radius: 4px;
+        }
+        /* 列表项 */
+        .wb-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #3d3d5c;
+            color: #d4d4d4;
+            font-size: 13px;
+        }
+        .wb-list-item:last-child { border-bottom: none; }
+        .wb-list-icon { font-size: 16px; }
+        .wb-list-icon.success { color: #52c41a; }
+        .wb-list-icon.warning { color: #faad14; }
+        .wb-list-icon.error { color: #ff4d4f; }
+        .wb-list-icon.info { color: #1890ff; }
+        /* 右侧面板 */
+        .wb-right-panel {
+            width: 280px;
+            background: #252538;
+            border-left: 1px solid #3d3d5c;
+            padding: 16px;
+        }
+        .wb-panel-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .wb-panel-section {
+            margin-bottom: 20px;
+        }
+        .wb-panel-label {
+            color: #8080a0;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .wb-panel-value {
+            color: #d4d4d4;
+            font-size: 14px;
+        }
+        /* 分割布局 */
+        .wb-split {
+            display: flex;
+            gap: 1px;
+            background: #3d3d5c;
+        }
+        .wb-split-left, .wb-split-right {
+            flex: 1;
+            background: #1a1a2e;
+            padding: 16px;
+        }
+        /* Diff 视图 */
+        .wb-diff-line {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            padding: 4px 12px;
+            display: flex;
+            gap: 12px;
+        }
+        .wb-diff-line.removed {
+            background: #ff4d4f20;
+            color: #ff7875;
+        }
+        .wb-diff-line.added {
+            background: #52c41a20;
+            color: #95de64;
+        }
+        .wb-diff-sign {
+            width: 16px;
+            text-align: center;
+        }
+        .phase-card {
+            border-left: 4px solid #1890ff;
+            background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 0 8px 8px 0;
+        }
+        .phase-card.phase-1 { border-color: #52c41a; background: linear-gradient(135deg, #f6ffed 0%, #ffffff 100%); }
+        .phase-card.phase-2 { border-color: #1890ff; }
+        .phase-card.phase-3 { border-color: #722ed1; background: linear-gradient(135deg, #f9f0ff 0%, #ffffff 100%); }
+        .phase-card.phase-4 { border-color: #faad14; background: linear-gradient(135deg, #fffbe6 0%, #ffffff 100%); }
+        .phase-card.phase-5 { border-color: #eb2f96; background: linear-gradient(135deg, #fff0f6 0%, #ffffff 100%); }
+        .phase-card.phase-6 { border-color: #13c2c2; background: linear-gradient(135deg, #e6fffb 0%, #ffffff 100%); }
+        .phase-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .compare-table td {
+            vertical-align: top;
+        }
+        .vs-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .vs-claude { background: #fff1f0; color: #cf1322; }
+        .vs-lsc { background: #f6ffed; color: #389e0d; }
+    </style>
+</head>
+<body>
+<div class="section-page">
+    <div class="section-header">
+        <h2>12 - Workbench 万能工作台</h2>
+        <div class="meta">文档版本：1.0 | 更新日期：2026-01-22 | 作者：lsc0103</div>
+    </div>
+
+    <h3>一、Workbench 核心定位</h3>
+
+    <h4>1.1 什么是 Workbench</h4>
+    <p>Workbench 是 LSC-AI 的<strong>核心特色功能</strong>，定位为"万能工作台"。它不是简单的预览区域，而是一个<strong>用户和 AI 共同协作的交互式工作空间</strong>。</p>
+
+    <div class="tip-box success" style="border-color: #52c41a; background: #f6ffed;">
+        <h5 style="margin-bottom: 12px; color: #52c41a;">核心理念：用户和 AI 在 Workbench 上无所不能</h5>
+        <ul style="margin-bottom: 0;">
+            <li><strong>不仅仅是展示</strong> - 用户可以编辑、操作、交互</li>
+            <li><strong>不仅仅是结果</strong> - 完整展示任务执行过程</li>
+            <li><strong>不仅仅是 AI 输出</strong> - 用户可以介入、修改、继续</li>
+            <li><strong>三方实时协作</strong> - 浏览器 ↔ Platform ↔ Client Agent</li>
+        </ul>
+    </div>
+
+    <h4>1.2 与 Claude Artifact 的对比</h4>
+    <table class="compare-table">
+        <thead>
+            <tr>
+                <th>特性</th>
+                <th><span class="vs-badge vs-claude">Claude Artifact</span></th>
+                <th><span class="vs-badge vs-lsc">LSC-AI Workbench</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>定位</strong></td>
+                <td>预览展示</td>
+                <td>协作工作台</td>
+            </tr>
+            <tr>
+                <td><strong>交互性</strong></td>
+                <td>只读查看</td>
+                <td>用户+AI 共同操作</td>
+            </tr>
+            <tr>
+                <td><strong>内容能力</strong></td>
+                <td>静态内容生成</td>
+                <td>动态构建、实时交互、数据联动</td>
+            </tr>
+            <tr>
+                <td><strong>执行过程</strong></td>
+                <td>仅展示最终结果</td>
+                <td>完整展示执行过程（工具调用、文件操作等）</td>
+            </tr>
+            <tr>
+                <td><strong>用户介入</strong></td>
+                <td>不支持</td>
+                <td>支持用户编辑、修改后让 AI 继续</td>
+            </tr>
+            <tr>
+                <td><strong>多任务</strong></td>
+                <td>单个 Artifact</td>
+                <td>多标签页、多任务并行</td>
+            </tr>
+            <tr>
+                <td><strong>数据联动</strong></td>
+                <td>不支持</td>
+                <td>组件间数据共享、事件触发</td>
+            </tr>
+            <tr>
+                <td><strong>本地执行</strong></td>
+                <td>不支持</td>
+                <td>通过 Client Agent 在用户电脑执行</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>1.3 Workbench 能力全景</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">Workbench 万能工作台</div>
+        <div style="padding: 20px;">
+            <div class="grid-3">
+                <div class="feature-card">
+                    <h5>代码开发</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>Monaco Editor 代码编辑</li>
+                        <li>Diff 对比视图</li>
+                        <li>终端命令输出</li>
+                        <li>项目结构预览</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h5>数据分析</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>数据表格（排序/筛选/导出）</li>
+                        <li>ECharts 图表可视化</li>
+                        <li>SQL 查询编辑器</li>
+                        <li>Excel 数据处理</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h5>文档处理</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>PDF/Word/图片预览</li>
+                        <li>Markdown 渲染编辑</li>
+                        <li>合同关键信息提取</li>
+                        <li>文档批量处理</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h5>办公自动化</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>PPT 生成预览</li>
+                        <li>邮件批量发送</li>
+                        <li>会议纪要生成</li>
+                        <li>报告自动生成</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h5>运维监控</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>服务器状态面板</li>
+                        <li>日志分析可视化</li>
+                        <li>故障诊断修复</li>
+                        <li>实时监控图表</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h5>业务集成</h5>
+                    <ul style="font-size: 13px; margin: 0; padding-left: 16px;">
+                        <li>RPA 流程可视化</li>
+                        <li>数据同步进度</li>
+                        <li>跨系统操作界面</li>
+                        <li>业务表单构建</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: rgba(24,144,255,0.05); border-radius: 6px; margin-top: 12px;">
+            <strong>三方实时协作通道：</strong>浏览器 ←─ WebSocket ─→ Platform ←─ WebSocket ─→ Client Agent
+        </div>
+    </div>
+
+    <h3>二、技术架构设计</h3>
+
+    <h4>2.1 整体架构</h4>
+    <div class="arch-diagram">
+        <div class="arch-title">Workbench 技术架构</div>
+        <div style="padding: 20px;">
+            <div class="arch-layer" style="border-color: #52c41a; margin-bottom: 16px;">
+                <span class="layer-title" style="color: #52c41a;">渲染层</span>
+                <div class="layer-content" style="padding: 16px;">
+                    <div class="arch-box"><div class="arch-box-title">SchemaRenderer</div><div class="arch-box-desc">JSON → React</div></div>
+                    <div class="arch-box"><div class="arch-box-title">ComponentRegistry</div><div class="arch-box-desc">30+ 组件</div></div>
+                    <div class="arch-box"><div class="arch-box-title">TabManager</div><div class="arch-box-desc">多标签页</div></div>
+                    <div class="arch-box"><div class="arch-box-title">LayoutEngine</div><div class="arch-box-desc">分屏布局</div></div>
+                </div>
+            </div>
+            <div class="arch-layer" style="border-color: #1890ff; margin-bottom: 16px;">
+                <span class="layer-title" style="color: #1890ff;">状态层</span>
+                <div class="layer-content" style="padding: 16px;">
+                    <div class="arch-box primary"><div class="arch-box-title">WorkbenchContext</div><div class="arch-box-desc">共享状态</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">DataStore</div><div class="arch-box-desc">数据联动</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">ExecutionState</div><div class="arch-box-desc">执行状态</div></div>
+                    <div class="arch-box primary"><div class="arch-box-title">HistoryManager</div><div class="arch-box-desc">操作历史</div></div>
+                </div>
+            </div>
+            <div class="arch-layer" style="border-color: #722ed1; margin-bottom: 16px;">
+                <span class="layer-title" style="color: #722ed1;">事件层</span>
+                <div class="layer-content" style="padding: 16px;">
+                    <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">ActionHandler</div><div class="arch-box-desc">事件处理</div></div>
+                    <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">ChatTrigger</div><div class="arch-box-desc">触发 AI 对话</div></div>
+                    <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">APIConnector</div><div class="arch-box-desc">调用后端</div></div>
+                    <div class="arch-box" style="border-color: #722ed1;"><div class="arch-box-title">ExportHandler</div><div class="arch-box-desc">导出文件</div></div>
+                </div>
+            </div>
+            <div class="arch-layer" style="border-color: #faad14;">
+                <span class="layer-title" style="color: #faad14;">通信层</span>
+                <div class="layer-content" style="padding: 16px;">
+                    <div class="arch-box warning"><div class="arch-box-title">Socket.IO</div><div class="arch-box-desc">实时通信</div></div>
+                    <div class="arch-box warning"><div class="arch-box-title">StreamHandler</div><div class="arch-box-desc">流式更新</div></div>
+                    <div class="arch-box warning"><div class="arch-box-title">AgentBridge</div><div class="arch-box-desc">Client Agent 桥接</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>2.2 Schema 驱动机制</h4>
+    <p>Workbench 采用 <strong>Schema 驱动</strong> 的设计，AI 只需输出 JSON Schema，前端自动渲染对应组件。</p>
+
+    <div class="grid-2">
+        <div>
+            <h5>AI 输出的 Schema</h5>
+            <div class="workbench-preview">
+{
+  <span class="title">"type"</span>: "workbench",
+  <span class="title">"tabs"</span>: [
+    {
+      <span class="highlight">"title"</span>: "数据分析",
+      <span class="highlight">"components"</span>: [
+        {
+          "type": "DataTable",
+          "data": [...],
+          "columns": [...]
+        },
+        {
+          "type": "BarChart",
+          "data": [...],
+          "xAxis": "month"
+        }
+      ]
+    }
+  ]
+}
+            </div>
+        </div>
+        <div>
+            <h5>渲染流程</h5>
+            <div class="mermaid">
+flowchart TD
+    A[AI 输出 Schema] --> B[SchemaValidator 校验]
+    B --> C[ComponentRegistry 查找]
+    C --> D[递归渲染组件]
+    D --> E[绑定事件处理]
+    E --> F[Workbench 展示]
+            </div>
+        </div>
+    </div>
+
+    <h4>2.3 事件系统设计</h4>
+    <p>组件可以触发事件，实现用户交互闭环：</p>
+
+    <table>
+        <thead>
+            <tr><th>事件类型</th><th>说明</th><th>示例</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>chat</code></td>
+                <td>发送消息到 AI 对话</td>
+                <td>点击按钮触发 "分析选中的数据"</td>
+            </tr>
+            <tr>
+                <td><code>api</code></td>
+                <td>调用后端 API</td>
+                <td>提交表单保存数据</td>
+            </tr>
+            <tr>
+                <td><code>export</code></td>
+                <td>导出文件</td>
+                <td>导出表格为 Excel</td>
+            </tr>
+            <tr>
+                <td><code>navigate</code></td>
+                <td>页面导航</td>
+                <td>跳转到详情页</td>
+            </tr>
+            <tr>
+                <td><code>update</code></td>
+                <td>更新组件数据</td>
+                <td>筛选条件变化刷新表格</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>2.4 与现有系统的整合</h4>
+    <table>
+        <thead>
+            <tr><th>现有模块</th><th>Workbench 对接方式</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>ToolSteps.tsx</code></td>
+                <td>整合为 Workbench 的一部分，增加工具输出内容的可视化预览</td>
+            </tr>
+            <tr>
+                <td><code>socket.ts</code></td>
+                <td>扩展事件类型，支持 <code>workbench:update</code>、<code>workbench:open</code></td>
+            </tr>
+            <tr>
+                <td><code>chat.ts</code> store</td>
+                <td>新增 <code>workbenchState</code> 状态管理</td>
+            </tr>
+            <tr>
+                <td><code>MessageBubble.tsx</code></td>
+                <td>检测消息中的 Schema 代码块，自动触发 Workbench 打开</td>
+            </tr>
+            <tr>
+                <td><code>ChatGateway</code></td>
+                <td>新增 Workbench 相关事件转发</td>
+            </tr>
+            <tr>
+                <td><code>AgentGateway</code></td>
+                <td>转发 Client Agent 的工具输出到 Workbench</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>三、开发计划</h3>
+
+    <div class="phase-card phase-1">
+        <div class="phase-title">Phase 1: 基础框架与布局 (Week 1)</div>
+        <div class="grid-2">
+            <div>
+                <strong>1.1 Workbench 容器组件</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>分屏布局（左聊天 + 右工作台）</li>
+                    <li>宽度可拖拽调整</li>
+                    <li>展开/收起动画</li>
+                    <li>响应式适配</li>
+                </ul>
+            </div>
+            <div>
+                <strong>1.2 标签页系统</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>多标签页管理</li>
+                    <li>新增/关闭/切换</li>
+                    <li>标签页类型识别</li>
+                    <li>标签页持久化</li>
+                </ul>
+            </div>
+            <div>
+                <strong>1.3 Schema 渲染引擎</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>SchemaRenderer 组件</li>
+                    <li>ComponentRegistry 注册表</li>
+                    <li>SchemaValidator 安全校验</li>
+                    <li>递归渲染机制</li>
+                </ul>
+            </div>
+            <div>
+                <strong>1.4 基础布局组件</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>Container（容器）</li>
+                    <li>Row/Col（栅格）</li>
+                    <li>Tabs（标签页）</li>
+                    <li>Collapse（折叠面板）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="phase-card phase-2">
+        <div class="phase-title">Phase 2: 核心内容组件 (Week 2)</div>
+        <div class="grid-2">
+            <div>
+                <strong>2.1 CodeEditor（代码编辑器）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>Monaco Editor 集成</li>
+                    <li>100+ 语言语法高亮</li>
+                    <li>只读/编辑模式切换</li>
+                    <li>Diff 对比视图</li>
+                </ul>
+            </div>
+            <div>
+                <strong>2.2 TerminalOutput（终端输出）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>命令执行结果展示</li>
+                    <li>ANSI 颜色支持</li>
+                    <li>滚动优化</li>
+                    <li>复制功能</li>
+                </ul>
+            </div>
+            <div>
+                <strong>2.3 MarkdownView（Markdown 渲染）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>完整 Markdown 语法</li>
+                    <li>代码块高亮</li>
+                    <li>表格渲染</li>
+                    <li>目录导航</li>
+                </ul>
+            </div>
+            <div>
+                <strong>2.4 FilePreview（文件预览）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>图片预览（缩放、旋转）</li>
+                    <li>PDF 预览</li>
+                    <li>代码文件高亮</li>
+                    <li>未知类型下载</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="phase-card phase-3">
+        <div class="phase-title">Phase 3: 数据展示组件 (Week 3)</div>
+        <div class="grid-2">
+            <div>
+                <strong>3.1 DataTable（数据表格）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>列配置、排序、筛选</li>
+                    <li>分页、行选择</li>
+                    <li>单元格渲染器</li>
+                    <li>导出功能</li>
+                </ul>
+            </div>
+            <div>
+                <strong>3.2 Statistic（统计卡片）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>数值展示、趋势指示</li>
+                    <li>前后缀、颜色主题</li>
+                </ul>
+            </div>
+            <div>
+                <strong>3.3 Card（信息卡片）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>标题/内容、封面图</li>
+                    <li>操作按钮、多种布局</li>
+                </ul>
+            </div>
+            <div>
+                <strong>3.4 Timeline（时间线）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>事件展示</li>
+                    <li>状态颜色、折叠展开</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="phase-card phase-4">
+        <div class="phase-title">Phase 4: 图表组件 (Week 4)</div>
+        <div class="grid-2">
+            <div>
+                <strong>4.1 基础图表（ECharts）</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>BarChart（柱状图）</li>
+                    <li>LineChart（折线图）</li>
+                    <li>PieChart（饼图）</li>
+                    <li>AreaChart（面积图）</li>
+                    <li>ScatterChart（散点图）</li>
+                </ul>
+            </div>
+            <div>
+                <strong>4.2 图表通用功能</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>图例、工具提示</li>
+                    <li>数据缩放、主题适配</li>
+                    <li>响应式、数据动态更新</li>
+                    <li>点击事件、导出图片</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="phase-card phase-5">
+        <div class="phase-title">Phase 5: 表单与交互系统 (Week 5)</div>
+        <div class="grid-2">
+            <div>
+                <strong>5.1 表单组件</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>FormBuilder（表单容器）</li>
+                    <li>Input、Select、DatePicker</li>
+                    <li>Checkbox、Radio、Button</li>
+                    <li>表单校验</li>
+                </ul>
+            </div>
+            <div>
+                <strong>5.2 事件系统</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>Action 类型定义</li>
+                    <li>Action Handler 处理器</li>
+                    <li>事件冒泡机制</li>
+                </ul>
+            </div>
+            <div>
+                <strong>5.3 数据联动</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>WorkbenchContext</li>
+                    <li>组件间数据共享</li>
+                    <li>状态同步</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="phase-card phase-6">
+        <div class="phase-title">Phase 6: AI 集成与实时协作 (Week 6)</div>
+        <div class="grid-2">
+            <div>
+                <strong>6.1 AI Schema 输出</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>解析 workbench-schema 代码块</li>
+                    <li>自动打开 Workbench</li>
+                    <li>增量更新支持</li>
+                </ul>
+            </div>
+            <div>
+                <strong>6.2 实时执行可视化</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>工具调用过程展示</li>
+                    <li>文件操作实时预览</li>
+                    <li>代码生成实时渲染</li>
+                    <li>命令执行实时输出</li>
+                </ul>
+            </div>
+            <div>
+                <strong>6.3 三方协作</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>Platform 任务状态</li>
+                    <li>Client Agent 执行进度</li>
+                    <li>结果自动同步到 Workbench</li>
+                </ul>
+            </div>
+            <div>
+                <strong>6.4 模板系统</strong>
+                <ul style="font-size: 13px; margin: 8px 0; padding-left: 20px;">
+                    <li>预设模板库</li>
+                    <li>数据报表、对比分析模板</li>
+                    <li>时间线、代码项目模板</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h3>四、应用场景全景</h3>
+
+    <h4>4.1 软件开发场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：项目创建与初始化</h5>
+        <div class="user-query"><strong>用户：</strong>"帮我创建一个 Vue3 + TypeScript + Vite 项目"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 项目创建</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-sidebar">
+                    <div class="wb-sidebar-title">项目结构</div>
+                    <div class="wb-file-tree">
+                        <div class="wb-file"><span class="wb-file-icon">📁</span> my-vue-project</div>
+                        <div class="wb-file" style="padding-left: 24px;"><span class="wb-file-icon">📁</span> src</div>
+                        <div class="wb-file" style="padding-left: 40px;"><span class="wb-file-icon">📁</span> components</div>
+                        <div class="wb-file" style="padding-left: 40px;"><span class="wb-file-icon">📁</span> views</div>
+                        <div class="wb-file active" style="padding-left: 40px;"><span class="wb-file-icon">📄</span> App.vue</div>
+                        <div class="wb-file" style="padding-left: 40px;"><span class="wb-file-icon">📄</span> main.ts</div>
+                        <div class="wb-file" style="padding-left: 24px;"><span class="wb-file-icon">📄</span> package.json</div>
+                        <div class="wb-file" style="padding-left: 24px;"><span class="wb-file-icon">📄</span> vite.config.ts</div>
+                    </div>
+                </div>
+                <div class="wb-main">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">App.vue</div>
+                        <div class="wb-tab">终端</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div class="wb-code">
+<span class="tag">&lt;template&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="string">"app"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;router-view</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+<span class="tag">&lt;/template&gt;</span>
+
+<span class="tag">&lt;script</span> <span class="attr">setup</span> <span class="attr">lang</span>=<span class="string">"ts"</span><span class="tag">&gt;</span>
+<span class="keyword">import</span> { <span class="variable">ref</span> } <span class="keyword">from</span> <span class="string">'vue'</span>
+<span class="comment">// 组件逻辑</span>
+<span class="tag">&lt;/script&gt;</span>
+                        </div>
+                        <div class="wb-terminal" style="margin-top: 16px;">
+                            <div><span class="prompt">$</span> npm create vite@latest my-vue-project</div>
+                            <div class="success">✓ 项目创建成功</div>
+                            <div><span class="prompt">$</span> cd my-vue-project && npm install</div>
+                            <div class="success">✓ 依赖安装完成 (32 packages)</div>
+                            <div><span class="prompt">$</span> npm run dev</div>
+                            <div class="success">  VITE v5.0.0  ready in 320 ms</div>
+                            <div>  ➜  Local:   http://localhost:5173/</div>
+                        </div>
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">在 VS Code 打开</button>
+                            <button class="wb-btn default">继续开发</button>
+                            <button class="wb-btn default">查看预览</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：代码审查与重构</h5>
+        <div class="user-query"><strong>用户：</strong>"审查这个文件的代码质量，给出改进建议"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 代码审查</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-main" style="flex: 1;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">Diff 对比</div>
+                        <div class="wb-tab">问题清单</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div style="display: flex; gap: 1px; background: #3d3d5c; border-radius: 8px; overflow: hidden;">
+                            <div style="flex: 1; background: #1a1a2e; padding: 12px;">
+                                <div style="color: #8080a0; font-size: 12px; margin-bottom: 8px;">原代码</div>
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>function processData(data) {</div>
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>  var result = [];</div>
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>  for (var i = 0; i &lt; data.length; i++) {</div>
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>    result.push(data[i].value);</div>
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>  }</div>
+                            </div>
+                            <div style="flex: 1; background: #1a1a2e; padding: 12px;">
+                                <div style="color: #8080a0; font-size: 12px; margin-bottom: 8px;">建议修改</div>
+                                <div class="wb-diff-line added"><span class="wb-diff-sign">+</span>const processData = (data: Data[]) =&gt; {</div>
+                                <div class="wb-diff-line added"><span class="wb-diff-sign">+</span>  return data.map(item =&gt; item.value);</div>
+                                <div class="wb-diff-line added"><span class="wb-diff-sign">+</span>};</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div style="color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px;">问题清单</div>
+                            <div class="wb-list-item"><span class="wb-list-icon warning">⚠</span> 第12行：使用 var 应改为 const/let</div>
+                            <div class="wb-list-item"><span class="wb-list-icon warning">⚠</span> 第25行：函数过长(85行)，建议拆分</div>
+                            <div class="wb-list-item"><span class="wb-list-icon info">💡</span> 第40行：可使用可选链 ?. 简化</div>
+                            <div class="wb-list-item"><span class="wb-list-icon success">✓</span> 第52行：命名规范良好</div>
+                        </div>
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">一键应用所有建议</button>
+                            <button class="wb-btn default">逐个确认</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：Bug 调试与修复</h5>
+        <div class="user-query"><strong>用户：</strong>"这个报错怎么解决？" + 粘贴错误日志</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 错误分析</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-main">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">错误分析</div>
+                        <div class="wb-tab">修复方案</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div class="wb-alert error">
+                            <span>❌</span>
+                            <div>
+                                <div style="font-weight: 600;">TypeError: Cannot read property 'map' of undefined</div>
+                                <div style="opacity: 0.8; font-size: 12px; margin-top: 4px;">at UserList.tsx:25:15</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <div style="color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px;">根因分析</div>
+                            <div class="wb-list-item"><span class="wb-list-icon error">●</span> <strong>问题：</strong>users 在首次渲染时为 undefined</div>
+                            <div class="wb-list-item"><span class="wb-list-icon warning">●</span> <strong>原因：</strong>API 请求是异步的，初始状态未设置</div>
+                            <div class="wb-list-item"><span class="wb-list-icon success">●</span> <strong>解决：</strong>添加初始值 [] 或条件渲染</div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <div style="color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px;">修复代码</div>
+                            <div style="background: #0d1117; border-radius: 8px; overflow: hidden;">
+                                <div class="wb-diff-line removed"><span class="wb-diff-sign">-</span>const [users, setUsers] = useState();</div>
+                                <div class="wb-diff-line added"><span class="wb-diff-sign">+</span>const [users, setUsers] = useState&lt;User[]&gt;([]);</div>
+                            </div>
+                        </div>
+
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">应用修复</button>
+                            <button class="wb-btn default">查看更多方案</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.2 数据分析场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：数据查询与可视化</h5>
+        <div class="user-query"><strong>用户：</strong>"查询上个月的销售数据，按地区分析"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 销售数据分析</div>
+            </div>
+            <div class="wb-content" style="flex-direction: column;">
+                <div class="wb-tabs">
+                    <div class="wb-tab active">数据表格</div>
+                    <div class="wb-tab">图表视图</div>
+                    <div class="wb-tab">SQL</div>
+                </div>
+                <div class="wb-panel">
+                    <div class="wb-stats">
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value">355万</div>
+                            <div class="wb-stat-label">总销售额</div>
+                            <div class="wb-stat-trend up">↑ 8.5%</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value success">125万</div>
+                            <div class="wb-stat-label">华东地区</div>
+                            <div class="wb-stat-trend up">↑ 12%</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value">98万</div>
+                            <div class="wb-stat-label">华南地区</div>
+                            <div class="wb-stat-trend up">↑ 5%</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value warning">87万</div>
+                            <div class="wb-stat-label">华北地区</div>
+                            <div class="wb-stat-trend down">↓ 3%</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <table class="wb-table">
+                                <thead>
+                                    <tr><th>地区</th><th>销售额</th><th>环比</th><th>占比</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>华东</td><td>¥125万</td><td style="color: #52c41a;">+12%</td><td>35.2%</td></tr>
+                                    <tr><td>华南</td><td>¥98万</td><td style="color: #52c41a;">+5%</td><td>27.6%</td></tr>
+                                    <tr><td>华北</td><td>¥87万</td><td style="color: #ff4d4f;">-3%</td><td>24.5%</td></tr>
+                                    <tr><td>西南</td><td>¥45万</td><td style="color: #52c41a;">+8%</td><td>12.7%</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="width: 300px;">
+                            <div class="wb-chart">
+                                <div class="wb-bar" style="height: 160px;" data-value="125万"><span class="wb-bar-label">华东</span></div>
+                                <div class="wb-bar" style="height: 125px;" data-value="98万"><span class="wb-bar-label">华南</span></div>
+                                <div class="wb-bar" style="height: 112px;" data-value="87万"><span class="wb-bar-label">华北</span></div>
+                                <div class="wb-bar" style="height: 58px;" data-value="45万"><span class="wb-bar-label">西南</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wb-alert info">
+                        <span>💡</span>
+                        <div><strong>AI 洞察：</strong>华东地区增长最快(+12%)，建议加大该区域市场投入；华北地区下滑需关注</div>
+                    </div>
+
+                    <div class="wb-actions">
+                        <button class="wb-btn primary">导出 Excel</button>
+                        <button class="wb-btn default">导出 PDF</button>
+                        <button class="wb-btn default">生成周报</button>
+                        <button class="wb-btn default">深入分析</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：数据库查询</h5>
+        <div class="user-query"><strong>用户：</strong>"查询订单表，找出金额大于1万的订单"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 数据库查询</div>
+            </div>
+            <div class="wb-content" style="flex-direction: column;">
+                <div class="wb-tabs">
+                    <div class="wb-tab active">SQL 编辑器</div>
+                    <div class="wb-tab">查询历史</div>
+                </div>
+                <div class="wb-panel">
+                    <div style="background: #0d1117; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div class="wb-code">
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> orders
+<span class="keyword">WHERE</span> amount &gt; <span class="string">10000</span>
+<span class="keyword">ORDER BY</span> created_at <span class="keyword">DESC</span>
+<span class="keyword">LIMIT</span> <span class="string">100</span>;
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                        <button class="wb-btn primary">执行</button>
+                        <button class="wb-btn default">格式化</button>
+                        <button class="wb-btn default">解释执行计划</button>
+                    </div>
+
+                    <div class="wb-alert success">
+                        <span>✓</span>
+                        <div>查询完成：共 45 条记录，耗时 0.023s</div>
+                    </div>
+
+                    <table class="wb-table" style="margin-top: 16px;">
+                        <thead>
+                            <tr><th>ID</th><th>客户</th><th>金额</th><th>状态</th><th>日期</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1001</td><td>华为技术</td><td>¥52,000</td><td><span style="color: #52c41a;">已完成</span></td><td>2026-01-20</td></tr>
+                            <tr><td>1002</td><td>腾讯科技</td><td>¥38,000</td><td><span style="color: #52c41a;">已完成</span></td><td>2026-01-19</td></tr>
+                            <tr><td>1003</td><td>阿里巴巴</td><td>¥28,500</td><td><span style="color: #faad14;">处理中</span></td><td>2026-01-18</td></tr>
+                            <tr><td>1004</td><td>字节跳动</td><td>¥15,800</td><td><span style="color: #52c41a;">已完成</span></td><td>2026-01-17</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="wb-actions">
+                        <button class="wb-btn primary">导出结果</button>
+                        <button class="wb-btn default">生成图表</button>
+                        <button class="wb-btn default">保存为视图</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.3 文档处理场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：合同/文档审查</h5>
+        <div class="user-query"><strong>用户：</strong>"审查这份合同，提取关键信息"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 合同审查</div>
+            </div>
+            <div class="wb-content">
+                <div style="flex: 1; background: #252538; display: flex; align-items: center; justify-content: center; border-right: 1px solid #3d3d5c;">
+                    <div style="text-align: center; color: #8080a0;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
+                        <div>采购合同.pdf</div>
+                        <div style="font-size: 12px; margin-top: 8px;">共 12 页 | 正在显示第 1 页</div>
+                        <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
+                            <button class="wb-btn default" style="padding: 6px 12px;">◀ 上一页</button>
+                            <button class="wb-btn default" style="padding: 6px 12px;">下一页 ▶</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="wb-right-panel" style="width: 340px;">
+                    <div class="wb-panel-title">📋 合同要素提取</div>
+
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">甲方</div>
+                        <div class="wb-panel-value">XX科技有限公司</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">乙方</div>
+                        <div class="wb-panel-value">YY供应商有限公司</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">合同金额</div>
+                        <div class="wb-panel-value" style="color: #1890ff; font-size: 18px; font-weight: 600;">¥150,000</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">有效期</div>
+                        <div class="wb-panel-value">2026.01.01 - 2026.12.31</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">付款方式</div>
+                        <div class="wb-panel-value">3-3-4 分期付款</div>
+                    </div>
+
+                    <div class="wb-alert warning" style="margin-top: 16px;">
+                        <span>⚠</span>
+                        <div style="font-size: 12px;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">风险提示 (2项)</div>
+                            <div>• 第5条: 验收标准不明确</div>
+                            <div>• 第8条: 违约金比例偏高(10%)</div>
+                        </div>
+                    </div>
+
+                    <div class="wb-actions" style="flex-direction: column; gap: 8px;">
+                        <button class="wb-btn primary" style="width: 100%;">生成审查报告</button>
+                        <button class="wb-btn default" style="width: 100%;">标注问题条款</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：报告自动生成</h5>
+        <div class="user-query"><strong>用户：</strong>"根据这些数据生成月度工作报告"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 报告生成器</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-sidebar" style="width: 180px;">
+                    <div class="wb-sidebar-title">报告大纲</div>
+                    <div class="wb-file-tree">
+                        <div class="wb-file active">📑 一、工作概述</div>
+                        <div class="wb-file">📑 二、重点工作</div>
+                        <div class="wb-file">📑 三、数据分析</div>
+                        <div class="wb-file">📑 四、问题与建议</div>
+                        <div class="wb-file">📑 五、下月计划</div>
+                    </div>
+                    <div style="padding: 16px; border-top: 1px solid #3d3d5c; margin-top: 16px;">
+                        <div style="color: #8080a0; font-size: 12px;">字数统计</div>
+                        <div style="color: #d4d4d4; font-size: 20px; font-weight: 600; margin-top: 4px;">1,850</div>
+                        <div class="wb-progress" style="margin-top: 8px;">
+                            <div class="wb-progress-bar" style="width: 92%;"></div>
+                        </div>
+                        <div style="color: #8080a0; font-size: 11px;">目标: 2,000字</div>
+                    </div>
+                </div>
+                <div class="wb-main">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">编辑</div>
+                        <div class="wb-tab">预览</div>
+                    </div>
+                    <div class="wb-panel" style="background: #1e1e2e;">
+                        <div style="color: #d4d4d4; font-family: -apple-system, sans-serif; line-height: 1.8;">
+                            <h1 style="color: #fff; font-size: 24px; margin-bottom: 20px;">2026年1月工作报告</h1>
+
+                            <h2 style="color: #1890ff; font-size: 18px; margin: 20px 0 12px;">一、工作概述</h2>
+                            <p>本月完成销售额 <strong style="color: #52c41a;">355 万元</strong>，同比增长 <strong style="color: #52c41a;">12%</strong>，超额完成月度目标。华东地区表现亮眼，环比增长 12%，成为本月增长主力...</p>
+
+                            <h2 style="color: #1890ff; font-size: 18px; margin: 20px 0 12px;">二、重点工作</h2>
+                            <p>1. 完成 XX智能化改造项目 顺利交付<br>
+                            2. 新签客户 15 家，总合同额 280万元<br>
+                            3. 团队新增成员 3 人，完成岗前培训</p>
+
+                            <div style="background: #252538; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center; color: #8080a0;">
+                                <div style="font-size: 14px; margin-bottom: 8px;">📊 销售数据图表</div>
+                                <div style="font-size: 12px;">[AI 自动生成的可视化图表]</div>
+                            </div>
+                        </div>
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">导出 Word</button>
+                            <button class="wb-btn default">导出 PDF</button>
+                            <button class="wb-btn default">发送邮件</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.4 办公自动化场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：PPT 演示文稿生成</h5>
+        <div class="user-query"><strong>用户：</strong>"根据这份方案，生成一个10页的PPT"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - PPT 生成器</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-sidebar" style="width: 160px; padding: 12px;">
+                    <div class="wb-sidebar-title">幻灯片</div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0; border: 2px solid #1890ff;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">📊</div>
+                            1.封面
+                        </div>
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">📋</div>
+                            2.目录
+                        </div>
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">💡</div>
+                            3.背景
+                        </div>
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">🎯</div>
+                            4.方案
+                        </div>
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">📈</div>
+                            5.实施
+                        </div>
+                        <div style="background: #3d3d5c; border-radius: 4px; padding: 8px; text-align: center; font-size: 10px; color: #a0a0b0;">
+                            <div style="font-size: 16px; margin-bottom: 4px;">💰</div>
+                            6.预算
+                        </div>
+                    </div>
+                    <div style="color: #8080a0; font-size: 11px; margin-top: 12px; text-align: center;">共 10 页</div>
+                </div>
+                <div class="wb-main">
+                    <div class="wb-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="width: 90%; max-width: 500px; background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 8px; padding: 40px; text-align: center; color: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                            <div style="font-size: 28px; font-weight: 700; margin-bottom: 16px;">XX智能化改造项目</div>
+                            <div style="font-size: 16px; opacity: 0.9;">项目方案汇报</div>
+                            <div style="margin-top: 40px; font-size: 14px; opacity: 0.7;">
+                                <div>XX科技有限公司</div>
+                                <div>2026年1月</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
+                            <span style="color: #8080a0; font-size: 13px;">模板:</span>
+                            <select style="background: #3d3d5c; border: none; color: #d4d4d4; padding: 6px 12px; border-radius: 4px;">
+                                <option>商务蓝</option>
+                                <option>科技紫</option>
+                                <option>简约黑</option>
+                            </select>
+                            <button class="wb-btn default" style="padding: 6px 12px;">调整配色</button>
+                        </div>
+                        <div class="wb-actions" style="margin-top: 24px;">
+                            <button class="wb-btn primary">下载 PPTX</button>
+                            <button class="wb-btn default">在线编辑</button>
+                            <button class="wb-btn default">全屏预览</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：会议纪要生成</h5>
+        <div class="user-query"><strong>用户：</strong>"根据这段会议录音，生成会议纪要"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 会议纪要</div>
+            </div>
+            <div class="wb-content">
+                <div style="flex: 1; border-right: 1px solid #3d3d5c;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">音频转写</div>
+                        <div class="wb-tab">原始录音</div>
+                    </div>
+                    <div class="wb-panel" style="font-size: 13px;">
+                        <div style="padding: 12px; background: #252538; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <span style="color: #1890ff; font-weight: 600; white-space: nowrap;">[00:00]</span>
+                                <div><span style="color: #52c41a; font-weight: 500;">张总:</span> <span style="color: #d4d4d4;">今天讨论Q1的销售策略，目标是完成500万业绩...</span></div>
+                            </div>
+                        </div>
+                        <div style="padding: 12px; background: #252538; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <span style="color: #1890ff; font-weight: 600; white-space: nowrap;">[02:15]</span>
+                                <div><span style="color: #faad14; font-weight: 500;">李经理:</span> <span style="color: #d4d4d4;">我认为应该重点关注华东市场，上季度增长势头好...</span></div>
+                            </div>
+                        </div>
+                        <div style="padding: 12px; background: #252538; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <span style="color: #1890ff; font-weight: 600; white-space: nowrap;">[05:30]</span>
+                                <div><span style="color: #722ed1; font-weight: 500;">王主管:</span> <span style="color: #d4d4d4;">预算方面建议增加20%，用于市场推广活动...</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="wb-right-panel" style="width: 320px;">
+                    <div class="wb-panel-title">📝 结构化纪要</div>
+
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">会议主题</div>
+                        <div class="wb-panel-value">Q1销售策略讨论</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">参会人员</div>
+                        <div class="wb-panel-value">张总、李经理、王主管</div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">主要议题</div>
+                        <div class="wb-panel-value" style="font-size: 13px;">
+                            <div>1. 华东市场重点突破</div>
+                            <div>2. 预算增加20%</div>
+                            <div>3. Q1目标500万</div>
+                        </div>
+                    </div>
+                    <div class="wb-panel-section">
+                        <div class="wb-panel-label">待办事项</div>
+                        <div style="font-size: 13px; color: #d4d4d4;">
+                            <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                                <span style="color: #faad14;">☐</span>
+                                <span>李经理 - 制定华东方案 (1/25)</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="color: #faad14;">☐</span>
+                                <span>王主管 - 提交预算报告 (1/28)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wb-actions" style="flex-direction: column; gap: 8px;">
+                        <button class="wb-btn primary" style="width: 100%;">导出 Word</button>
+                        <button class="wb-btn default" style="width: 100%;">发送参会人</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.5 运维监控场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：服务器状态监控</h5>
+        <div class="user-query"><strong>用户：</strong>"查看所有服务器的运行状态"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 服务器监控面板</div>
+            </div>
+            <div class="wb-content" style="flex-direction: column;">
+                <div class="wb-tabs">
+                    <div class="wb-tab active">服务器列表</div>
+                    <div class="wb-tab">性能图表</div>
+                    <div class="wb-tab">告警记录</div>
+                </div>
+                <div class="wb-panel">
+                    <div class="wb-stats">
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value success">4</div>
+                            <div class="wb-stat-label">正常运行</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value warning">1</div>
+                            <div class="wb-stat-label">性能告警</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value error">1</div>
+                            <div class="wb-stat-label">服务故障</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value">6</div>
+                            <div class="wb-stat-label">服务器总数</div>
+                        </div>
+                    </div>
+
+                    <table class="wb-table">
+                        <thead>
+                            <tr><th>服务器</th><th>状态</th><th>CPU</th><th>内存</th><th>磁盘</th><th>网络</th><th>操作</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>web-01</td>
+                                <td><span style="color: #52c41a;">● 正常</span></td>
+                                <td>45%</td>
+                                <td>62%</td>
+                                <td>55%</td>
+                                <td>12 MB/s</td>
+                                <td><span style="color: #1890ff; cursor: pointer;">详情</span></td>
+                            </tr>
+                            <tr>
+                                <td>web-02</td>
+                                <td><span style="color: #52c41a;">● 正常</span></td>
+                                <td>38%</td>
+                                <td>58%</td>
+                                <td>52%</td>
+                                <td>10 MB/s</td>
+                                <td><span style="color: #1890ff; cursor: pointer;">详情</span></td>
+                            </tr>
+                            <tr style="background: #faad1410;">
+                                <td>db-master</td>
+                                <td><span style="color: #faad14;">● 告警</span></td>
+                                <td>78%</td>
+                                <td style="color: #faad14; font-weight: 600;">85%</td>
+                                <td>70%</td>
+                                <td>5 MB/s</td>
+                                <td><span style="color: #1890ff; cursor: pointer;">详情</span></td>
+                            </tr>
+                            <tr>
+                                <td>db-slave</td>
+                                <td><span style="color: #52c41a;">● 正常</span></td>
+                                <td>25%</td>
+                                <td>45%</td>
+                                <td>68%</td>
+                                <td>3 MB/s</td>
+                                <td><span style="color: #1890ff; cursor: pointer;">详情</span></td>
+                            </tr>
+                            <tr style="background: #ff4d4f10;">
+                                <td>redis-01</td>
+                                <td><span style="color: #ff4d4f;">● 故障</span></td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td><span style="color: #ff4d4f; cursor: pointer;">诊断</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="wb-alert warning">
+                        <span>⚠</span>
+                        <div><strong>告警：</strong>db-master 内存使用率超过 80%，建议扩容或优化查询</div>
+                    </div>
+                    <div class="wb-alert error">
+                        <span>❌</span>
+                        <div><strong>故障：</strong>redis-01 无法连接，服务已中断 15 分钟</div>
+                    </div>
+
+                    <div class="wb-actions">
+                        <button class="wb-btn primary">AI 智能诊断</button>
+                        <button class="wb-btn default">批量重启</button>
+                        <button class="wb-btn default">导出报告</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scenario-card">
+        <h5>场景：日志分析与故障修复</h5>
+        <div class="user-query"><strong>用户：</strong>"redis-01 挂了，帮我排查并修复"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 故障修复</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-main" style="flex: 1;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">诊断过程</div>
+                        <div class="wb-tab">系统日志</div>
+                        <div class="wb-tab">执行记录</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div style="color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 16px;">诊断过程</div>
+
+                        <div class="wb-list-item"><span class="wb-list-icon success">✓</span> 检查网络连接: <span style="color: #52c41a;">正常</span></div>
+                        <div class="wb-list-item"><span class="wb-list-icon warning">✓</span> 检查端口 6379: <span style="color: #faad14;">无响应</span></div>
+                        <div class="wb-list-item"><span class="wb-list-icon error">✓</span> 检查进程状态: <span style="color: #ff4d4f;">Redis 进程不存在</span></div>
+                        <div class="wb-list-item"><span class="wb-list-icon error">✓</span> 检查系统日志: <span style="color: #ff4d4f;">OOM Killer 终止了进程</span></div>
+                        <div class="wb-list-item"><span class="wb-list-icon info">●</span> <strong>根因确认:</strong> 内存不足导致进程被系统杀死</div>
+
+                        <div style="color: #fff; font-size: 16px; font-weight: 600; margin: 24px 0 16px;">修复方案</div>
+                        <div class="wb-list-item"><span style="color: #8080a0;">1.</span> 增加系统 swap 空间 (4GB)</div>
+                        <div class="wb-list-item"><span style="color: #8080a0;">2.</span> 设置 Redis maxmemory 限制 (2GB)</div>
+                        <div class="wb-list-item"><span style="color: #8080a0;">3.</span> 重启 Redis 服务</div>
+
+                        <div style="color: #fff; font-size: 16px; font-weight: 600; margin: 24px 0 12px;">执行进度</div>
+                        <div class="wb-progress" style="height: 12px;">
+                            <div class="wb-progress-bar" style="width: 80%;"></div>
+                        </div>
+                        <div style="color: #8080a0; font-size: 12px; margin-bottom: 16px;">80% - 正在重启 Redis 服务...</div>
+
+                        <div class="wb-terminal" style="max-height: 120px; overflow-y: auto;">
+                            <div><span class="success">✓</span> 创建 4G swap 文件完成</div>
+                            <div><span class="success">✓</span> 启用 swap 成功</div>
+                            <div><span class="success">✓</span> 修改 redis.conf: maxmemory 2gb</div>
+                            <div><span class="warning">⏳</span> 重启 Redis 服务中...</div>
+                        </div>
+
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">查看执行日志</button>
+                            <button class="wb-btn default">回滚操作</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.6 业务系统集成场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：RPA 流程自动化</h5>
+        <div class="user-query"><strong>用户：</strong>"自动审批所有金额小于1000元的报销单"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - RPA 流程执行</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-main" style="flex: 1;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">执行状态</div>
+                        <div class="wb-tab">浏览器预览</div>
+                        <div class="wb-tab">执行日志</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div class="wb-stats">
+                            <div class="wb-stat-card">
+                                <div class="wb-stat-value">25</div>
+                                <div class="wb-stat-label">待处理总数</div>
+                            </div>
+                            <div class="wb-stat-card">
+                                <div class="wb-stat-value success">8</div>
+                                <div class="wb-stat-label">已审批通过</div>
+                            </div>
+                            <div class="wb-stat-card">
+                                <div class="wb-stat-value warning">3</div>
+                                <div class="wb-stat-label">跳过(超额)</div>
+                            </div>
+                            <div class="wb-stat-card">
+                                <div class="wb-stat-value">14</div>
+                                <div class="wb-stat-label">待处理</div>
+                            </div>
+                        </div>
+
+                        <div style="color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px;">OA系统 - 待审批列表</div>
+                        <div style="background: #252538; border-radius: 8px; padding: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #3d3d5c;">
+                                <span style="color: #52c41a;">✓</span>
+                                <span style="color: #d4d4d4; flex: 1;">报销单001 - ¥500 - 张三</span>
+                                <span style="color: #52c41a; font-size: 12px;">已通过</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #3d3d5c; background: #1890ff10;">
+                                <span style="color: #1890ff;">⟳</span>
+                                <span style="color: #d4d4d4; flex: 1;">报销单002 - ¥800 - 李四</span>
+                                <span style="color: #1890ff; font-size: 12px;">审批中...</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #3d3d5c;">
+                                <span style="color: #faad14;">⊘</span>
+                                <span style="color: #d4d4d4; flex: 1;">报销单003 - ¥1500 - 王五</span>
+                                <span style="color: #faad14; font-size: 12px;">跳过-超额</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0;">
+                                <span style="color: #8080a0;">○</span>
+                                <span style="color: #d4d4d4; flex: 1;">报销单004 - ¥350 - 赵六</span>
+                                <span style="color: #8080a0; font-size: 12px;">待处理</span>
+                            </div>
+                        </div>
+
+                        <div style="color: #fff; font-size: 14px; font-weight: 600; margin: 20px 0 12px;">执行记录</div>
+                        <div class="wb-terminal">
+                            <div><span style="color: #8080a0;">10:30:15</span> <span class="success">✓</span> 登录OA系统成功</div>
+                            <div><span style="color: #8080a0;">10:30:18</span> <span class="success">✓</span> 获取待审批列表: 25条</div>
+                            <div><span style="color: #8080a0;">10:30:20</span> <span class="success">✓</span> 审批报销单001: 通过</div>
+                            <div><span style="color: #8080a0;">10:30:22</span> <span style="color: #1890ff;">⟳</span> 审批报销单002: 处理中...</div>
+                        </div>
+
+                        <div class="wb-progress" style="margin-top: 16px;">
+                            <div class="wb-progress-bar" style="width: 44%;"></div>
+                        </div>
+                        <div style="color: #8080a0; font-size: 12px;">进度: 11/25 (44%)</div>
+
+                        <div class="wb-actions">
+                            <button class="wb-btn default">暂停</button>
+                            <button class="wb-btn default" style="background: #ff4d4f30; color: #ff4d4f;">停止</button>
+                            <button class="wb-btn primary">查看完整日志</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.7 知识管理场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：知识库问答</h5>
+        <div class="user-query"><strong>用户：</strong>"公司的年假政策是什么？"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 知识库问答</div>
+            </div>
+            <div class="wb-content">
+                <div class="wb-main" style="flex: 1;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">AI 回答</div>
+                        <div class="wb-tab">引用来源</div>
+                        <div class="wb-tab">相关文档</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div style="background: #252538; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                            <div style="color: #fff; font-size: 15px; line-height: 1.8;">
+                                根据《公司员工手册》第三章规定：
+                            </div>
+                            <div style="margin: 16px 0; padding-left: 20px; color: #d4d4d4; line-height: 1.8;">
+                                <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                                    <span style="color: #1890ff; font-weight: 600;">1.</span>
+                                    <span>工龄1-10年：年假5天</span>
+                                </div>
+                                <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                                    <span style="color: #1890ff; font-weight: 600;">2.</span>
+                                    <span>工龄10-20年：年假10天</span>
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                    <span style="color: #1890ff; font-weight: 600;">3.</span>
+                                    <span>工龄20年以上：年假15天</span>
+                                </div>
+                            </div>
+                            <div style="color: #fff; margin-top: 16px;">注意事项：</div>
+                            <div style="padding-left: 20px; color: #d4d4d4; margin-top: 8px;">
+                                <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+                                    <span style="color: #8080a0;">•</span>
+                                    <span>年假需提前3天申请</span>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <span style="color: #8080a0;">•</span>
+                                    <span>未休年假可折算工资</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px;">引用来源</div>
+                        <div style="background: #252538; border-radius: 8px; padding: 16px; border-left: 3px solid #1890ff;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                <span style="color: #1890ff; font-size: 18px;">📄</span>
+                                <span style="color: #d4d4d4; font-weight: 500;">员工手册2026版.pdf - 第32页</span>
+                            </div>
+                            <div style="color: #8080a0; font-size: 13px; font-style: italic; padding: 12px; background: #1a1a2e; border-radius: 6px;">
+                                "第三章 休假制度<br/>
+                                3.1 年假规定<br/>
+                                根据国家劳动法及公司政策，员工享有带薪年假..."
+                            </div>
+                            <div style="margin-top: 12px; text-align: right;">
+                                <span style="color: #1890ff; cursor: pointer; font-size: 13px;">查看原文 →</span>
+                            </div>
+                        </div>
+
+                        <div style="color: #8080a0; font-size: 13px; margin-top: 20px;">
+                            <span style="margin-right: 8px;">相关问题：</span>
+                            <span style="color: #1890ff; cursor: pointer; margin-right: 12px;">如何申请年假?</span>
+                            <span style="color: #1890ff; cursor: pointer;">年假可以累积吗?</span>
+                        </div>
+
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">继续提问</button>
+                            <button class="wb-btn default">查看更多来源</button>
+                            <button class="wb-btn default">导出回答</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.8 内容创作场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：内容创作</h5>
+        <div class="user-query"><strong>用户：</strong>"帮我写一篇关于AI在制造业应用的公众号文章"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 内容创作工作台</div>
+            </div>
+            <div class="wb-content">
+                <!-- 左侧大纲 -->
+                <div class="wb-sidebar" style="width: 180px;">
+                    <div class="wb-sidebar-title">文章大纲</div>
+                    <div style="padding: 0 12px;">
+                        <div class="wb-file active">
+                            <span style="color: #52c41a;">✓</span>
+                            <span>1. 开篇引入</span>
+                        </div>
+                        <div class="wb-file active">
+                            <span style="color: #52c41a;">✓</span>
+                            <span>2. 应用场景</span>
+                        </div>
+                        <div style="padding-left: 20px;">
+                            <div class="wb-file" style="padding: 4px 8px; font-size: 12px;">2.1 智能质检</div>
+                            <div class="wb-file" style="padding: 4px 8px; font-size: 12px;">2.2 预测维护</div>
+                            <div class="wb-file" style="padding: 4px 8px; font-size: 12px;">2.3 排产优化</div>
+                        </div>
+                        <div class="wb-file">
+                            <span style="color: #1890ff;">⟳</span>
+                            <span>3. 案例分享</span>
+                        </div>
+                        <div class="wb-file">
+                            <span style="color: #8080a0;">○</span>
+                            <span>4. 未来展望</span>
+                        </div>
+                    </div>
+                    <div style="padding: 16px 12px; border-top: 1px solid #3d3d5c; margin-top: 16px;">
+                        <div style="color: #8080a0; font-size: 12px; margin-bottom: 8px;">字数统计</div>
+                        <div style="color: #fff; font-size: 20px; font-weight: 600;">1,850</div>
+                        <div style="color: #8080a0; font-size: 12px;">目标: 2,000字</div>
+                        <div class="wb-progress" style="margin-top: 8px;">
+                            <div class="wb-progress-bar" style="width: 92%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧编辑器 -->
+                <div class="wb-main" style="flex: 1;">
+                    <div class="wb-tabs">
+                        <div class="wb-tab active">正文编辑</div>
+                        <div class="wb-tab">预览效果</div>
+                        <div class="wb-tab">SEO分析</div>
+                    </div>
+                    <div class="wb-panel">
+                        <div style="background: #252538; border-radius: 8px; padding: 20px; color: #d4d4d4; line-height: 1.8;">
+                            <div style="color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 16px;">AI赋能智能制造</div>
+                            <p style="margin-bottom: 16px;">在数字化转型浪潮下，AI正在重塑制造业的每个环节。从产品设计到质量检测，从生产排程到设备维护，人工智能技术正以前所未有的速度改变着传统制造模式...</p>
+
+                            <div style="color: #1890ff; font-size: 18px; font-weight: 600; margin: 20px 0 12px;">一、智能质检</div>
+                            <p style="margin-bottom: 12px;">传统质检依赖人工目视检测，效率低且容易疲劳。基于深度学习的视觉检测系统可以...</p>
+
+                            <div style="background: #1a1a2e; border: 2px dashed #3d3d5c; border-radius: 8px; padding: 24px; text-align: center; margin: 16px 0;">
+                                <span style="color: #8080a0;">[插入配图位置]</span>
+                                <div style="margin-top: 8px;">
+                                    <span style="color: #1890ff; cursor: pointer; font-size: 13px;">+ AI生成配图</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wb-actions">
+                            <button class="wb-btn primary">生成配图</button>
+                            <button class="wb-btn default">SEO优化</button>
+                            <button class="wb-btn default">预览效果</button>
+                            <button class="wb-btn default" style="background: #52c41a30; color: #52c41a;">导出公众号格式</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.9 项目管理场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：项目进度追踪</h5>
+        <div class="user-query"><strong>用户：</strong>"查看 XX 项目的当前进度"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - XX智能化改造项目</div>
+            </div>
+            <div class="wb-content" style="flex-direction: column;">
+                <div class="wb-tabs">
+                    <div class="wb-tab active">甘特图</div>
+                    <div class="wb-tab">任务看板</div>
+                    <div class="wb-tab">风险预警</div>
+                    <div class="wb-tab">周报</div>
+                </div>
+                <div class="wb-panel">
+                    <!-- 整体进度 -->
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                        <span style="color: #fff; font-size: 14px;">整体进度</span>
+                        <div style="flex: 1; background: #3d3d5c; height: 24px; border-radius: 12px; overflow: hidden;">
+                            <div style="width: 72%; height: 100%; background: linear-gradient(90deg, #52c41a 0%, #1890ff 100%); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px;">
+                                <span style="color: #fff; font-size: 13px; font-weight: 600;">72%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 甘特图 -->
+                    <div style="background: #252538; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding: 10px; color: #8080a0; border-bottom: 1px solid #3d3d5c; width: 120px;">任务</th>
+                                    <th style="text-align: center; padding: 10px; color: #8080a0; border-bottom: 1px solid #3d3d5c;">1月</th>
+                                    <th style="text-align: center; padding: 10px; color: #8080a0; border-bottom: 1px solid #3d3d5c;">2月</th>
+                                    <th style="text-align: center; padding: 10px; color: #8080a0; border-bottom: 1px solid #3d3d5c;">3月</th>
+                                    <th style="text-align: center; padding: 10px; color: #8080a0; border-bottom: 1px solid #3d3d5c; width: 60px;">状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 12px 10px; color: #d4d4d4;">需求分析</td>
+                                    <td style="padding: 12px 10px;"><div style="background: #52c41a; height: 20px; border-radius: 4px; width: 80%;"></div></td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px; text-align: center; color: #52c41a;">✓</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 10px; color: #d4d4d4;">系统设计</td>
+                                    <td style="padding: 12px 10px;"><div style="background: #52c41a; height: 20px; border-radius: 4px 0 0 4px; width: 60%; margin-left: 40%;"></div></td>
+                                    <td style="padding: 12px 10px;"><div style="background: #52c41a; height: 20px; border-radius: 0 4px 4px 0; width: 40%;"></div></td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px; text-align: center; color: #52c41a;">✓</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 10px; color: #d4d4d4;">开发实现</td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px;"><div style="background: #1890ff; height: 20px; border-radius: 4px 0 0 4px; width: 100%;"></div></td>
+                                    <td style="padding: 12px 10px;"><div style="background: #1890ff50; height: 20px; border-radius: 0 4px 4px 0; width: 50%; border: 1px dashed #1890ff;"></div></td>
+                                    <td style="padding: 12px 10px; text-align: center; color: #1890ff;">进行中</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 10px; color: #d4d4d4;">测试验收</td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px;"></td>
+                                    <td style="padding: 12px 10px;"><div style="background: #3d3d5c; height: 20px; border-radius: 4px; width: 60%; margin-left: 20%;"></div></td>
+                                    <td style="padding: 12px 10px; text-align: center; color: #8080a0;">待开始</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 风险提示 -->
+                    <div class="wb-alert warning">
+                        <span>⚠</span>
+                        <div><strong>风险提示：</strong>开发阶段延期3天，可能影响整体交付时间</div>
+                    </div>
+
+                    <!-- 待办事项 -->
+                    <div style="color: #fff; font-size: 14px; font-weight: 600; margin: 20px 0 12px;">待办事项</div>
+                    <div style="background: #252538; border-radius: 8px; padding: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #3d3d5c;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: #ff4d4f;"></span>
+                            <span style="color: #d4d4d4; flex: 1;">完成用户模块开发</span>
+                            <span style="color: #ff4d4f; font-size: 12px;">截止: 1/25</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #3d3d5c;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: #faad14;"></span>
+                            <span style="color: #d4d4d4; flex: 1;">接口联调</span>
+                            <span style="color: #faad14; font-size: 12px;">截止: 1/28</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: #52c41a;"></span>
+                            <span style="color: #d4d4d4; flex: 1;">编写测试用例</span>
+                            <span style="color: #52c41a; font-size: 12px;">截止: 2/1</span>
+                        </div>
+                    </div>
+
+                    <div class="wb-actions">
+                        <button class="wb-btn primary">更新进度</button>
+                        <button class="wb-btn default">生成周报</button>
+                        <button class="wb-btn default">调整计划</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>4.10 安全与合规场景</h4>
+
+    <div class="scenario-card">
+        <h5>场景：代码安全扫描</h5>
+        <div class="user-query"><strong>用户：</strong>"扫描这个项目的安全漏洞"</div>
+
+        <div class="wb-mock">
+            <div class="wb-titlebar">
+                <div class="wb-dot red"></div>
+                <div class="wb-dot yellow"></div>
+                <div class="wb-dot green"></div>
+                <div class="wb-title">Workbench - 安全扫描报告</div>
+            </div>
+            <div class="wb-content" style="flex-direction: column;">
+                <div class="wb-tabs">
+                    <div class="wb-tab active">扫描结果</div>
+                    <div class="wb-tab">漏洞详情</div>
+                    <div class="wb-tab">修复建议</div>
+                    <div class="wb-tab">历史记录</div>
+                </div>
+                <div class="wb-panel">
+                    <!-- 统计卡片 -->
+                    <div class="wb-stats">
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value error">2</div>
+                            <div class="wb-stat-label">高危漏洞</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value warning">1</div>
+                            <div class="wb-stat-label">中危漏洞</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value" style="color: #8080a0;">2</div>
+                            <div class="wb-stat-label">低危漏洞</div>
+                        </div>
+                        <div class="wb-stat-card">
+                            <div class="wb-stat-value">5</div>
+                            <div class="wb-stat-label">问题总数</div>
+                        </div>
+                    </div>
+
+                    <!-- 漏洞列表 -->
+                    <table class="wb-table">
+                        <thead>
+                            <tr>
+                                <th>严重程度</th>
+                                <th>漏洞类型</th>
+                                <th>位置</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #ff4d4f10;">
+                                <td><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ff4d4f;"></span> 高危</span></td>
+                                <td>SQL注入</td>
+                                <td style="font-family: monospace; font-size: 12px;">user.ts:45</td>
+                                <td><span style="color: #faad14;">待修复</span></td>
+                                <td><span style="color: #1890ff; cursor: pointer;">查看</span></td>
+                            </tr>
+                            <tr style="background: #ff4d4f10;">
+                                <td><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ff4d4f;"></span> 高危</span></td>
+                                <td>XSS漏洞</td>
+                                <td style="font-family: monospace; font-size: 12px;">comment.tsx:112</td>
+                                <td><span style="color: #faad14;">待修复</span></td>
+                                <td><span style="color: #1890ff; cursor: pointer;">查看</span></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #faad14;"></span> 中危</span></td>
+                                <td>敏感信息泄露</td>
+                                <td style="font-family: monospace; font-size: 12px;">config.ts:8</td>
+                                <td><span style="color: #faad14;">待修复</span></td>
+                                <td><span style="color: #1890ff; cursor: pointer;">查看</span></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span> 低危</span></td>
+                                <td>依赖版本过旧</td>
+                                <td style="font-family: monospace; font-size: 12px;">package.json</td>
+                                <td><span style="color: #faad14;">待修复</span></td>
+                                <td><span style="color: #1890ff; cursor: pointer;">查看</span></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span> 低危</span></td>
+                                <td>未使用HTTPS</td>
+                                <td style="font-family: monospace; font-size: 12px;">api.ts:23</td>
+                                <td><span style="color: #faad14;">待修复</span></td>
+                                <td><span style="color: #1890ff; cursor: pointer;">查看</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 漏洞详情 -->
+                    <div style="color: #fff; font-size: 14px; font-weight: 600; margin: 20px 0 12px;">漏洞详情 - SQL注入</div>
+                    <div style="background: #252538; border-radius: 8px; padding: 16px;">
+                        <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px; font-size: 13px; margin-bottom: 16px;">
+                            <span style="color: #8080a0;">位置:</span>
+                            <span style="color: #d4d4d4; font-family: monospace;">src/services/user.ts:45</span>
+                            <span style="color: #8080a0;">问题:</span>
+                            <span style="color: #d4d4d4;">直接拼接用户输入到SQL语句</span>
+                            <span style="color: #8080a0;">修复建议:</span>
+                            <span style="color: #d4d4d4;">使用参数化查询</span>
+                        </div>
+
+                        <div style="background: #1a1a2e; border-radius: 6px; overflow: hidden;">
+                            <div class="wb-diff-line removed">
+                                <span class="wb-diff-sign">-</span>
+                                <span style="font-family: 'Fira Code', monospace;">const sql = `SELECT * FROM users WHERE id=${id}`</span>
+                            </div>
+                            <div class="wb-diff-line added">
+                                <span class="wb-diff-sign">+</span>
+                                <span style="font-family: 'Fira Code', monospace;">const sql = `SELECT * FROM users WHERE id=$1`</span>
+                            </div>
+                            <div class="wb-diff-line added">
+                                <span class="wb-diff-sign">+</span>
+                                <span style="font-family: 'Fira Code', monospace;">const result = await db.query(sql, [id])</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wb-actions">
+                        <button class="wb-btn primary">一键修复所有</button>
+                        <button class="wb-btn default">生成报告</button>
+                        <button class="wb-btn default">导出PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3>五、应用场景总结</h3>
+
+    <table>
+        <thead>
+            <tr><th>大类</th><th>具体场景</th><th>核心组件</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>软件开发</strong></td>
+                <td>项目创建、代码审查、Bug修复、API开发</td>
+                <td>CodeEditor, Terminal, Diff</td>
+            </tr>
+            <tr>
+                <td><strong>数据分析</strong></td>
+                <td>数据查询、Excel处理、可视化报表</td>
+                <td>DataTable, Charts, SQL Editor</td>
+            </tr>
+            <tr>
+                <td><strong>文档处理</strong></td>
+                <td>合同审查、批量处理、报告生成</td>
+                <td>FilePreview, Markdown, PDF</td>
+            </tr>
+            <tr>
+                <td><strong>办公自动化</strong></td>
+                <td>PPT生成、邮件群发、会议纪要</td>
+                <td>Form, Timeline, Preview</td>
+            </tr>
+            <tr>
+                <td><strong>运维监控</strong></td>
+                <td>服务器监控、日志分析、故障修复</td>
+                <td>Dashboard, Terminal, Charts</td>
+            </tr>
+            <tr>
+                <td><strong>业务集成</strong></td>
+                <td>数据同步、流程自动化、跨系统操作</td>
+                <td>RPA Preview, DataFlow, Form</td>
+            </tr>
+            <tr>
+                <td><strong>知识管理</strong></td>
+                <td>知识问答、文档检索、技术查询</td>
+                <td>Markdown, Citation, Search</td>
+            </tr>
+            <tr>
+                <td><strong>内容创作</strong></td>
+                <td>文章写作、多语言翻译、内容生成</td>
+                <td>Editor, Tabs, Preview</td>
+            </tr>
+            <tr>
+                <td><strong>项目管理</strong></td>
+                <td>进度追踪、任务管理、风险预警</td>
+                <td>Gantt, Timeline, Card</td>
+            </tr>
+            <tr>
+                <td><strong>安全合规</strong></td>
+                <td>漏洞扫描、代码审计、合规检查</td>
+                <td>Table, Diff, Report</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>六、关键创新点</h3>
+
+    <div class="tip-box success" style="border-color: #52c41a; background: #f6ffed;">
+        <h5 style="margin-bottom: 12px; color: #52c41a;">创新1：执行过程可视化（而非仅结果）</h5>
+        <p>传统 AI 工具只展示最终结果，Workbench 展示完整的任务执行过程：</p>
+        <ul style="margin-bottom: 0;">
+            <li>实时显示文件创建、代码编写过程</li>
+            <li>命令执行的实时终端输出</li>
+            <li>工具调用的详细过程和参数</li>
+        </ul>
+    </div>
+
+    <div class="tip-box info">
+        <h5 style="margin-bottom: 12px;">创新2：用户可介入编辑</h5>
+        <p>AI 生成内容后，用户可以直接在 Workbench 中编辑修改，然后让 AI 基于用户修改继续工作，形成真正的人机协作闭环。</p>
+    </div>
+
+    <div class="tip-box warning">
+        <h5 style="margin-bottom: 12px;">创新3：数据交互闭环</h5>
+        <p>组件之间可以数据联动，用户在表格中选择数据后，可以触发 AI 进行深入分析，实现从"展示"到"交互"到"智能响应"的完整闭环。</p>
+    </div>
+
+    <div class="tip-box" style="border-color: #722ed1; background: #f9f0ff;">
+        <h5 style="margin-bottom: 12px; color: #722ed1;">创新4：三方实时协作</h5>
+        <p>浏览器 ↔ Platform ↔ Client Agent 三方实时通信，无论任务在云端还是本地执行，用户都能在 Workbench 中看到完整的执行过程。</p>
+    </div>
+
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>
