@@ -56,3 +56,42 @@
 - 采用 CLAUDE.md + dev-log.md 双文件记忆方案
 - CLAUDE.md 存储结构化知识（架构/进度/问题/规则），自动加载
 - dev-log.md 存储时间线操作记录，手动查阅恢复上下文
+
+---
+
+## 2026-01-30 (第2次) | 完善三层持久记忆系统
+
+**目标**：将基础记忆方案升级为三层记忆体系，确保 Claude Code 不丢失记忆
+
+**完成**：
+1. 重构 `CLAUDE.md` — 精简为项目级永久知识，移除会话日志（避免膨胀）
+2. 创建 `.claude/current-task.md` — 当前任务上下文文件，记录正在做什么、下一步做什么
+3. 深入分析三个子包代码结构，创建子包级 CLAUDE.md：
+   - `packages/server/CLAUDE.md` — 完整目录结构、Agent 体系、对话流程、环境变量
+   - `packages/web/CLAUDE.md` — 组件树、路由、Vite 配置、85个组件文件
+   - `packages/client-agent/CLAUDE.md` — CLI 命令、执行流程、工具体系、配对机制
+4. 建立记忆维护规则写入 CLAUDE.md 第六节（6.4），确保每次对话遵循
+
+**修改的文件**：
+- 重写 `CLAUDE.md`（从 274 行精简为 145 行）
+- 新建 `.claude/current-task.md`
+- 新建 `lsc-ai-platform/packages/server/CLAUDE.md`
+- 新建 `lsc-ai-platform/packages/web/CLAUDE.md`
+- 新建 `lsc-ai-platform/packages/client-agent/CLAUDE.md`
+- 更新 `.claude/dev-log.md`（本文件）
+
+**三层记忆体系**：
+```
+第1层: CLAUDE.md                    ← 自动加载，项目级永久知识（精简，不膨胀）
+第2层: .claude/current-task.md      ← 当前任务上下文（每次更新，防止压缩丢失）
+       .claude/dev-log.md           ← 会话日志时间线（开始时读最近3条恢复上下文）
+第3层: packages/*/CLAUDE.md         ← 子包级详细记忆（进入子包目录时自动加载）
+```
+
+**下次继续**：
+- Phase 5 第一步：修复 3 个 P0 bug（同上次）
+
+**重要决策**：
+- 三层分离：永久知识 vs 当前任务 vs 子包详情，各层独立更新不互相膨胀
+- CLAUDE.md 严格控制在 150 行以内，避免信息过载
+- 子包 CLAUDE.md 让 Claude Code 进入子目录时自动获得深度上下文
