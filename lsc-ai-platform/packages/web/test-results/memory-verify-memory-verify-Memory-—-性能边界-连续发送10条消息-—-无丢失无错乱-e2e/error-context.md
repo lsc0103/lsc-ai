@@ -1,0 +1,195 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - button "AI" [ref=e7] [cursor=pointer]:
+        - generic [ref=e9]: AI
+      - generic [ref=e10]:
+        - generic [ref=e11]: LSC-AI
+        - button "menu-fold" [ref=e12] [cursor=pointer]:
+          - img "menu-fold" [ref=e13]:
+            - img [ref=e14]
+    - generic [ref=e16]:
+      - generic [ref=e17] [cursor=pointer]:
+        - img "plus" [ref=e19]:
+          - img [ref=e20]
+        - generic [ref=e23]: 新对话
+      - generic [ref=e24] [cursor=pointer]:
+        - img "search" [ref=e26]:
+          - img [ref=e27]
+        - generic [ref=e29]: 搜索
+      - link "folder 我的项目" [ref=e30] [cursor=pointer]:
+        - /url: /projects
+        - img "folder" [ref=e32]:
+          - img [ref=e33]
+        - generic [ref=e35]: 我的项目
+      - link "clock-circle RPA/定时任务" [ref=e36] [cursor=pointer]:
+        - /url: /tasks
+        - img "clock-circle" [ref=e38]:
+          - img [ref=e39]
+        - generic [ref=e42]: RPA/定时任务
+      - link "appstore 其他应用" [ref=e43] [cursor=pointer]:
+        - /url: /apps
+        - img "appstore" [ref=e45]:
+          - img [ref=e46]
+        - generic [ref=e48]: 其他应用
+    - generic [ref=e49]:
+      - generic [ref=e50]: 历史对话
+      - generic [ref=e51]:
+        - button "序号1：这是第1条测试消息" [ref=e52] [cursor=pointer]:
+          - generic [ref=e53]: 序号1：这是第1条测试消息
+        - button "秘密代号是 PHOENIX_SESSION_1_ONLY" [ref=e54] [cursor=pointer]:
+          - generic [ref=e55]: 秘密代号是 PHOENIX_SESSION_1_ONLY
+        - button "请记住密码是 Tiger2026Dragon" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: 请记住密码是 Tiger2026Dragon
+        - button "持久化验证_1769774639790_独特标记XYZ" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: 持久化验证_1769774639790_独特标记XYZ
+        - button "我喜欢简洁的代码风格，不要太多注释，变量名用英文，函数名用驼..." [ref=e60] [cursor=pointer]:
+          - generic [ref=e61]: 我喜欢简洁的代码风格，不要太多注释，变量名用英文，函数名用驼...
+        - button "请记住：我正在开发一个名叫\"海鸥号\"的船舶管理系统，用的是R..." [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: 请记住：我正在开发一个名叫"海鸥号"的船舶管理系统，用的是R...
+        - button "并发安全测试消息" [ref=e64] [cursor=pointer]:
+          - generic [ref=e65]: 并发安全测试消息
+        - button "请使用showTable工具展示一个2行3列的简单表格，内容..." [ref=e66] [cursor=pointer]:
+          - generic [ref=e67]: 请使用showTable工具展示一个2行3列的简单表格，内容...
+        - button "重复测试内容。重复测试内容。重复测试内容。重复测试内容。重复..." [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: 重复测试内容。重复测试内容。重复测试内容。重复测试内容。重复...
+        - button "请用代码块展示一个简单的Python hello world..." [ref=e70] [cursor=pointer]:
+          - generic [ref=e71]: 请用代码块展示一个简单的Python hello world...
+        - button "请用Markdown格式回复：一个一级标题\"测试标题\"，一个..." [ref=e72] [cursor=pointer]:
+          - generic [ref=e73]: 请用Markdown格式回复：一个一级标题"测试标题"，一个...
+        - button "侧边栏测试消息" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: 侧边栏测试消息
+        - button "请用markdown格式列出3个要点" [ref=e76] [cursor=pointer]:
+          - generic [ref=e77]: 请用markdown格式列出3个要点
+        - button "持久化测试1769773914815" [ref=e78] [cursor=pointer]:
+          - generic [ref=e79]: 持久化测试1769773914815
+        - button "请列出5个中国传统节日并简要介绍" [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]: 请列出5个中国传统节日并简要介绍
+        - button "realflow测试消息1769773809966" [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]: realflow测试消息1769773809966
+        - button "请记住：我的名字叫测试员小王" [ref=e84] [cursor=pointer]:
+          - generic [ref=e85]: 请记住：我的名字叫测试员小王
+        - button "你好，请用一句话介绍你自己" [ref=e86] [cursor=pointer]:
+          - generic [ref=e87]: 你好，请用一句话介绍你自己
+        - button "test-history-first-msg-visible" [ref=e88] [cursor=pointer]:
+          - generic [ref=e89]: test-history-first-msg-visible
+        - button "帮我分析这份数据报表" [ref=e90] [cursor=pointer]:
+          - generic [ref=e91]: 帮我分析这份数据报表
+        - button "详细介绍人工智能的发展历史" [ref=e92] [cursor=pointer]:
+          - generic [ref=e93]: 详细介绍人工智能的发展历史
+        - button "test clear input" [ref=e94] [cursor=pointer]:
+          - generic [ref=e95]: test clear input
+        - button "E2E测试消息hello" [ref=e96] [cursor=pointer]:
+          - generic [ref=e97]: E2E测试消息hello
+        - button "请使用workbench工具创建一个综合面板，包含以下3个内..." [ref=e98] [cursor=pointer]:
+          - generic [ref=e99]: 请使用workbench工具创建一个综合面板，包含以下3个内...
+        - button "请按顺序执行以下Office操作（每步用对应工具）： 1. ..." [ref=e100] [cursor=pointer]:
+          - generic [ref=e101]: 请按顺序执行以下Office操作（每步用对应工具）： 1. ...
+        - button "请按顺序执行以下完整流程（每步都用对应工具）： 1. mkd..." [ref=e102] [cursor=pointer]:
+          - generic [ref=e103]: 请按顺序执行以下完整流程（每步都用对应工具）： 1. mkd...
+        - button "请使用askUser工具问我一个问题：\"你希望用什么编程语言..." [ref=e104] [cursor=pointer]:
+          - generic [ref=e105]: 请使用askUser工具问我一个问题："你希望用什么编程语言...
+        - button "请使用modificationHistory工具查看最近的文..." [ref=e106] [cursor=pointer]:
+          - generic [ref=e107]: 请使用modificationHistory工具查看最近的文...
+        - button "请执行：1)先用write工具创建/tmp/lscai_te..." [ref=e108] [cursor=pointer]:
+          - generic [ref=e109]: 请执行：1)先用write工具创建/tmp/lscai_te...
+        - button "持久化验证_1769773121586_独特标记XYZ" [ref=e110] [cursor=pointer]:
+          - generic [ref=e111]: 持久化验证_1769773121586_独特标记XYZ
+        - button "请使用workbench工具创建一个综合面板，包含以下3个内..." [ref=e112] [cursor=pointer]:
+          - generic [ref=e113]: 请使用workbench工具创建一个综合面板，包含以下3个内...
+        - button "请按顺序执行以下Office操作（每步用对应工具）： 1. ..." [ref=e114] [cursor=pointer]:
+          - generic [ref=e115]: 请按顺序执行以下Office操作（每步用对应工具）： 1. ...
+        - button "请按顺序执行以下完整流程（每步都用对应工具）： 1. mkd..." [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]: 请按顺序执行以下完整流程（每步都用对应工具）： 1. mkd...
+        - button "请使用askUser工具问我一个问题：\"你希望用什么编程语言..." [ref=e118] [cursor=pointer]:
+          - generic [ref=e119]: 请使用askUser工具问我一个问题："你希望用什么编程语言...
+        - button "请使用modificationHistory工具查看最近的文..." [ref=e120] [cursor=pointer]:
+          - generic [ref=e121]: 请使用modificationHistory工具查看最近的文...
+        - button "请使用webSearch工具搜索\"舟山中远海运重工\"，返回前..." [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]: 请使用webSearch工具搜索"舟山中远海运重工"，返回前...
+        - button "请使用todoWrite工具执行以下操作：1)创建(crea..." [ref=e124] [cursor=pointer]:
+          - generic [ref=e125]: 请使用todoWrite工具执行以下操作：1)创建(crea...
+        - button "请使用createChart工具创建一个柱状图(bar类型)..." [ref=e126] [cursor=pointer]:
+          - generic [ref=e127]: 请使用createChart工具创建一个柱状图(bar类型)...
+        - button "请使用readOffice工具读取/tmp/lscai_te..." [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]: 请使用readOffice工具读取/tmp/lscai_te...
+        - button "请使用createPDF工具在/tmp/lscai_test..." [ref=e130] [cursor=pointer]:
+          - generic [ref=e131]: 请使用createPDF工具在/tmp/lscai_test...
+        - button "请使用createExcel工具在/tmp/lscai_te..." [ref=e132] [cursor=pointer]:
+          - generic [ref=e133]: 请使用createExcel工具在/tmp/lscai_te...
+        - button "请使用createWord工具在/tmp/lscai_tes..." [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]: 请使用createWord工具在/tmp/lscai_tes...
+        - button "请使用git_status工具查看当前项目的Git仓库状态。..." [ref=e136] [cursor=pointer]:
+          - generic [ref=e137]: 请使用git_status工具查看当前项目的Git仓库状态。...
+        - button "请使用bash工具执行命令 \"echo LSCAI_BASH..." [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: 请使用bash工具执行命令 "echo LSCAI_BASH...
+        - button "序号1：这是第1条测试消息" [ref=e140] [cursor=pointer]:
+          - generic [ref=e141]: 序号1：这是第1条测试消息
+        - button "请执行：1)write创建/tmp/lscai_grep1...." [ref=e142] [cursor=pointer]:
+          - generic [ref=e143]: 请执行：1)write创建/tmp/lscai_grep1....
+        - button "请使用glob工具搜索/tmp目录下所有.txt文件（模式:..." [ref=e144] [cursor=pointer]:
+          - generic [ref=e145]: 请使用glob工具搜索/tmp目录下所有.txt文件（模式:...
+        - button "请执行：1)write创建/tmp/lscai_rm_tes..." [ref=e146] [cursor=pointer]:
+          - generic [ref=e147]: 请执行：1)write创建/tmp/lscai_rm_tes...
+        - button "秘密代号是 PHOENIX_SESSION_1_ONLY" [ref=e148] [cursor=pointer]:
+          - generic [ref=e149]: 秘密代号是 PHOENIX_SESSION_1_ONLY
+        - button "请执行：1)write创建/tmp/lscai_cp_tes..." [ref=e150] [cursor=pointer]:
+          - generic [ref=e151]: 请执行：1)write创建/tmp/lscai_cp_tes...
+        - button "请记住密码是 Tiger2026Dragon" [ref=e152] [cursor=pointer]:
+          - generic [ref=e153]: 请记住密码是 Tiger2026Dragon
+    - button "系 系统管理员" [ref=e155] [cursor=pointer]:
+      - generic [ref=e158]: 系
+      - generic [ref=e159]: 系统管理员
+  - main [ref=e160]:
+    - generic [ref=e163]:
+      - generic [ref=e166]:
+        - generic [ref=e168]:
+          - generic [ref=e170]: 系
+          - paragraph [ref=e173]: 序号1：这是第1条测试消息
+        - generic [ref=e175]:
+          - generic [ref=e177]: 系
+          - paragraph [ref=e180]: 序号2：这是第2条测试消息
+        - generic [ref=e182]:
+          - generic [ref=e184]: 系
+          - paragraph [ref=e187]: 序号3：这是第3条测试消息
+        - generic [ref=e189]:
+          - generic [ref=e191]: 系
+          - paragraph [ref=e194]: 序号4：这是第4条测试消息
+        - generic [ref=e196]:
+          - generic [ref=e198]: 系
+          - paragraph [ref=e201]: 序号5：这是第5条测试消息
+        - generic [ref=e203]:
+          - generic [ref=e205]: 系
+          - paragraph [ref=e208]: 序号6：这是第6条测试消息
+        - generic [ref=e210]:
+          - generic [ref=e212]: 系
+          - paragraph [ref=e215]: 序号7：这是第7条测试消息
+        - generic [ref=e217]:
+          - generic [ref=e219]: 系
+          - paragraph [ref=e222]: 序号8：这是第8条测试消息
+        - generic [ref=e224]:
+          - generic [ref=e226]: 系
+          - paragraph [ref=e229]: 序号9：这是第9条测试消息
+        - generic [ref=e231]:
+          - generic [ref=e233]: 系
+          - paragraph [ref=e236]: 序号10：这是第10条测试消息
+      - generic [ref=e238]:
+        - generic [ref=e239]:
+          - button "plus" [ref=e240] [cursor=pointer]:
+            - img "plus" [ref=e242]:
+              - img [ref=e243]
+          - textbox "输入消息，Shift+Enter 换行..." [active] [ref=e247]
+          - generic [ref=e248]:
+            - button "audio" [disabled] [ref=e249]:
+              - generic:
+                - img "audio":
+                  - img
+            - button "send" [disabled] [ref=e251]:
+              - generic:
+                - img "send":
+                  - img
+        - paragraph [ref=e252]: LSC-AI 可能会出错，请核实重要信息
+```
