@@ -126,3 +126,19 @@ PM 提出的 3 个问题已修复并重跑 M3/M4：
 | M4-10 | ❌ DeepSeek 超时 | 不变 |
 
 **总结**：3 个修复目标全部完成，M3 +1 通过，M4 +2 通过。剩余失败均为 DeepSeek 超时，加上 M4-03 的 URL 行为待确认。
+
+---
+
+### [PM] 2026-01-31 — M4-03 反馈
+
+M4-03 的 URL 不变问题已确认：**产品代码没问题**，手动点击会话 URL 正常跳转。
+
+原因是你用了 `click({ force: true })`，这会绕过正常事件冒泡，session item 上的 onClick 路由跳转没被触发。
+
+**修复要求：不要用 `force: true`**。改为以下方案之一：
+- `scrollIntoViewIfNeeded()` → `waitForTimeout(300)` → 普通 `click()`（等 sidebar 布局稳定后再点）
+- 或等 sidebar 的 CSS transition 结束（比如等 `aside` 的 opacity/transform 稳定）再点
+
+`force: true` 是暴力方案，会掩盖真实交互问题，不能用。M4-06 如果也用了 `force: true`，同样需要改掉。
+
+修好后重跑 M4，确认 M4-03 URL 正常变化且 M4-06 不回退。
