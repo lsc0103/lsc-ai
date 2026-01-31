@@ -76,7 +76,9 @@ test('M4-03 切换会话加载历史消息', async ({ page }) => {
   // Click first session (most recent is at top, session 1 may be second)
   // Find the one that isn't the current session
   for (let i = 0; i < count; i++) {
-    await sessions.nth(i).click();
+    const item = sessions.nth(i);
+    await item.scrollIntoViewIfNeeded();
+    await item.click({ force: true });
     await page.waitForTimeout(2000);
 
     // Check if this session has our message
@@ -217,7 +219,9 @@ test('M4-06 快速切换会话不错乱', async ({ page }) => {
   // Click each session and verify its content
   let foundMatchCount = 0;
   for (let i = 0; i < Math.min(count, 3); i++) {
-    await sessions.nth(i).click();
+    const item = sessions.nth(i);
+    await item.scrollIntoViewIfNeeded();
+    await item.click({ force: true });
     await page.waitForTimeout(2000);
 
     // Page should not crash
