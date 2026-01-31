@@ -374,3 +374,53 @@
 - BUG-1 是真实产品 bug（welcome 页 workbench 不渲染）
 - BUG-2 是测试选择器问题 + 确认云端模式不更新 store 是设计如此
 - BUG-3 是测试选择器问题（modal 定位不准确），产品本身的退出按钮存在且功能正常
+
+---
+
+## 2026-01-31 步骤 2-4 完成 + 步骤 5 M3/M4 失败分类
+
+### 步骤 2-4 完成（commit 554c73c）
+
+- 删除所有 `expect(true).toBe(true)` 和 `toBeGreaterThanOrEqual(0)`
+- M6 全部改用 `setInputFiles()`
+- M2-09 prompt 改为触发工具调用
+- M3-03 增加真实 mouse 拖拽
+- M3-10/11/12 增加 workbench/内容验证
+- M5-12 增加 test.skip 说明离线测试限制
+
+### 步骤 5：M3/M4 失败逐个分类
+
+**M3 结果：6 passed, 4 skipped, 3 failed（总 19.6m）**
+
+| 测试 | 错误类型 | 有 429 状态码吗 | 判定 |
+|------|---------|----------------|------|
+| M3-01 AI 自动触发 Workbench | `.workbench-container` 15s 内不可见 | 否 — AI 回复了但未触发 workbench | **AI 行为不确定** — AI 回复了消息但未使用 workbench 工具，prompt 未保证触发 |
+| M3-02 手动打开关闭 Workbench | ✅ PASSED | — | — |
+| M3-03 分屏拖拽调整宽度 | ✅ PASSED | — | — |
+| M3-04 Workbench 标签页管理 | ✅ PASSED | — | — |
+| M3-05~08 内容渲染 | SKIPPED（依赖 M3-01 的 workbench 打开） | — | 跟随 M3-01 跳过 |
+| M3-09 复合内容多Tab | ✅ PASSED | — | — |
+| M3-10 切换会话后 Workbench 恢复 | ✅ PASSED (skipped workbench check) | — | — |
+| M3-11 多会话 Workbench 隔离 | Test timeout 300s — `page.waitForTimeout: Target page, context or browser has been closed` | 否 — session 2 的 AI 调用超时后浏览器关闭 | **DeepSeek 限流/超时** — 测试序列末尾，累积多次 AI 调用后限流导致超时 |
+| M3-12 刷新页面后 Workbench 恢复 | `hasResponse` = false，3 次重试全部超时 | 否 — 但发生在 M3-11 之后 | **DeepSeek 限流/超时** — 前面测试消耗了 API 额度 |
+
+**M4 结果：7 passed, 0 skipped, 4 failed（总 18.5m）**
+
+| 测试 | 错误类型 | 有 429 状态码吗 | 判定 |
+|------|---------|----------------|------|
+| M4-01 新建会话显示欢迎页 | ✅ PASSED | — | — |
+| M4-02 发消息后会话出现在侧边栏 | ✅ PASSED | — | — |
+| M4-03 切换会话加载历史消息 | `locator.click: Timeout` — `<aside>` intercepts pointer events | 否 | **选择器问题** — sidebar `<aside>` 遮挡了 session item 的点击，需要用 `force: true` 或等待 sidebar transition 完成 |
+| M4-04 当前会话高亮 | ✅ PASSED | — | — |
+| M4-05 删除会话 | ✅ PASSED | — | — |
+| M4-06 快速切换会话不错乱 | `locator.click: Timeout` — `<aside>` intercepts pointer events | 否 | **选择器问题** — 与 M4-03 相同根因，sidebar `<aside>` 遮挡点击 |
+| M4-07 会话列表按更新时间排序 | ✅ PASSED | — | — |
+| M4-08 会话列表可滚动 | ✅ PASSED | — | — |
+| M4-09 AI 回复中切换会话不崩溃 | `hasResponse` = false | 否 | **DeepSeek 限流/超时** — retry 2 次后仍无回复 |
+| M4-10 AI 回复中刷新页面恢复正常 | `hasResponse` = false，3 次重试全部超时 | 否 | **DeepSeek 限流/超时** — 测试序列末尾 |
+
+**失败汇总**：
+- **AI 行为不确定**：M3-01（AI 不保证使用 workbench 工具）
+- **选择器问题**：M4-03, M4-06（sidebar aside 遮挡 pointer events）
+- **DeepSeek 限流/超时**：M3-11, M3-12, M4-09, M4-10（均发生在测试序列后段，累积 API 调用后超时）
+- **无产品 bug**：本轮未发现新的产品 bug

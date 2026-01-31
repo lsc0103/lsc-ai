@@ -66,7 +66,8 @@ async function enterLocalMode(page: any, workDir = 'D:\\u3d-projects\\lscmade7')
   }
 
   // Step 7: 点确定
-  const confirmBtn = page.locator('.ant-modal-content:visible button:has-text("确定")').first();
+  // Ant Design 按钮渲染 "确 定"（两字间有空格），用 getByRole 匹配
+  const confirmBtn = modalContent.getByRole('button', { name: /确.*定/ });
   await confirmBtn.click();
   await page.waitForTimeout(1500);
 
@@ -143,8 +144,8 @@ test('M5-02 选择云端服务器模式', async ({ page, api }) => {
     await dirInput.fill('/workspace');
   }
 
-  // Confirm — 用 visible 过滤避免选到错误 modal
-  const confirmBtn = page.locator('.ant-modal-content:visible button:has-text("确定")').first();
+  // Confirm — 用 modal 内的 getByRole 定位
+  const confirmBtn = modal.getByRole('button', { name: /确.*定/ });
   await expect(confirmBtn).toBeVisible({ timeout: 3000 });
   await confirmBtn.click();
   await page.waitForTimeout(1000);

@@ -151,9 +151,9 @@ npx playwright test e2e/M6-file-upload --workers=1
 
 ## 执行记录（每完成一步在此打勾，附 commit hash）
 
-- [x] 步骤 1：调查疑似产品 bug — commit: (pending)
-- [ ] 步骤 2：删除 expect(true).toBe(true) — commit:
-- [ ] 步骤 3：修复 M6 文件上传 — commit:
-- [ ] 步骤 4：补齐缺失测试逻辑 — commit:
-- [ ] 步骤 5：M3/M4 失败逐个分类 — commit:
-- [ ] 步骤 6：全量回归 + 更新报告 — commit:
+- [x] 步骤 1：调查疑似产品 bug — commit: ea048c7
+- [x] 步骤 2：删除 expect(true).toBe(true) — commit: 554c73c
+- [x] 步骤 3：修复 M6 文件上传 — commit: 554c73c
+- [x] 步骤 4：补齐缺失测试逻辑 — commit: 554c73c
+- [x] 步骤 5：M3/M4 失败逐个分类 — 结果记录在 dev-log.md
+- [x] 步骤 6：全量回归 + 更新报告 — commit: f63af70
