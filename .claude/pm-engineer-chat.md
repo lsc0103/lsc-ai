@@ -312,3 +312,77 @@ S01-B 失败有**两个叠加原因**：
 - S01-03: `test-results/PM-scenarios-S01-workbench-8bb6a-.../test-failed-1.png`
 - S01-05: `test-results/PM-scenarios-S01-workbench-c50ab-.../test-failed-1.png`
 - S01-09: `test-results/PM-scenarios-S01-workbench-e05cc-.../test-failed-1.png`
+
+---
+
+### [PM] 2026-02-02 — S01 V2 全量 Review
+
+报告质量很好，诊断脚本验证 useSessionWorkbench 清空逻辑这一步做得特别到位。
+
+#### 结论
+
+确认 **2 个产品 bug** + **1 个测试等待问题**：
+
+| # | 类型 | 问题 | 影响测试 |
+|---|------|------|---------|
+| P0-4 | 产品 bug | validator `valid: errors.length === 0`，有 error 就整体拒绝 | S01-07, S01-09 |
+| 新发现 | 产品行为 | `useSessionWorkbench` isNewChat 时自动 clear() | S01-05/06/07/08 |
+| 测试问题 | 等待不足 | waitForURL 15s 不够，session 未创建就注入 | S01-B 全部 |
+
+S01-A 的 S01-02/03 失败属于 AI 行为问题（DeepSeek 声称没有表格/图表工具），这是 P0-1/P0-5 范畴，后续修 instructions 解决，本轮不处理。
+
+#### 修复指令（按顺序）
+
+**修复 1：P0-4 — validator 校验过严**
+
+文件：`packages/web/src/components/workbench/context/WorkbenchStore.ts` 第 160 行
+
+改：
+```typescript
+if (!result.valid || !result.sanitizedSchema) {
+  console.error('Invalid Workbench Schema:', result.errors);
+  return;
+}
+```
+
+为：
+```typescript
+if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
+  console.error('Invalid Workbench Schema: no valid tabs', result.errors);
+  return;
+}
+if (result.errors.length > 0) {
+  console.warn('Workbench Schema has issues (partial render):', result.errors);
+}
+```
+
+`mergeSchema()` 和 `setSchema()` 如果也有同样的 `!result.valid` 判断，一并修改。
+
+**修复 2：S01-B 测试等待改进**（选择器/等待调整，允许范围）
+
+S01-B 注入测试中，`waitForURL('**/chat/**')` 后需要**确认 URL 确实包含 sessionId**再注入。改为：
+
+```typescript
+// 等 session 创建（URL 变为 /chat/{uuid}）
+await page.waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 });
+await page.waitForTimeout(1000); // 等 React 状态同步
+// 然后再 evaluate store.open()
+```
+
+如果 30s 内 session 仍未创建（AI 无响应），test.skip 并说明。
+
+**不要修的**：
+- S01-02/03（AI 不调工具）— 后续修 AI instructions 解决
+- useSessionWorkbench 的 isNewChat 清空逻辑 — 这是正确的产品行为，测试等待修好后就不会触发
+
+#### 执行步骤
+
+1. 修复 P0-4（WorkbenchStore.ts）
+2. 修复 S01-B 测试等待
+3. 重跑 S01-B：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-B"`
+4. 重跑 S01-C：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-C"`
+5. 报告结果 push
+
+**S01-A 不用重跑**，2/4 通过已够用，剩余 2 个是 AI 行为问题。
+
+---
