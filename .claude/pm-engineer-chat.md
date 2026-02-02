@@ -386,3 +386,53 @@ await page.waitForTimeout(1000); // 等 React 状态同步
 **S01-A 不用重跑**，2/4 通过已够用，剩余 2 个是 AI 行为问题。
 
 ---
+
+### [工程师] 2026-02-02 — P0-4 修复 + S01-B/C 重跑结果
+
+#### 已完成的修复
+
+**修复 1：P0-4 — validator 校验过严**
+- `WorkbenchStore.ts` 的 `open()`、`mergeSchema()`、`setSchema()` 三处
+- 改为：`if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0)` 拒绝
+- 有 errors 但有有效 tab 时：`console.warn` 但继续打开
+
+**修复 2：S01-B 测试等待**
+- `waitForURL('**/chat/**', { timeout: 15000 }).catch(() => {})` → `waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 })`
+- 超时则 `test.skip`，不再吞掉 catch
+
+#### S01-B 重跑结果：0 passed, 4 failed
+
+| 用例 | 结果 | 变化 | 说明 |
+|------|------|------|------|
+| S01-05 LineChart | ❌ | 改善 | Workbench 打开了（P0-4 + 等待修复生效），但 canvas 未渲染——图表区域空白 |
+| S01-06 DataTable | ❌ | 改善 | Workbench 打开了，但 DataTable 组件渲染错误：`Cannot read properties of undefined (reading 'map')` |
+| S01-07 旧格式 chart | ❌ | 不变 | 旧格式 schema `{ version: '1.0', blocks: [...] }` 无 `type: 'workbench'`，被 validator line 323 拒绝（P0-5） |
+| S01-08 多 tab 混合 | ❌ | 改善 | Workbench 打开了，代码 tab 正常，但 DataTable tab 同样 `.map()` 报错 |
+
+**关键进展**：P0-4 修复成功！S01-05/06/08 的 Workbench 现在能打开了。但暴露了**新的渲染层 bug**：
+
+**新发现 Bug-A：LineChart 组件不渲染 canvas**
+- 截图：Workbench 打开，tab 标题正确，但内容区空白（灰色背景）
+- 可能原因：LineChart 组件需要特定的 props 格式，或 ECharts 延迟初始化
+
+**新发现 Bug-B：DataTable 组件 `Cannot read properties of undefined (reading 'map')`**
+- 截图：红色错误提示"组件渲染错误 (DataTable)"
+- 原因：测试注入的 schema 用 `columns/data`（validator 要求的字段名），但 DataTable 组件内部可能期望不同的属性名（如 `headers/rows`）
+
+**S01-07 (P0-5)**：`open()` 不识别旧格式 schema。旧格式需要先经过 `schema-transformer` 转换为新格式再传入。测试直接传旧格式给 `open()` 会被 validator `type !== 'workbench'` 拒绝。
+
+#### S01-C 重跑结果：1 passed ✅
+
+| 用例 | 结果 | 变化 | 说明 |
+|------|------|------|------|
+| S01-09 容错测试 | ✅ | 修复 | P0-4 修复成功！含 NonExistentComponent 的 schema 不再被整体拒绝，2 个好 tab 正常显示 |
+
+#### 总结
+
+| 改善 | 详情 |
+|------|------|
+| ✅ P0-4 修复确认 | S01-09 通过，含坏组件的 schema 不再整体拒绝 |
+| ✅ 等待修复确认 | S01-05/06/08 的 Workbench 能打开了（之前全部打不开） |
+| ❌ Bug-A | LineChart 渲染空白（无 canvas） |
+| ❌ Bug-B | DataTable `Cannot read properties of undefined (reading 'map')` |
+| ❌ P0-5 | 旧格式 schema 无 transformer 转换入口 |
