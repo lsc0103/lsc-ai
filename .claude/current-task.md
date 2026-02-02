@@ -119,15 +119,45 @@ e2e/
 - Client Agent 需要 `DEEPSEEK_API_KEY` 环境变量
 - `sendAndWaitWithRetry` 增加 streaming 二次等待
 
-### 待办事项
+### PM 场景测试进度
 
-- [ ] DeepSeek 限流缓解后重跑 M3/M4 确认全绿
-- [ ] 开始 Sentinel Agent 开发
+#### S01 — Workbench 渲染（9 tests → 6✅ 3❌）
+| 测试 | 结果 | 说明 |
+|------|------|------|
+| S01-01 | ✅ | AI 纯文本回复正常 |
+| S01-02 | ❌ | P0-1：AI 未调用 showTable |
+| S01-03 | ❌ | P0-1：AI 未调用 showChart |
+| S01-04 | ✅ | AI 对话+Workbench 联动 |
+| S01-05 | ✅ | LineChart 直接注入渲染正常 |
+| S01-06 | ✅ | DataTable 直接注入渲染正常 |
+| S01-07 | ❌ | P0-5：旧格式 schema 无 transformer |
+| S01-08 | ✅ | 多 Tab 渲染正常 |
+| S01-09 | ✅ | 容错验证通过（P0-4 已修复）|
+
+#### S02 — 多轮对话上下文（8 tests → 6✅ 2❌）
+| 测试 | 结果 | 说明 |
+|------|------|------|
+| S02-01 | ✅ | 两轮上下文正常 |
+| S02-02 | ❌ | P0-2：双重历史注入致信息丢失 |
+| S02-03 | ✅ | 不重复自我介绍 |
+| S02-04 | ✅ | 会话隔离正常 |
+| S02-05 | ✅ | 切回会话历史加载正常 |
+| S02-06 | ❌ | P0-2 同源：切回后上下文丢失 |
+| S02-07 | ✅ | 流式渲染正常 |
+| S02-08 | ✅ | 连续消息不丢失 |
+
+#### 确认 bug 汇总（4 个，1 已修 3 待修）
+| Bug | 根因 | 来源 | 状态 |
+|-----|------|------|------|
+| P0-1 | AI instructions 对 showTable/showChart 引导不够 | S01-02/03 | 待修 |
+| P0-2 | chat.gateway.ts + mastra-agent.service.ts 双重历史注入 | S02-02/06 | 待修 |
+| P0-4 | validator 有 error 就整体拒绝 schema | S01-09 | **已修** |
+| P0-5 | 旧格式 schema 无 transformer 自动转换 | S01-07 | 待修 |
 
 ### 下次继续
 
-1. 限流缓解后全量跑一次确认
-2. 如无问题，开始 Sentinel Agent 开发
+1. 设计 S03 场景测试
+2. 全部场景测试完成后统一修复 P0-1/P0-2/P0-5
 
 ---
 

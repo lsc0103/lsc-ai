@@ -81,22 +81,26 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 
 ## 五、已知问题 (必须跟踪)
 
-### P0 — 必须修复
+### P0 — 必须修复（S01/S02 场景测试发现）
 1. ✅ **Instructions 与工具不匹配** — 已添加 editWord/editExcel/sqlConfig/modificationHistory
 2. ✅ **TodoStore 每次新建实例** — 已改为模块级单例 `_todoStoreSingleton`
 3. ✅ **工具包装三层嵌套** — 已改为模块级 `_cache` 缓存（30个工具）
+4. **P0-1 AI Instructions 对 showTable/showChart 引导不够** — AI 倾向纯文本回复而非调用 Workbench 工具（S01-02/03）
+5. **P0-2 双重历史注入** — `chat.gateway.ts:324` 手动 history + `mastra-agent.service.ts:483-487` Mastra Memory 同时加载历史，导致 token 窗口被重复消息撑满，第二轮+信息丢失（S02-02/06）
+6. ✅ **P0-4 Validator 有 error 就整体拒绝 schema** — 已修复 `WorkbenchStore.ts:160`（S01-09）
+7. **P0-5 旧格式 schema 无 transformer 自动转换** — Workbench 不识别旧格式 schema（S01-07）
 
 ### P1 — 重要优化
-4. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）
-5. Platform 端无 MCP（代码存在但未接入）
-6. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
-7. Workflow/RPA 前端无入口
+8. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）
+9. Platform 端无 MCP（代码存在但未接入）
+10. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
+11. Workflow/RPA 前端无入口
 
 ### P2 — 改进项
-8. Structured Output 未使用
-9. Client Agent tool-adapter 丢失嵌套 Schema
-10. Memory 不互通 (Platform ↔ Client Agent)
-11. DeepSeek 不支持图片
+12. Structured Output 未使用
+13. Client Agent tool-adapter 丢失嵌套 Schema
+14. Memory 不互通 (Platform ↔ Client Agent)
+15. DeepSeek 不支持图片
 
 > 修复一个问题后，立即在此标记 ✅ 并更新 dev-log
 
