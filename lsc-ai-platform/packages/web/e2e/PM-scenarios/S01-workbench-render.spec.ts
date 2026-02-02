@@ -139,8 +139,8 @@ test.describe('S01-A: AI 触发 Workbench 内容渲染', () => {
     expect(looksLikeChartJson, 'P0-5: 图表渲染成了原始 JSON 文本').toBe(false);
 
     // 2. 应该有 ECharts canvas 或 SVG
-    const chart = wb.locator('canvas, [_echarts_instance_], [class*="echarts"]').first();
-    await expect(chart, '应该有图表 canvas 元素').toBeVisible({ timeout: 5000 });
+    const chart = wb.locator('svg, canvas, [_echarts_instance_], [class*="echarts"]').first();
+    await expect(chart, '应该有图表元素（SVG/canvas）').toBeVisible({ timeout: 5000 });
   });
 
   test('S01-04 AI 多 tab Workbench → tab 可切换，每个 tab 内容正确', async ({ page }) => {
@@ -200,7 +200,7 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
    * }
    */
 
-  test('S01-05 注入新格式 LineChart → canvas 图表渲染', async ({ page }) => {
+  test('S01-05 注入新格式 LineChart → SVG 图表渲染', async ({ page }) => {
     test.setTimeout(60000);
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
@@ -257,9 +257,9 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
 
     // ===== 核心断言 =====
 
-    // 1. 有 canvas（ECharts 渲染的图表）
-    const canvas = wb.locator('canvas').first();
-    await expect(canvas, '应有 ECharts canvas').toBeVisible({ timeout: 5000 });
+    // 1. 有 SVG 图表（ECharts 使用 SVG renderer）
+    const chart = wb.locator('svg, [_echarts_instance_], [class*="echarts"]').first();
+    await expect(chart, '应有 ECharts SVG 图表').toBeVisible({ timeout: 5000 });
 
     // 2. 没有原始 JSON / 类型名泄露
     const wbText = await wb.innerText();
@@ -296,11 +296,16 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
             components: [{
               type: 'DataTable',
               title: '员工信息表',
-              headers: ['姓名', '年龄', '城市', '职位'],
-              rows: [
-                ['张三', '25', '北京', '工程师'],
-                ['李四', '30', '上海', '设计师'],
-                ['王五', '28', '广州', '产品经理'],
+              columns: [
+                { key: 'name', title: '姓名', dataIndex: 'name' },
+                { key: 'age', title: '年龄', dataIndex: 'age' },
+                { key: 'city', title: '城市', dataIndex: 'city' },
+                { key: 'role', title: '职位', dataIndex: 'role' },
+              ],
+              data: [
+                { name: '张三', age: '25', city: '北京', role: '工程师' },
+                { name: '李四', age: '30', city: '上海', role: '设计师' },
+                { name: '王五', age: '28', city: '广州', role: '产品经理' },
               ],
             }],
           }],
@@ -398,9 +403,9 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
     const hasRawJson = wbText.includes('"chartType"') || wbText.includes('"option"');
     expect(hasRawJson, 'P0-5: 旧格式图表渲染成了 JSON 文本').toBe(false);
 
-    // 应该有 canvas 图表
-    const canvas = wb.locator('canvas').first();
-    await expect(canvas, '旧格式图表应转换后渲染为 canvas').toBeVisible({ timeout: 5000 });
+    // 应该有 SVG 图表
+    const chart = wb.locator('svg, [_echarts_instance_], [class*="echarts"]').first();
+    await expect(chart, '旧格式图表应转换后渲染为 SVG 图表').toBeVisible({ timeout: 5000 });
   });
 
   test('S01-08 注入多 tab 混合内容 → 所有 tab 正确渲染', async ({ page }) => {
@@ -442,8 +447,15 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
               title: '数据表格',
               components: [{
                 type: 'DataTable',
-                headers: ['产品', '销量', '金额'],
-                rows: [['商品A', '100', '5000'], ['商品B', '200', '10000']],
+                columns: [
+                  { key: 'product', title: '产品', dataIndex: 'product' },
+                  { key: 'sales', title: '销量', dataIndex: 'sales' },
+                  { key: 'amount', title: '金额', dataIndex: 'amount' },
+                ],
+                data: [
+                  { product: '商品A', sales: '100', amount: '5000' },
+                  { product: '商品B', sales: '200', amount: '10000' },
+                ],
               }],
             },
             {
@@ -492,11 +504,11 @@ test.describe('S01-B: Socket 事件注入渲染验证', () => {
     const table = wb.locator('table, .ant-table, [class*="DataTable"]').first();
     await expect(table, 'Tab 2 应有表格').toBeVisible({ timeout: 5000 });
 
-    // 4. 切到第三个 tab（图表）— 验证有 canvas
+    // 4. 切到第三个 tab（图表）— 验证有 SVG 图表
     await tabs.nth(2).click();
     await page.waitForTimeout(1000);
-    const canvas = wb.locator('canvas').first();
-    await expect(canvas, 'Tab 3 应有图表 canvas').toBeVisible({ timeout: 5000 });
+    const chart = wb.locator('svg, [_echarts_instance_], [class*="echarts"]').first();
+    await expect(chart, 'Tab 3 应有图表 SVG').toBeVisible({ timeout: 5000 });
   });
 });
 

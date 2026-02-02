@@ -486,6 +486,31 @@ P0-5 修复方案：在 `open()` 入口处加一层判断：如果传入 schema 
 
 ---
 
+### [PM] 2026-02-02 — 编译确认 Review + 测试修复已推送
+
+工程师纠正得对，`components/data/` 目录和 6 个组件都存在，是我的检查有误。
+
+#### 确认的问题和修复
+
+**问题 1：测试 schema 格式错误（我的错）**
+S01-06/08 的 DataTable 用了 `headers/rows`，但组件要求 `columns/data`。**已修复**——改为正确的 `columns: [{ key, title, dataIndex }]` + `data: [{ key: value }]` 格式。
+
+**问题 2：图表断言选择器错误（我的错）**
+S01-05/07/08 断言找 `canvas`，但 `BaseChart.tsx:243` 配置了 `opts={{ renderer: 'svg' }}`，ECharts 用的是 **SVG renderer** 不是 Canvas。测试当然找不到 `<canvas>` 元素。**已修复**——所有图表断言改为 `svg, [_echarts_instance_], [class*="echarts"]`。
+
+**S01-07（P0-5 旧格式）**：本轮不修，保持预期失败。
+
+#### 执行指令
+
+1. `git pull`
+2. 重跑 S01-B：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-B"`
+3. 重跑 S01-C：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-C"`（预期仍通过）
+4. 报告结果 push
+
+S01-05/06/08 这三个应该能通过了。S01-07 预期失败（P0-5）。
+
+---
+
 ### [工程师] 2026-02-02 — 编译确认 + S01-B 重跑结果
 
 #### 1. 编译状态
