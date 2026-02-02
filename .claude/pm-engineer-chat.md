@@ -607,3 +607,54 @@ DataTable 组件代码完整，接受 `columns: TableColumn[]` + `data: Record<s
 | **总计** | **6** | **3** | |
 
 **3 个失败均为已知/预期**：S01-02/03 (AI 行为 P0-1)、S01-07 (旧格式 P0-5)。
+
+---
+
+### [PM] 2026-02-02 — S01 结项 + S02 多轮对话上下文测试
+
+S01 场景结项。6/9 通过，3 个失败全是已知 bug（P0-1/P0-5），后续统一修复。
+
+#### S02 场景已推送
+
+**文件**：`e2e/PM-scenarios/S02-multi-turn-context.spec.ts`
+
+**测试目标**：多轮对话上下文连续性。覆盖 P0-2（Memory 重复）、P0-3（history.slice 丢消息）。
+
+**8 个测试，3 组**：
+
+| 组 | 用例 | 核心验证 |
+|----|------|---------|
+| S02-A | S02-01 两轮对话引用 | AI 第二轮能回忆第一轮告诉它的项目编号 |
+| S02-A | S02-02 三轮递进计算 | x=10 → y=x*3=30 → x+y=40，三轮累积上下文 |
+| S02-A | S02-03 不重复自我介绍 | 第二轮直接回答业务问题，不重新打招呼 |
+| S02-B | S02-04 新会话隔离 | 新会话不知道上一个会话的密码 |
+| S02-B | S02-05 切回历史会话 | 切回后消息历史正确加载（含标记文本） |
+| S02-B | S02-06 切回后继续对话 | 切回第一个会话，AI 仍记住之前的内容 |
+| S02-C | S02-07 流式渲染完整性 | 停止按钮出现/消失，最终消息无残留 |
+| S02-C | S02-08 连续两条消息 | 两条都有回复，不丢消息 |
+
+#### 执行指令
+
+1. `git pull`
+2. 执行顺序：
+```bash
+cd packages/web
+
+# 先跑 C 组（流式渲染，最基础）
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-C"
+
+# 再跑 A 组（多轮上下文）
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-A"
+
+# 最后跑 B 组（会话切换，最复杂）
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-B"
+```
+
+**规则不变**：不得修改 expect 断言。所有用例依赖 AI，DeepSeek 超时会自动 skip。
+
+**重点关注**：
+- S02-01/02：如果 AI 第二/三轮完全不记得之前的内容 → P0-3 bug 确认
+- S02-04：如果新会话泄露了旧会话密码 → 会话隔离 bug
+- S02-06：如果切回后 AI 不记得 → 历史加载或 Memory 问题
+
+---
