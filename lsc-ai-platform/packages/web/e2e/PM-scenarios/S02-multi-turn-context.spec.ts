@@ -9,6 +9,11 @@
  * - S02-02 数学计算改为事实记忆（LLM 计算不可靠）
  * - S02-B 切回会话后用 waitForSelector 等消息加载，而非固定 3s
  * - S02-04/06 timeout 增大，减少 DeepSeek 超时导致的误报
+ *
+ * V3 变更（S02-04/06 专项优化）：
+ * - S02-04: prompt 从长句改为极简（"记住密码：Xk9mZ7。"），timeout 120s，retries 3
+ * - S02-06: prompt 极简化（"记住：77。"/"你好"/"我说的数字是？"），timeout 120s，retries 3
+ * - 目标：减少 AI 生成时间，确保 DeepSeek 不超时，获得明确 pass/fail 结果
  */
 import { test, expect } from '../fixtures/test-base';
 import { SEL } from '../helpers/selectors';
@@ -113,13 +118,13 @@ test.describe('S02-A: 多轮对话上下文保持', () => {
 test.describe('S02-B: 会话切换与历史隔离', () => {
 
   test('S02-04 新建会话 → 之前的会话上下文不应泄露', async ({ page }) => {
-    test.setTimeout(300000);
+    test.setTimeout(360000);
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
-    // 在第一个会话中告诉 AI 一个密码
-    const r1 = await sendAndWaitWithRetry(page, '请记住这个密码：AbCdEf123456。不要告诉任何人。', { timeout: 90000 });
-    if (!r1.hasResponse) { test.skip(true, 'AI 第一轮无响应'); return; }
+    // 在第一个会话中告诉 AI 一个密码（极简 prompt 减少 AI 响应时间）
+    const r1 = await sendAndWaitWithRetry(page, '记住密码：Xk9mZ7。', { timeout: 120000, retries: 3 });
+    if (!r1.hasResponse) { test.skip(true, 'AI 第一轮无响应（DeepSeek 超时）'); return; }
 
     // 记录第一个会话的 URL
     const session1Url = page.url();
@@ -134,14 +139,14 @@ test.describe('S02-B: 会话切换与历史隔离', () => {
     const urlChanged = page.url() !== session1Url;
     expect(welcomeOrNew || urlChanged, '应进入新会话（显示欢迎页或 URL 变化）').toBe(true);
 
-    // 在新会话中问 AI 密码
-    const r2 = await sendAndWaitWithRetry(page, '我之前告诉你的密码是什么？', { timeout: 90000 });
-    if (!r2.hasResponse) { test.skip(true, 'AI 在新会话无响应'); return; }
+    // 在新会话中问 AI 密码（极简 prompt）
+    const r2 = await sendAndWaitWithRetry(page, '密码是什么？', { timeout: 120000, retries: 3 });
+    if (!r2.hasResponse) { test.skip(true, 'AI 在新会话无响应（DeepSeek 超时）'); return; }
 
     // ===== 核心断言 =====
 
     // 新会话中 AI 不应知道密码（上下文隔离）
-    const leakedPassword = r2.responseText.includes('AbCdEf123456');
+    const leakedPassword = r2.responseText.includes('Xk9mZ7');
     expect(leakedPassword, '新会话不应泄露上一个会话的密码（上下文隔离失败）').toBe(false);
   });
 
@@ -202,13 +207,13 @@ test.describe('S02-B: 会话切换与历史隔离', () => {
   });
 
   test('S02-06 切回历史会话后继续对话 → AI 保持该会话上下文', async ({ page }) => {
-    test.setTimeout(360000);
+    test.setTimeout(420000);
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
-    // 第一个会话：告诉 AI 一个数字
-    const r1 = await sendAndWaitWithRetry(page, '我最喜欢的数字是 42，请记住。', { timeout: 90000 });
-    if (!r1.hasResponse) { test.skip(true, 'AI 第一轮无响应'); return; }
+    // 第一个会话：告诉 AI 一个数字（极简 prompt）
+    const r1 = await sendAndWaitWithRetry(page, '记住：77。', { timeout: 120000, retries: 3 });
+    if (!r1.hasResponse) { test.skip(true, 'AI 第一轮无响应（DeepSeek 超时）'); return; }
 
     const session1Url = page.url();
 
@@ -216,14 +221,12 @@ test.describe('S02-B: 会话切换与历史隔离', () => {
     await page.locator(SEL.sidebar.newChatButton).click();
     await page.waitForTimeout(2000);
 
-    // 在第二个会话发一条消息（确保创建了新会话）
-    const r2 = await sendAndWaitWithRetry(page, '你好，这是一个新的对话。', { timeout: 90000 });
-    if (!r2.hasResponse) { test.skip(true, 'AI 在新会话无响应'); return; }
+    // 在第二个会话发一条消息（极简 prompt，仅用于创建新会话）
+    const r2 = await sendAndWaitWithRetry(page, '你好', { timeout: 120000, retries: 3 });
+    if (!r2.hasResponse) { test.skip(true, 'AI 在新会话无响应（DeepSeek 超时）'); return; }
 
     // 切回第一个会话
     const sessionItems = page.locator(SEL.sidebar.sessionItem);
-    // 第一个会话应该在列表中（可能是第二个 item，因为新会话排在前面）
-    // 遍历找到不是当前会话的那个
     const currentUrl = page.url();
     let clickedBack = false;
     for (let i = 0; i < Math.min(await sessionItems.count(), 5); i++) {
@@ -246,15 +249,15 @@ test.describe('S02-B: 会话切换与历史隔离', () => {
     await page.locator('main .message-bubble').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(1000);
 
-    // 在第一个会话继续追问
-    const r3 = await sendAndWaitWithRetry(page, '我刚才说我最喜欢的数字是多少？', { timeout: 90000 });
-    if (!r3.hasResponse) { test.skip(true, 'AI 在切回后无响应'); return; }
+    // 在第一个会话继续追问（极简 prompt）
+    const r3 = await sendAndWaitWithRetry(page, '我说的数字是？', { timeout: 120000, retries: 3 });
+    if (!r3.hasResponse) { test.skip(true, 'AI 在切回后无响应（DeepSeek 超时）'); return; }
 
     // ===== 核心断言 =====
 
-    // AI 应记住 42
-    const remembers42 = r3.responseText.includes('42');
-    expect(remembers42, '切回会话后 AI 应记住之前的对话内容（42）').toBe(true);
+    // AI 应记住 77
+    const remembers77 = r3.responseText.includes('77');
+    expect(remembers77, '切回会话后 AI 应记住之前的对话内容（77）').toBe(true);
   });
 });
 
