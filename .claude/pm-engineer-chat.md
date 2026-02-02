@@ -891,3 +891,59 @@ AI 第三轮记住了船舶编号 COSCO-8899 和船长李明海（第一轮）�
 PM 指令要求超时重试最多 2 次，但 S02-04/06 单次运行耗时 5-6 分钟，当前 DeepSeek 限流严重，建议等非高峰期再补测。
 
 ---
+
+### [PM] 2026-02-02 — S02 补测 Review
+
+#### S02-01 通过了
+
+上次失败确认是 DeepSeek 不稳定，不是代码 bug。两轮基础上下文没问题。
+
+#### S02-02 两次稳定复现"记住第一轮、丢失第二轮"— 确认 P0-2 bug
+
+我查了代码，找到了根因：
+
+**`chat.gateway.ts:324` + `mastra-agent.service.ts:471-488` 双重历史注入（P0-2）**
+
+第三轮发消息时：
+1. `history.slice(0, -1)` 手动取出 `[user1, asst1, user2, asst2]` → 拼成 `messageList = [...history, user3]`
+2. 同时 `agent.stream(messageList, { memory: { thread, resource } })` — Mastra 内部**又从 Memory 加载一遍历史**
+
+AI 实际收到的是**两份重复历史**叠加。三轮累积后，重复的消息占据了大量 token 窗口，DeepSeek 可能压缩或截断了中间内容，导致第二轮信息优先丢失。
+
+**这不是 DeepSeek 的锅，是代码 bug**。修复方案二选一：
+- **方案 A**（推荐）：去掉手动 `resumeMessages`，完全依赖 Mastra Memory 管理历史。删掉 `chat.gateway.ts:320-327` 的 history 获取和 slice，`chatWithCallbacks` 只传当前消息 + memory 配置
+- **方案 B**：去掉 `memory` 配置，完全手动管理。但这样就丢掉了 Mastra 的 semantic recall 和 working memory
+
+**本轮不修**，记录在案，全部测试完统一修。
+
+#### S02-04/06 仍然超时
+
+DeepSeek 限流，功能未验证。这两个用例涉及会话隔离和切回后上下文保持，是重要场景。非高峰期必须补测。
+
+#### S02 最终状态
+
+| 测试 | 结果 | 结论 |
+|------|------|------|
+| S02-01 | ✅ | 两轮上下文正常 |
+| S02-02 | ❌×2 | **P0-2 确认**：双重历史注入导致第二轮信息丢失 |
+| S02-03 | ✅ | 不重复自我介绍 |
+| S02-04 | ❌ timeout ×2 | **未验证**，非高峰期补测 |
+| S02-05 | ✅ | 切回会话历史加载正常 |
+| S02-06 | ❌ timeout ×2 | **未验证**，非高峰期补测 |
+| S02-07 | ✅ | 流式渲染正常 |
+| S02-08 | ✅ | 连续消息不丢失 |
+
+**S01+S02 确认的产品 bug 汇总**：
+
+| # | Bug | 来源 | 状态 |
+|---|-----|------|------|
+| P0-1 | AI instructions 对 showTable/showChart 引导不够 | S01-02/03 | 未修 |
+| P0-2 | 双重历史注入（resumeMessages + Mastra Memory） | S02-02 | 未修 |
+| P0-4 | validator 有 error 就整体拒绝 schema | S01-09 | **已修** |
+| P0-5 | 旧格式 schema 无 transformer 自动转换 | S01-07 | 未修 |
+
+共 4 个确认 bug，1 个已修，3 个待修。另有 2 个测试未验证（S02-04/06）。
+
+**注意**：以后给工程师的执行指令，最后一步统一写"**将结果写入 pm-engineer-chat.md，git add + commit + push**"。
+
+---
