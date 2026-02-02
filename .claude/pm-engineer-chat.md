@@ -229,3 +229,86 @@ npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-A"
 **规则不变**：不得修改 expect 断言。选择器调整需说明原因。失败就报告。
 
 **重点关注 S01-B 组**：这组不依赖 AI，如果失败 100% 是产品 bug。
+
+---
+
+### [工程师] 2026-02-02 — S01 全量执行结果（B → C → A）
+
+**前置准备已完成**：`main.tsx` 已添加 `window.__workbenchStore` 暴露代码，web dev server 已重启。
+
+#### S01-B 结果：4 failed, 0 passed
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S01-05 注入 LineChart | ❌ | store.open() 成功但 `.workbench-container` 不可见 |
+| S01-06 注入 DataTable | ❌ | 同上 |
+| S01-07 注入旧格式 chart | ❌ | 同上（P0-4/P0-5 标记） |
+| S01-08 注入多 tab 混合 | ❌ | 同上 |
+
+**根因分析（经诊断脚本验证）**：
+
+S01-B 失败有**两个叠加原因**：
+
+**原因 1：useSessionWorkbench 的新对话清空逻辑**
+- `useSessionWorkbench.ts:274-287` 有一个 useEffect：当 `isNewChat=true` 时，只要 workbench 变为 visible 就立即 `clear()` 清空
+- 测试发"你好"后用 `waitForURL('**/chat/**', { timeout: 15000 }).catch(() => {})` 等 session 创建，但如果 AI 响应慢（>15s），URL 仍是 `/chat`（无 sessionId），isNewChat=true
+- 此时 `store.open()` 设置 `visible=true` → React re-render → useEffect 检测到 isNewChat + visible → `clear()` → workbench 消失
+- **诊断验证**：我写了一个独立脚本，在 `/chat`（无 session）下注入 → visible=false；等 URL 变成 `/chat/{id}` 后注入 → **visible=true，workbench-container 正常显示**
+
+**原因 2：validator 整体拒绝（影响 S01-07/09）**
+- `validator.ts:378` → `valid: errors.length === 0`
+- `open()` line 160 → `if (!result.valid || !result.sanitizedSchema) return`
+- 含一个 `NonExistentComponent` 或缺必填字段的组件 → errors > 0 → valid=false → 整个 schema 被拒绝
+- 即使 sanitizedSchema 中好的 tab 已被正确构建，也因为 valid=false 不会打开
+- **这是 P0-4 bug**：校验过严，一个坏组件导致整体拒绝
+
+**修复建议**：
+1. 等待时间问题：测试中 `waitForURL` 超时后应 retry 或增加等待，确保 session 已创建。这是选择器/等待调整，PM 允许范围
+2. P0-4 修复：`open()` 应使用 `sanitizedSchema` 存在就打开，而非依赖 `valid`。或改为：有 errors 但 sanitizedSchema 有有效 tab 时仍打开（warn 但不 block）
+
+---
+
+#### S01-C 结果：1 failed, 0 passed
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S01-09 部分组件瑕疵容错 | ❌ | P0-4 确认：含 NonExistentComponent 的 schema 被整体拒绝 |
+
+**详细**：schema 有 3 个 tab（2 好 1 坏），validator 对坏组件 push error → `valid=false` → `open()` 拒绝整个 schema。另外 DataTable 测试传了 `headers/rows` 但 validator 要求 `columns/data`，也会产生 MISSING_REQUIRED error。
+
+---
+
+#### S01-A 结果：2 passed, 2 failed, 0 skipped
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S01-01 代码展示 | ✅ | AI 触发 workbench，代码高亮正确渲染 |
+| S01-02 表格展示 | ❌ | AI 回复"没有直接展示表格的工具"，未调用 workbench，但文本含"表格"触发断言 |
+| S01-03 图表展示 | ❌ | AI 回复图表数据文本但未调用 workbench，文本含"图表"/"柱状图"触发断言 |
+| S01-04 多 tab | ✅ | AI 触发 workbench，2 个 tab 正确渲染，切换正常 |
+
+**S01-01 和 S01-04 通过**——说明 PM 修改 prompt 后效果好很多。S01-02/03 失败是因为 AI（DeepSeek）声称没有表格/图表工具但实际上有（P0-1 范畴：AI instructions 对 showTable/showChart 引导不够）。
+
+---
+
+#### 总汇总
+
+| 组 | 通过 | 失败 | 跳过 |
+|----|------|------|------|
+| S01-A（AI 触发） | 2 | 2 | 0 |
+| S01-B（注入测试） | 0 | 4 | 0 |
+| S01-C（容错测试） | 0 | 1 | 0 |
+| **总计** | **2** | **7** | **0** |
+
+**确认的产品 bug**：
+1. **P0-4（校验过严）**：validator 有 error 就整体拒绝，应改为"有效 tab > 0 就打开"
+2. **P0-1（AI 不调工具）**：AI instructions 对 showTable/showChart 快捷工具引导不够，AI 声称没有这些工具
+
+**测试环境问题**（非产品 bug）：
+3. S01-B 注入测试的 `waitForURL` 超时 15s 可能不够，需增加等待或确认 session 创建后再注入
+
+**截图路径**：
+- S01-02: `test-results/PM-scenarios-S01-workbench-7184a-.../test-failed-1.png`
+- S01-03: `test-results/PM-scenarios-S01-workbench-8bb6a-.../test-failed-1.png`
+- S01-05: `test-results/PM-scenarios-S01-workbench-c50ab-.../test-failed-1.png`
+- S01-09: `test-results/PM-scenarios-S01-workbench-e05cc-.../test-failed-1.png`
