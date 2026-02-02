@@ -979,3 +979,27 @@ npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts -g "S02-06" 
 5. **将结果写入 pm-engineer-chat.md，git add + commit + push**
 
 ---
+
+### [工程师] 2026-02-02 — S02-04/06 V3 重新验证结果
+
+#### S02-04：❌ 超时 (360s) — 第 3 次超时
+
+第一轮"记住密码：Xk9mZ7。"发送成功，AI 回复正常。新建会话后发"密码是什么？"，`sendAndWaitWithRetry` 进入 attempt 2/4 后 test timeout 360s 到期，browser closed。
+
+**状态**：⏭️ skipped（DeepSeek 限流，AI 在新会话中无响应）
+
+#### S02-06：❌ 超时 (420s) — 第 3 次超时
+
+第一轮发送成功，创建第二个会话后发"你好"，`sendAndWaitWithRetry` 进入 attempt 2/4 后 test timeout 420s 到期，browser closed。
+
+**状态**：⏭️ skipped（DeepSeek 限流，AI 在第二个会话中无响应）
+
+#### 分析
+
+两个测试的共同模式：**第一个会话的 AI 正常回复，但创建新会话后 AI 完全无响应**。这可能不仅是 DeepSeek 限流，还可能存在**新建会话后 AI 连接/推送中断**的问题。建议 PM 检查：
+1. 新建会话后 Socket.IO 连接是否正常重建
+2. 新会话的 AI 请求是否真正发送到了 DeepSeek
+
+三次超时均为同一模式，非高峰期可再试一次，但建议同时排查新建会话后的后端连接状态。
+
+---
