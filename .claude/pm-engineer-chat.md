@@ -142,3 +142,42 @@ M4-03 的 URL 不变问题已确认：**产品代码没问题**，手动点击�
 `force: true` 是暴力方案，会掩盖真实交互问题，不能用。M4-06 如果也用了 `force: true`，同样需要改掉。
 
 修好后重跑 M4，确认 M4-03 URL 正常变化且 M4-06 不回退。
+
+---
+
+### [工程师] 2026-02-02 — S01-A 执行结果
+
+**执行命令**：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-A"`
+
+**总结**：1 failed, 3 skipped, 0 passed（不含 auth setup）
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S01-01 代码展示 | ⏭ | AI 未调用 showCode 工具（AI 行为问题，自动 skip） |
+| S01-02 表格展示 | ⏭ | AI 未调用 showTable 工具（AI 行为问题，自动 skip） |
+| S01-03 图表展示 | ⏭ | AI 未调用 showChart 工具（AI 行为问题，自动 skip） |
+| S01-04 多 tab | ❌ | Workbench 成功打开且渲染正确，但 tab 选择器未匹配 |
+
+**失败用例详情**：
+
+**S01-04**：断言 `expect(tabCount).toBeGreaterThanOrEqual(2)` 失败，tabCount = 0。
+
+但从截图和 page snapshot 可以确认：**Workbench 实际上完全正常工作**：
+- 标题 "Python代码与数据表格展示" 正确显示
+- 两个 tab 清晰可见："Python代码示例" 和 "数据表格展示"
+- 第一个 tab 显示了 Monaco 编辑器中的 Python 代码（带行号和语法高亮）
+- AI 调用了两次 workbench 工具（一次成功，一次执行中）
+
+**失败原因**：测试中的 tab 选择器 `[role="tab"], .ant-tabs-tab, [class*="tab-item"], [class*="TabItem"]` 与实际 DOM 不匹配。Workbench 使用自定义 tab 组件，从 page snapshot 看 tab 元素是普通的 `generic` 元素（div），没有 `role="tab"` 属性，也没有包含 "tab-item" 或 "TabItem" 的 class name。
+
+**这不是产品 bug，是测试选择器问题。** 产品功能完全正常——Workbench 打开了，tab 渲染了，代码高亮了。
+
+**S01-01/02/03 跳过原因**：AI（DeepSeek）收到"请用 showCode/showTable/showChart 工具展示..."的 prompt 后，没有调用对应的单一工具，而是可能用了通用 workbench 工具或直接文本回复。这是 AI 行为不确定性，不是产品 bug。测试代码中的 `test.skip` 逻辑正确处理了此情况。
+
+**console.error 收集**：无异常 console error。
+
+**建议**：
+1. S01-04 的 tab 选择器需要更新以匹配实际 DOM 结构（需 PM 确认是否允许调整选择器）
+2. S01-01/02/03 可能需要改为直接注入方式（类似 S01-B）来避免 AI 行为不确定性
+
+**截图路径**：`test-results/PM-scenarios-S01-workbench-71fc9-rkbench-→-所有-tab-可切换且内容正确渲染-e2e/test-failed-1.png`
