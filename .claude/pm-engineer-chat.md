@@ -485,3 +485,64 @@ P0-5 修复方案：在 `open()` 入口处加一层判断：如果传入 schema 
 5. 报告结果 push
 
 ---
+
+### [工程师] 2026-02-02 — 编译确认 + S01-B 重跑结果
+
+#### 1. 编译状态
+
+`pnpm --filter web build` 初次失败：`tsconfig.json` 缺少 `"types": ["vite/client", "node"]`（`import.meta.env.DEV` 和 `process` 无类型定义）。已修复，**build 成功**。
+
+#### 2. 组件缺失情况
+
+**PM 的假设不成立——所有 6 个组件都存在**：
+
+```
+packages/web/src/components/workbench/components/data/
+├── Card.tsx
+├── Citation.tsx
+├── DataTable.tsx     ← 175 行，完整实现（基于 Ant Design Table）
+├── List.tsx
+├── Statistic.tsx
+└── Timeline.tsx
+```
+
+`git log --all --oneline -- 'packages/web/src/components/workbench/components/data/'` 无结果——这些文件在当前分支上，不在 git 历史中（可能是 merge 或初始 commit 带入）。
+
+`index.ts` 的 import 也正确：`import { DataTable } from './data/DataTable'` 等 6 个导入都存在。
+
+#### 3. DataTable 渲染失败的真正原因
+
+DataTable 组件代码完整，接受 `columns: TableColumn[]` + `data: Record<string, unknown>[]`（与 `DataTableSchema` 类型一致）。
+
+**但测试注入的 schema 用了错误的字段名**：
+- 测试传：`headers: ['姓名', '年龄', '城市', '职位']` + `rows: [['张三', ...]]`
+- 组件要求：`columns: [{ key: 'name', title: '姓名', dataIndex: 'name' }, ...]` + `data: [{ name: '张三', ... }]`
+
+组件解构 `columns: schemaColumns` (line 100)，当 `schemaColumns` 为 undefined（因为 schema 中叫 `headers`），`schemaColumns.map()` 在 line 127 崩溃 → `Cannot read properties of undefined (reading 'map')`。
+
+**这不是产品 bug，是测试 schema 格式与组件 API 不匹配**。`headers/rows` 是一种"简化格式"，但 DataTable 组件不支持。
+
+#### 4. LineChart canvas 空白原因
+
+查看 S01-05 截图：Workbench 打开，tab "销售趋势" 可见，但内容区空白。可能原因：
+- ECharts 需要容器有明确的宽高，初始渲染时容器高度可能为 0
+- 或 LineChart 组件的 props 映射有问题（需要进一步诊断）
+
+#### 5. S01-B 重跑结果：4 failed（与上轮相同）
+
+| 用例 | 结果 | 原因 |
+|------|------|------|
+| S01-05 LineChart | ❌ | Workbench 打开，canvas 空白（可能 ECharts 容器高度问题） |
+| S01-06 DataTable | ❌ | 测试 schema 用 `headers/rows`，组件要求 `columns/data`（schema 格式不匹配） |
+| S01-07 旧格式 | ❌ | P0-5：旧格式无 `type: 'workbench'`，被 validator 拒绝 |
+| S01-08 多 tab | ❌ | DataTable tab 同上原因报错，影响后续 tab 断言 |
+
+#### 6. tsconfig.json 修复
+
+已添加 `"types": ["vite/client", "node"]`，build 通过。
+
+#### 建议
+
+1. **S01-06/08**：测试 schema 的 `headers/rows` 格式需改为 `columns/data` 格式（匹配 DataTableSchema 类型定义）。这是测试数据修改，不是 expect 断言修改。
+2. **S01-05**：需要进一步诊断 LineChart 的 canvas 空白问题——可能是容器高度、ECharts 初始化时机、或 props 格式问题。
+3. **S01-07**：P0-5 已记录，本轮不修。
