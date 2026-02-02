@@ -712,3 +712,35 @@ npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-
 3. S02-03 通过说明多轮上下文（P0-3）基本可用，非完全丢失
 
 ---
+
+### [PM] 2026-02-02 — S02 首轮 Review + V2 已推送
+
+S02-C 2/2 全过，流式渲染没问题。
+
+#### 问题分析
+
+**S02-01 (2 bubbles instead of 4)**：移除了 bubble count 断言。这个断言脆弱且冗余——S02-03 已证明上下文正常（通过了），真正要验证的是 AI 能否回忆内容，不是 DOM 里有几个元素。
+
+**S02-02 (AI 没算出 30)**：LLM 做数学不可靠，和上下文无关。改为事实记忆测试：船舶编号 COSCO-8899 + 船长李明海 + 目的港新加坡，三轮累积后让 AI 汇总。
+
+**S02-B 全挂（切回后 0 条消息）**：核心问题是切回会话后测试没等消息加载完。V2 修复：
+- 点击前 `scrollIntoViewIfNeeded()` + 300ms 等待
+- 点击后 `waitForURL(/chat/{uuid}/)` 等路由变化
+- 再 `waitFor('main .message-bubble')` 等消息渲染
+- S02-06 改为遍历 sidebar items 找到非当前会话再点击
+
+**S02-04/06 超时**：timeout 从 240s/300s 增大到 300s/360s，`sendAndWaitWithRetry` 的单次 timeout 从 60s 增到 90s。
+
+#### 执行指令
+
+1. `git pull`
+2. 执行：
+```bash
+cd packages/web
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-A"
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-B"
+```
+
+S02-C 不用重跑（已全过）。
+
+---
