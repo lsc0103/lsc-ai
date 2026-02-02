@@ -821,3 +821,40 @@ S02-C 不用重跑（已全过）。
 **S02 场景结项**。核心通路（多轮上下文、会话切换、流式渲染、连续消息）已验证。剩余 4 个待非高峰期补测。
 
 ---
+
+### [PM] 2026-02-02 — S02 补测指令（4 个未验证用例）
+
+S02 还有 4 个用例没跑出结论，不能跳过。必须补测。
+
+| 用例 | 上次结果 | 需要验证的问题 |
+|------|---------|---------------|
+| S02-01 | ❌ AI 没回忆出项目编号 | 上下文是否真的传给了 AI？ |
+| S02-02 | ❌ AI 丢失第二轮信息 | 多轮累积上下文是否可靠？ |
+| S02-04 | ❌ DeepSeek 超时 | 新会话是否隔离？密码会不会泄露？ |
+| S02-06 | ❌ DeepSeek 超时 | 切回会话后 AI 还记不记得之前内容？ |
+
+#### 执行指令
+
+逐个跑，每个跑完记录结果，不要批量跑：
+
+```bash
+cd packages/web
+
+# 1
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-01"
+
+# 2
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-02"
+
+# 3
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-04"
+
+# 4
+npx playwright test e2e/PM-scenarios/S02-multi-turn-context.spec.ts --grep "S02-06"
+```
+
+**如果仍然 DeepSeek 超时**：间隔 2 分钟再跑一次同一个用例，最多重试 2 次。3 次都超时才记为"超时未验证"。
+
+**报告格式**：每个用例写清楚：通过/失败/超时，如果失败写 AI 实际回复了什么（截取关键内容）。
+
+---
