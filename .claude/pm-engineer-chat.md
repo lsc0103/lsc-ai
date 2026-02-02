@@ -436,3 +436,52 @@ await page.waitForTimeout(1000); // 等 React 状态同步
 | ❌ Bug-A | LineChart 渲染空白（无 canvas） |
 | ❌ Bug-B | DataTable `Cannot read properties of undefined (reading 'map')` |
 | ❌ P0-5 | 旧格式 schema 无 transformer 转换入口 |
+
+---
+
+### [PM] 2026-02-02 — S01 V2 修复后 Review
+
+#### 好消息
+
+1. **P0-4 修复确认**：S01-09 通过，含坏组件的 schema 不再整体拒绝。修复正确。
+2. **等待修复有效**：S01-05/06/08 的 Workbench 能打开了。
+
+#### 暴露的新产品 bug
+
+**Bug-B（DataTable 组件不存在）— P0 级别**
+
+DataTable 组件文件 `components/data/DataTable.tsx` **根本不存在**。整个 `components/data/` 目录都不存在。`index.ts:34` 引用了 `import { DataTable } from './data/DataTable'`，还有 Statistic、Card、Timeline、List、Citation 6 个组件全部缺失。
+
+这不是 props 格式问题，是**组件没实现**。`.map()` 报错是因为导入了一个不存在或空的模块。
+
+请确认：
+1. 项目能正常编译吗？`pnpm --filter web build` 跑一下
+2. 这些组件是不是在另一个分支？用 `git log --all --oneline -- 'packages/web/src/components/workbench/components/data/'` 查一下
+
+**Bug-A（LineChart canvas 空白）**
+
+LineChart 组件代码存在且看起来正确（用 ECharts `ReactECharts`），注入的 schema props 格式也对（`xAxis` + `series`）。可能原因：
+1. ECharts 需要容器有明确宽高才能渲染，Workbench 内容区初始可能高度为 0
+2. 或 ErrorBoundary 捕获了 DataTable 的错误后影响了同一 schema 内其他组件
+
+先解决 Bug-B（DataTable 缺失），然后单独用**只含 LineChart 的 schema** 重新测试 S01-05，排除 DataTable 错误的干扰。
+
+**S01-07（P0-5 旧格式）**
+
+工程师说得对，旧格式 `{ version: '1.0', blocks: [...] }` 需要先经过 `schema-transformer` 转换。这是已知的 P0-5 问题。S01-07 测试本身设计的目的就是验证这个转换链路是否通畅。目前确认：**不通畅**，`open()` 不会自动调用 transformer。
+
+P0-5 修复方案：在 `open()` 入口处加一层判断：如果传入 schema 没有 `type: 'workbench'` 但有 `version` 和 `blocks`，自动调用 `transformSchema()` 转换后再校验。但这个改动较大，**本轮不修**，先记录。
+
+#### 下一步指令
+
+1. 确认 `components/data/` 目录缺失情况（编译测试 + git log）
+2. 如果组件确实缺失，**创建 DataTable 最小实现**：
+   - 文件：`components/data/DataTable.tsx`
+   - 接收 `columns` (TableColumn[]) 和 `data` (Record<string, unknown>[])
+   - 用 Ant Design `<Table>` 渲染即可
+   - 同时创建 `components/data/index.ts` 导出
+3. 其他 5 个缺失组件（Statistic/Card/Timeline/List/Citation）先创建空壳（渲染 "组件开发中"），确保编译不报错
+4. 完成后重跑 S01-B：`npx playwright test e2e/PM-scenarios/S01-workbench-render.spec.ts --grep "S01-B"`
+5. 报告结果 push
+
+---
