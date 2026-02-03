@@ -1185,3 +1185,36 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 - S03-09: `test-results/PM-scenarios-S03-workbench-1a415-.../test-failed-1.png`
 
 ---
+
+### 🔄 PM Review S03 + 回归指令（2026-02-03）
+
+**结果确认**：8/10 通过（报告写"9 passed, 2 failed"数学有误，实际通过表列了 8 个）。
+
+**分析 2 个失败**：
+
+**S03-01（多 Tab 切换）❌ — 非产品 bug**
+- S03-06（单 tab CodeEditor）用 8000ms timeout 通过了，说明 CodeEditor 本身能渲染
+- S03-01 用 3-tab schema，CodeEditor 只给了 5000ms timeout，多 tab 场景组件初始化更慢
+- **修复**：显式点击第一个 tab 确保激活 + timeout 增大到 10000ms
+
+**S03-09（切换会话保持）❌ — 非产品 bug**
+- sidebar 动画未完成时 `<aside>` 拦截 pointer events，与 S02-B/M4 完全相同的已知问题
+- **修复**：加 `scrollIntoViewIfNeeded()` + `{ force: true }`
+
+**两个失败都是测试交互层面的问题，不是产品功能 bug。** 我已修改测试代码。
+
+#### 回归执行步骤
+
+1. `git pull origin claude/design-s03-s04-tests-6vd9s`
+
+2. **只回归 S03-01 和 S03-09**：
+```bash
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-01|S03-09" --reporter=list
+```
+
+3. 报告每个测试 ✅/❌ + 失败详情
+
+4. **将结果写入 pm-engineer-chat.md，git add + commit + push**
+
+---

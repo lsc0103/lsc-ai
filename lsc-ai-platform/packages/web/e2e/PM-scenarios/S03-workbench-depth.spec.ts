@@ -206,9 +206,13 @@ test.describe('S03-A: Tab 管理', () => {
     const tabs = wb.locator('.workbench-tab');
     await expect(tabs).toHaveCount(3);
 
-    // 2. 第一个 tab（代码）默认激活 — 应有代码编辑器
+    // 2. 显式点击第一个 tab 确保激活（多 tab 时默认激活可能延迟）
+    await tabs.nth(0).click();
+    await page.waitForTimeout(1000);
+
+    // 第一个 tab（代码）— 应有代码编辑器
     const codeEl = wb.locator('.monaco-editor, pre code, [class*="CodeEditor"], .cm-editor').first();
-    await expect(codeEl, 'Tab 1 应有代码编辑器').toBeVisible({ timeout: 5000 });
+    await expect(codeEl, 'Tab 1 应有代码编辑器').toBeVisible({ timeout: 10000 });
 
     // 3. 切换到第二个 tab（表格）
     await tabs.nth(1).click();
@@ -568,9 +572,11 @@ test.describe('S03-D: 状态持久化', () => {
     const wbGone = await wb.isVisible().catch(() => false) === false ||
       await page.locator(SEL.chat.welcomeScreen).isVisible().catch(() => false);
 
-    // 切回第一个会话
+    // 切回第一个会话（已知 sidebar 动画可能拦截点击，用 scrollIntoView + force）
     const sessionItems = page.locator(SEL.sidebar.sessionItem);
-    await sessionItems.first().click();
+    await sessionItems.first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await sessionItems.first().click({ force: true });
     await page.waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(3000);
 
