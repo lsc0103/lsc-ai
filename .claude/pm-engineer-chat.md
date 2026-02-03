@@ -1218,3 +1218,45 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-01|S03-
 4. **将结果写入 pm-engineer-chat.md，git add + commit + push**
 
 ---
+
+### 🔴 S03 V2 重新设计 — 执行指令（2026-02-03）
+
+**重要：S03 测试文件已完全重写（V2）。** 之前的 V1 版本设计过于简单，不符合 PM 场景测试要求。V2 从真实用户工作流出发，测试更深层交互。
+
+#### V2 变更要点
+- 10 个测试重新设计，分 4 组（Tab累积与操作 / 分屏与布局 / 关闭与重开 / 跨会话状态）
+- S03-01 改为真实 AI 调用（2 轮对话测 Tab 累积）
+- S03-03 新增右键菜单测试
+- S03-06 用真实 UI 关闭按钮而非 store.close()
+- S03-07 全新场景：Workbench 在纯文本对话中保持不变
+- S03-08 测试 mergeSchema（AI 真实路径）
+- S03-10 测试用户操作后的精确状态保持
+
+#### 执行步骤
+
+1. 拉取最新代码：
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+```
+
+2. 确认文件已更新（V2 文件头部有 `V2 — 真实用户场景重新设计`）：
+```bash
+head -3 packages/web/e2e/PM-scenarios/S03-workbench-depth.spec.ts
+```
+
+3. 执行全部 S03 测试：
+```bash
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
+```
+
+4. 报告格式：每个测试 ✅/❌ + 失败详情（错误信息 + 截图路径）
+
+5. **将结果写入 pm-engineer-chat.md，git add + commit + push**
+
+#### 注意事项
+- **不得修改 expect 断言**
+- S03-01 和 S03-07 依赖 AI 回复，如果 DeepSeek 限流导致无响应会自动 skip，这不算失败
+- 如遇选择器问题，记录实际 DOM 结构，在报告中说明
+
+---
