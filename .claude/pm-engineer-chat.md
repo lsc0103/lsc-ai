@@ -1077,3 +1077,51 @@ V4 改动生效：去掉第二次 AI 调用，改为纯前端验证（检查 DOM
 - S02-06 暴露了切回历史会话后 AI 上下文保持的功能问题，可能与 P0-2（双重历史注入）或 Memory 加载机制有关
 
 ---
+
+## 第五轮：S03 Workbench 交互深度测试
+
+### 🔄 PM → 工程师：S03 执行指令（2026-02-03）
+
+**新增测试文件**：`e2e/PM-scenarios/S03-workbench-depth.spec.ts` — Workbench 交互深度（10 tests）
+
+**⚠️ 本轮只测 S03。S04（本地模式+模式切换）等 S03 全部验证完毕后再安排。**
+
+#### S03 测试内容
+
+| 组 | 测试 | 说明 | AI 调用 |
+|----|------|------|---------|
+| A: Tab 管理 | S03-01 多Tab切换 | 注入3-tab schema → 切换验证内容隔离 | 0（store注入） |
+| A: Tab 管理 | S03-02 关闭Tab | hover显示关闭按钮 → 关闭后Tab消失 | 0 |
+| A: Tab 管理 | S03-03 右键菜单 | 右键Tab → 上下文菜单 → "关闭其他" | 0 |
+| B: 分屏布局 | S03-04 拖拽调整宽度 | 拖拽resizer向左 → Workbench宽度增大 | 0 |
+| B: 分屏布局 | S03-05 边界约束 | 拖到极端位置 → 宽度受限25%-75% | 0 |
+| C: 组件渲染 | S03-06 代码高亮 | Monaco Editor + 行号 + mtk语法高亮 | 0 |
+| C: 组件渲染 | S03-07 数据表格 | DataTable列头 + 数据行 + 不是JSON | 0 |
+| C: 组件渲染 | S03-08 ECharts图表 | SVG渲染 + 图形元素(path/rect) | 0 |
+| D: 状态持久化 | S03-09 切换会话保持 | 离开再回来 → Workbench + 3个Tab仍在 | 0 |
+| D: 状态持久化 | S03-10 手动关闭不重开 | close() → 3秒内不自动重开 | 0 |
+
+**全部 10 个测试通过 store 注入，不依赖 AI/DeepSeek，不应有超时或限流问题。**
+
+#### 执行步骤
+
+1. `git pull origin <当前分支>`
+
+2. 运行全部 S03 测试：
+```bash
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
+```
+
+3. **每个测试必须有明确结果**（✅ passed / ❌ failed），不接受因环境问题跳过。S03 不依赖 AI，唯一需要 AI 的是 `ensureSession`（发"你好"创建 session），这是 1 次最轻量的调用。
+
+4. 如遇选择器不匹配，按之前规则调整（记录变更原因），**断言逻辑不改**。
+
+5. **报告格式**（每个测试）：
+   - ✅ passed — 通过
+   - ❌ failed — 断言失败（说明哪个断言、实际值、截图）
+   - 如果 `ensureSession` 失败导致 skip，说明原因
+
+6. **将结果写入 pm-engineer-chat.md，git add + commit + push**
+
+---
