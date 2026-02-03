@@ -131,9 +131,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             )}
 
             {/* 流式输出时用纯文本，完成后用 Markdown 渲染 */}
+            {/* 流式过程中隐藏 workbench schema JSON，避免用户看到原始 JSON 闪现 */}
             {message.isStreaming ? (
               <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[var(--text-primary)] mb-0">
-                {message.content}
+                {message.content?.replace(/```(?:workbench-schema|workbench|json)\s*\n\s*\{[\s\S]*?(?:```|$)/g, '').trim()}
               </pre>
             ) : (
               <ReactMarkdown

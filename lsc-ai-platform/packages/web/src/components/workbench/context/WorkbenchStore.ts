@@ -157,9 +157,12 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
       // ====== 基础操作 ======
       open: (schema) => {
         const result = validateWorkbenchSchema(schema);
-        if (!result.valid || !result.sanitizedSchema) {
-          console.error('Invalid Workbench Schema:', result.errors);
+        if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
+          console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
+        }
+        if (result.errors.length > 0) {
+          console.warn('Workbench Schema has issues (partial render):', result.errors);
         }
 
         const sanitizedSchema = result.sanitizedSchema;
@@ -180,8 +183,8 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
 
       mergeSchema: (newSchema) => {
         const result = validateWorkbenchSchema(newSchema);
-        if (!result.valid || !result.sanitizedSchema) {
-          console.error('Invalid Workbench Schema:', result.errors);
+        if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
+          console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
         }
 
@@ -276,9 +279,12 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
 
       setSchema: (schema) => {
         const result = validateWorkbenchSchema(schema);
-        if (!result.valid || !result.sanitizedSchema) {
-          console.error('Invalid Workbench Schema:', result.errors);
+        if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
+          console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
+        }
+        if (result.errors.length > 0) {
+          console.warn('Workbench Schema has issues (partial render):', result.errors);
         }
 
         const sanitizedSchema = result.sanitizedSchema;

@@ -311,7 +311,9 @@ export class MastraAgentService implements OnModuleInit {
 ### 4. Office 办公
 - \`readOffice\` - 读取 Office 文件（Word/Excel/PDF/PPT）
 - \`createWord\` - 创建 Word 文档
+- \`editWord\` - 编辑 Word 文档
 - \`createExcel\` - 创建 Excel 表格
+- \`editExcel\` - 编辑 Excel 表格
 - \`createPDF\` - 创建 PDF 文档
 - \`createPPT\` - 创建 PowerPoint 演示文稿
 - \`createChart\` - 创建图表
@@ -320,12 +322,14 @@ export class MastraAgentService implements OnModuleInit {
 - \`webSearch\` - 网页搜索
 - \`webFetch\` - 网页抓取
 - \`sql\` - SQL 查询
+- \`sqlConfig\` - 配置 SQL 数据源
 - \`notebookEdit\` - Jupyter Notebook 编辑
 
 ### 6. 任务管理
 - \`todoWrite\` - Todo 任务管理
 - \`askUser\` - 询问用户
 - \`undo\` - 撤销操作
+- \`modificationHistory\` - 查看修改历史
 
 ## 🚨 强制规则
 

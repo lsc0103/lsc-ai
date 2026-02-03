@@ -27,3 +27,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+if (import.meta.env.DEV) {
+  import('./components/workbench/context/WorkbenchStore').then(mod => {
+    (window as any).__workbenchStore = mod.useWorkbenchStore;
+  });
+}
