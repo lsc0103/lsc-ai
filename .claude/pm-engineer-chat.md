@@ -1260,3 +1260,87 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 - 如遇选择器问题，记录实际 DOM 结构，在报告中说明
 
 ---
+
+### [工程师] 2026-02-04 — S03 V2 测试报告
+
+**执行时间**: 6.2 分钟
+**总结**: **6 passed, 5 failed**
+
+#### 通过的测试 (6/11) ✅
+
+| 测试 | 组别 | 耗时 | 说明 |
+|------|------|------|------|
+| auth setup | - | 5.5s | 认证设置 ✅ |
+| S03-03 | A: Tab管理 | 7.7s | 右键Tab→上下文菜单→禁用状态验证 ✅ |
+| S03-04 | B: 分屏布局 | 9.8s | 拖拽resizer→Workbench变宽→组件正常 ✅ |
+| S03-05 | B: 分屏布局 | 7.6s | 极端拖拽→宽度受限25%-75% ✅ |
+| S03-07 | C: 关闭与重开 | 1.2m | Workbench打开时纯文本对话→保持不变 ✅ |
+| S03-10 | D: 跨会话状态 | 27.0s | 用户操作Tab后切走再切回→精确保持 ✅ |
+
+#### 失败的测试 (5/11) ❌
+
+**1. S03-01: AI展示代码→再展示表格→Tab自动累积 ❌**
+- **错误**: `P0-1: AI 尝试但 Workbench 未打开`
+- **根因**: AI 调用了 workbench 工具（从截图看有 loading 状态），但 Workbench 未实际渲染出来
+- **分类**: **P0-1 产品bug** — AI instructions 引导不足，或 workbench 工具执行异常
+
+**2. S03-02: 用户连续关闭Tab→自动切换→最后一个Tab不可关闭 ❌**
+- **错误**: `.workbench-container` 5秒内未出现
+- **截图分析**: 页面显示AI正在流式输出（tool: workbench, loading），但最终未打开Workbench
+- **根因**: `ensureSession` 发"你好"后，AI响应仍在执行中就调用了 `injectSchema`，AI的workbench调用与测试注入产生冲突
+- **分类**: **测试设计问题** — 需要等待AI响应完成后再注入
+
+**3. S03-06: 用户点X关闭Workbench→再让AI展示内容→Workbench重新打开 ❌**
+- **错误**: `P0-1: AI 尝试但 Workbench 未重新打开`
+- **根因**: 与S03-01相同，AI调用workbench工具但未实际渲染
+- **分类**: **P0-1 产品bug**
+
+**4. S03-08: 先注入代码Tab→追加表格Tab(mergeSchema)→两个Tab都在 ❌**
+- **错误**: `第一个 Tab 应有代码编辑器` — Monaco Editor 未找到
+- **截图分析**: Workbench已打开（标题"代码工作台"），显示"加载编辑器..."，Monaco仍在加载
+- **根因**: Monaco Editor 加载延迟，测试等待时间不足
+- **分类**: **测试等待时间问题** — 需要增加等待时间或等待Monaco加载完成
+
+**5. S03-09: 会话1有Workbench→新建会话2→切回→Workbench恢复 ❌**
+- **错误**: `新建会话应无旧 Workbench` — 新建会话后Workbench仍显示
+- **截图分析**: 新建会话后页面显示"多Tab测试"（3个Tab：代码示例、员工数据、销售图表），完全是会话1的内容
+- **根因**: 新建会话时WorkbenchStore状态未清理
+- **分类**: **产品bug** — Workbench状态未与会话绑定，切换/新建会话时状态未重置
+
+#### 汇总分析
+
+| 分类 | 测试数 | 通过 | 失败 | 通过率 |
+|------|--------|------|------|--------|
+| A: Tab管理 | 3 | 1 | 2 | 33% |
+| B: 分屏布局 | 2 | 2 | 0 | **100%** ✅ |
+| C: 关闭与重开 | 3 | 1 | 2 | 33% |
+| D: 跨会话状态 | 2 | 1 | 1 | 50% |
+| **总计** | **10** | **5** | **5** | **50%** |
+
+#### 确认的问题
+
+**产品bug (2个)**：
+
+1. **P0-1 再次确认** — AI调用workbench工具但Workbench未打开（S03-01, S03-06）
+   - AI确实尝试调用workbench（截图显示 tool loading），但最终未渲染
+   - 可能是tool执行超时、schema返回异常、或前端处理失败
+
+2. **新bug: Workbench状态未与会话绑定** — (S03-09)
+   - 新建会话后，上一个会话的Workbench内容仍然显示
+   - WorkbenchStore是全局单例，没有按sessionId隔离
+
+**测试设计问题 (2个)**：
+
+1. **S03-02** — `ensureSession` 需要等待AI响应完成后再返回，否则后续的 `injectSchema` 会与AI的workbench调用冲突
+
+2. **S03-08** — Monaco Editor 加载时间较长，需要等待加载完成而非固定等待
+
+#### 截图路径
+
+- S03-01: `test-results/PM-scenarios-S03-workbench-1e55e-.../test-failed-1.png`
+- S03-02: `test-results/PM-scenarios-S03-workbench-442ca-.../test-failed-1.png`
+- S03-06: `test-results/PM-scenarios-S03-workbench-ebc67-.../test-failed-1.png`
+- S03-08: `test-results/PM-scenarios-S03-workbench-e229f-.../test-failed-1.png`
+- S03-09: `test-results/PM-scenarios-S03-workbench-32a69-.../test-failed-1.png`
+
+---
