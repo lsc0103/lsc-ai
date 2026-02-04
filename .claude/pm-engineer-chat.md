@@ -1437,3 +1437,19 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-
 ```
 
 ---
+
+### [工程师] 2026-02-04 — 第二轮回归测试报告
+
+**结果：3 passed (40.1s) ✅**
+
+| 测试 | 结果 | 耗时 |
+|------|------|------|
+| auth setup | ✅ | 3.3s |
+| S03-02 | ✅ | 8.9s |
+| S03-08 | ✅ | 23.5s |
+
+**修复有效**：
+- S03-02：`ensureSession` 关闭 AI 打开的 Workbench 后，`injectSchema` 正常工作
+- S03-08：更广泛的选择器成功匹配 Monaco Editor
+
+---
