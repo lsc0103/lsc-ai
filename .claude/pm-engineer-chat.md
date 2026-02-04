@@ -1413,3 +1413,27 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-
 3. S03-02 可能需要等待 AI 响应完成后的额外等待时间（超过 60 秒）
 
 ---
+
+### [PM] 2026-02-04 — 第二轮修复 + 回归测试指令
+
+#### 修复内容
+
+**S03-02 修复**：
+- `ensureSession` 增加检查：如果 AI 响应时打开了 Workbench，先调用 `store.close()` 关闭它
+- 避免 AI 的 workbench 调用与测试注入冲突
+
+**S03-08 修复**：
+- 使用更广泛的选择器：`.workbench-code-editor, .monaco-editor, pre code, [class*="CodeEditor"]`
+- 增加等待加载指示器消失：`text=加载编辑器`
+
+#### 🔄 第二轮回归测试
+
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# 回归测试
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-08" --reporter=list
+```
+
+---

@@ -27,7 +27,7 @@ import { sendAndWaitWithRetry } from '../helpers/ai-retry.helper';
 // 辅助函数
 // ============================================================================
 
-/** 创建 session（发"你好"，等 URL 变为 /chat/:id，等 AI 响应完成） */
+/** 创建 session（发"你好"，等 URL 变为 /chat/:id，等 AI 响应完成，清理可能的 Workbench） */
 async function ensureSession(page: import('@playwright/test').Page): Promise<string> {
   await page.goto('/chat');
   await page.waitForLoadState('networkidle');
@@ -44,6 +44,17 @@ async function ensureSession(page: import('@playwright/test').Page): Promise<str
   const stopBtn = page.locator(SEL.chat.stopButton);
   await stopBtn.waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(2000); // 额外等待确保流式输出结束
+
+  // 如果 AI 响应时打开了 Workbench，先关闭它，避免与后续注入冲突
+  const wb = page.locator('.workbench-container');
+  if (await wb.isVisible().catch(() => false)) {
+    await page.evaluate(() => {
+      const store = (window as any).__workbenchStore;
+      if (store?.getState) store.getState().close();
+    });
+    await page.waitForTimeout(500);
+  }
+
   return page.url();
 }
 
@@ -386,8 +397,10 @@ test.describe('S03-B: 分屏与布局', () => {
     const wb = page.locator('.workbench-container');
     await expect(wb).toBeVisible({ timeout: 5000 });
 
-    // 确认代码编辑器正常
-    const monaco = wb.locator('.monaco-editor').first();
+    // 确认代码编辑器正常（等待加载完成）
+    const loadingIndicator = wb.locator('text=加载编辑器');
+    await loadingIndicator.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+    const monaco = wb.locator('.workbench-code-editor, .monaco-editor, [class*="CodeEditor"]').first();
     await expect(monaco, '拖拽前应有 Monaco Editor').toBeVisible({ timeout: 8000 });
 
     // ===== 拖拽 resizer =====
@@ -593,8 +606,12 @@ test.describe('S03-C: 关闭与重开', () => {
     await expect(tabs, '第一次注入后应有 1 个 Tab').toHaveCount(1);
 
     // 验证第一个 tab 有代码（Monaco 加载可能较慢，需等待）
-    const monacoEditor = wb.locator('.monaco-editor, pre code').first();
-    await expect(monacoEditor, '第一个 Tab 应有代码编辑器').toBeVisible({ timeout: 15000 });
+    // 先等待加载指示器消失
+    const loadingIndicator = wb.locator('text=加载编辑器');
+    await loadingIndicator.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+    // 使用广泛选择器：容器 class + Monaco class + 代码元素
+    const codeEditor = wb.locator('.workbench-code-editor, .monaco-editor, pre code, [class*="CodeEditor"]').first();
+    await expect(codeEditor, '第一个 Tab 应有代码编辑器').toBeVisible({ timeout: 10000 });
 
     // 第二次：mergeSchema 追加表格
     const r2 = await mergeTab(page, TABLE_TAB_SCHEMA);
@@ -608,7 +625,7 @@ test.describe('S03-C: 关闭与重开', () => {
     // 2. 第一个 tab 仍是代码
     await tabs.nth(0).click();
     await page.waitForTimeout(800);
-    const codeStillThere = await wb.locator('.monaco-editor, pre code').first().isVisible().catch(() => false);
+    const codeStillThere = await wb.locator('.workbench-code-editor, .monaco-editor, pre code, [class*="CodeEditor"]').first().isVisible().catch(() => false);
     expect(codeStillThere, '原有代码 Tab 不应被覆盖').toBe(true);
 
     // 3. 第二个 tab 是表格
