@@ -27,7 +27,7 @@ import { sendAndWaitWithRetry } from '../helpers/ai-retry.helper';
 // 辅助函数
 // ============================================================================
 
-/** 创建 session（发"你好"，等 URL 变为 /chat/:id） */
+/** 创建 session（发"你好"，等 URL 变为 /chat/:id，等 AI 响应完成） */
 async function ensureSession(page: import('@playwright/test').Page): Promise<string> {
   await page.goto('/chat');
   await page.waitForLoadState('networkidle');
@@ -39,7 +39,11 @@ async function ensureSession(page: import('@playwright/test').Page): Promise<str
   const ok = await page.waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 })
     .then(() => true).catch(() => false);
   if (!ok) throw new Error('Session 未创建');
-  await page.waitForTimeout(2000);
+
+  // 等待 AI 响应完成（stop 按钮消失），避免与后续 injectSchema 冲突
+  const stopBtn = page.locator(SEL.chat.stopButton);
+  await stopBtn.waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+  await page.waitForTimeout(2000); // 额外等待确保流式输出结束
   return page.url();
 }
 
@@ -588,9 +592,9 @@ test.describe('S03-C: 关闭与重开', () => {
     const tabs = wb.locator('.workbench-tab');
     await expect(tabs, '第一次注入后应有 1 个 Tab').toHaveCount(1);
 
-    // 验证第一个 tab 有代码
-    const hasCode = await wb.locator('.monaco-editor, pre code').first().isVisible().catch(() => false);
-    expect(hasCode, '第一个 Tab 应有代码编辑器').toBe(true);
+    // 验证第一个 tab 有代码（Monaco 加载可能较慢，需等待）
+    const monacoEditor = wb.locator('.monaco-editor, pre code').first();
+    await expect(monacoEditor, '第一个 Tab 应有代码编辑器').toBeVisible({ timeout: 15000 });
 
     // 第二次：mergeSchema 追加表格
     const r2 = await mergeTab(page, TABLE_TAB_SCHEMA);

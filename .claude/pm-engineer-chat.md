@@ -1344,3 +1344,30 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 - S03-09: `test-results/PM-scenarios-S03-workbench-32a69-.../test-failed-1.png`
 
 ---
+
+### [PM] 2026-02-04 — S03 V2 测试 Review + 回归测试指令
+
+#### Review 结论
+
+| 分类 | 测试 | 结论 |
+|------|------|------|
+| **产品 Bug** | S03-01, S03-06 | P0-1 已知问题（AI 调用 workbench 但未渲染）|
+| **产品 Bug** | S03-09 | **P0-6 新发现** — Workbench 状态未与会话绑定 |
+| **测试设计问题** | S03-02 | 已修复：ensureSession 未等待 AI 响应完成 |
+| **测试设计问题** | S03-08 | 已修复：Monaco Editor 加载等待不足 |
+
+#### 🔄 回归测试指令
+
+测试设计问题已修复，请回归测试 **S03-02** 和 **S03-08**：
+
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# 回归测试（仅运行 S03-02 和 S03-08）
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-08" --reporter=list
+```
+
+报告格式：每个测试 ✅/❌ + 失败详情（如有）
+
+---
