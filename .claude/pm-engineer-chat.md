@@ -1453,3 +1453,146 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-
 - S03-08：更广泛的选择器成功匹配 Monaco Editor
 
 ---
+
+## 🔴🔴🔴 P0 Bug 修复任务（优先级最高）
+
+S01/S02/S03 场景测试发现 **4 个 P0 级别产品 Bug**，现在需要修复。
+
+### 修复后验证
+
+修复完成后，运行验证测试：
+```bash
+cd /home/user/lsc-ai/lsc-ai-platform
+npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts --reporter=list
+```
+
+---
+
+### P0-1：AI 调用 Workbench 工具但未渲染
+
+**问题描述**：用户请求 AI 在工作台展示表格/图表/代码，AI 回复中提到了"工作台"，但 Workbench 实际未打开。
+
+**影响测试**：S01-02, S01-03, S03-01, S03-06
+
+**代码位置**：
+- `packages/server/src/mastra/agents/instructions/platform-agent.instructions.ts` — Agent Instructions
+- `packages/server/src/mastra/tools/workbench/` — showTable/showChart/showCode/workbench 工具
+
+**根因分析**：
+1. Instructions 对 Workbench 工具的引导不够强，AI 倾向用纯文本回复
+2. 或者工具被调用了但执行失败（schema 格式问题、Socket 推送失败等）
+
+**修复方向**：
+1. 强化 Instructions 中对 Workbench 工具的使用指引，明确告诉 AI：
+   - 当用户请求"展示表格/图表/代码"时，**必须**使用 workbench/showTable/showChart/showCode 工具
+   - 不要用 markdown 纯文本回复表格或代码块
+2. 检查 workbench 工具执行链路，确保 schema 正确推送到前端
+
+**验证测试**：V01-01, V01-02, V01-03
+
+---
+
+### P0-2：多轮对话上下文丢失
+
+**问题描述**：用户在第一轮告诉 AI 一些信息，第二轮询问时 AI 忘记了。
+
+**影响测试**：S02-02, S02-06
+
+**代码位置**：
+- `packages/server/src/chat/chat.gateway.ts:324` — 手动注入 history
+- `packages/server/src/mastra/services/mastra-agent.service.ts:483-487` — Mastra Memory 加载历史
+
+**根因分析**：
+历史消息被**双重注入**：
+1. `chat.gateway.ts` 在调用 agent 前手动把 history 加到 messages 里
+2. `mastra-agent.service.ts` 又通过 Mastra Memory 自动加载历史
+
+导致 token 窗口被重复消息撑满，新的上下文被截断。
+
+**修复方向**：
+二选一：
+- 方案 A：移除 `chat.gateway.ts:324` 的手动 history 注入，完全依赖 Mastra Memory
+- 方案 B：禁用 Mastra Memory 的历史加载，完全使用手动注入
+
+推荐方案 A（使用 Mastra Memory 统一管理）。
+
+**验证测试**：V02-01, V02-02, V02-03
+
+---
+
+### P0-5：旧格式 Schema 显示原始 JSON
+
+**问题描述**：AI 返回的图表 schema 是旧格式 `{type: "chart", chartType: "bar"}`，但前端期望新格式 `{type: "BarChart"}`，导致图表显示为原始 JSON 文本。
+
+**影响测试**：S01-07 + 用户手动发现
+
+**代码位置**：
+- `packages/web/src/components/workbench/context/WorkbenchStore.ts` — open() 和 mergeSchema() 方法
+- `packages/web/src/components/workbench/schema/schema-transformer.ts` — 现有 transformer（可能不完整）
+- `packages/server/src/mastra/tools/workbench/showChart.tool.ts` — 工具输出格式
+
+**根因分析**：
+Server 端 showChart 工具输出旧格式，前端没有 transformer 转换。
+
+**修复方向**：
+方案 A（前端兼容）：在 `WorkbenchStore.ts` 的 `open()` 方法入口添加 schema transformer：
+```typescript
+// open(schema) 入口
+const normalizedSchema = transformLegacySchema(schema);
+// 然后使用 normalizedSchema
+```
+
+方案 B（后端修改）：修改 showChart 工具直接输出新格式。
+
+推荐方案 A（前端兼容更安全，不影响已有数据）。
+
+**验证测试**：V05-01
+
+---
+
+### P0-6：Workbench 状态未与会话绑定
+
+**问题描述**：用户在会话 1 打开 Workbench，新建会话 2 时，仍然显示会话 1 的 Workbench 内容。
+
+**影响测试**：S03-09
+
+**代码位置**：
+- `packages/web/src/components/workbench/context/WorkbenchStore.ts` — 全局单例 store
+- `packages/web/src/hooks/useSessionWorkbench.ts` — 会话切换时的状态恢复逻辑
+
+**根因分析**：
+WorkbenchStore 是全局单例，没有按 sessionId 隔离。切换会话时状态未清理。
+
+**修复方向**：
+在会话切换时清理 Workbench 状态。具体位置：
+- `useSessionWorkbench.ts` 或相关 hook 中，监听 sessionId 变化
+- sessionId 变化时调用 `store.close()` 或 `store.reset()`
+- 然后加载新 session 对应的 workbench 状态（如果有保存的话）
+
+**验证测试**：V06-01, V06-02
+
+---
+
+### 执行步骤
+
+1. **拉取最新代码**
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+```
+
+2. **按优先级修复**：P0-6 → P0-5 → P0-2 → P0-1（从简单到复杂）
+
+3. **每修复一个，运行对应验证测试**：
+```bash
+# 例如修复 P0-6 后
+npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts -g "P0-6" --reporter=list
+```
+
+4. **全部修复后，运行完整验证**：
+```bash
+npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts --reporter=list
+```
+
+5. **将修复代码和测试结果提交推送**
+
+---
