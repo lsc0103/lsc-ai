@@ -291,54 +291,164 @@ test.describe('P0-2 验证：多轮对话上下文', () => {
 });
 
 // ============================================================================
-// P0-5 验证：图表应正确渲染，不显示原始 JSON
+// P0-5 验证：旧格式 schema 应被 transformer 转换后正确渲染
 // ============================================================================
 
 test.describe('P0-5 验证：图表渲染', () => {
 
-  test('V05-01 用户请求图表 → 应显示渲染的图表，不是 JSON 文本', async ({ page }) => {
+  test('V05-01 注入旧格式 chart schema → 应显示渲染的图表，不是 JSON 文本', async ({ page }) => {
     /**
-     * 用户场景：
-     * 用户请求 AI 展示一个图表
-     * 期望：看到渲染的图表（SVG/Canvas）
-     * 而不是：看到 {"type": "chart", "chartType": "bar", ...} 这样的 JSON 文本
+     * P0-5 问题：AI 返回旧格式 {type: "chart", chartType: "bar"}
+     * 但前端期望新格式 {type: "BarChart"}
+     *
+     * 验证：直接注入旧格式 schema，检查是否被 transformer 转换并正确渲染
+     * 不依赖 AI 调用（避免被 P0-1 阻塞）
      */
-    test.setTimeout(180000);
+    test.setTimeout(90000);
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
-    const r = await sendAndWaitWithRetry(
-      page,
-      '请在工作台中用图表展示以下数据：苹果销量100，香蕉销量80，橙子销量120。使用柱状图。',
-      { timeout: 90000, retries: 2 },
-    );
+    // 先创建 session
+    const textarea = page.locator(SEL.chat.textarea);
+    await textarea.fill('你好');
+    await textarea.press('Enter');
+    await page.waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 }).catch(() => {});
 
-    if (!r.hasResponse) {
-      test.skip(true, 'AI 无响应');
-      return;
-    }
-    await page.waitForTimeout(3000);
+    // 等待 AI 响应完成
+    const stopBtn = page.locator(SEL.chat.stopButton);
+    await stopBtn.waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(2000);
 
+    // 如果 AI 打开了 Workbench，先关闭
     const wb = page.locator('.workbench-container');
-    const wbVisible = await wb.isVisible().catch(() => false);
+    if (await wb.isVisible().catch(() => false)) {
+      await page.evaluate(() => {
+        const store = (window as any).__workbenchStore;
+        if (store?.getState) store.getState().close();
+      });
+      await page.waitForTimeout(500);
+    }
 
-    if (!wbVisible) {
-      test.skip(true, 'Workbench 未打开（可能是 P0-1 问题）');
+    // 注入旧格式 chart schema（这是 server showChart 工具实际输出的格式）
+    const oldFormatSchema = {
+      version: '1.0',
+      title: '水果销量对比',
+      blocks: [{
+        type: 'chart',           // 旧格式：type 是 "chart"
+        chartType: 'bar',        // 旧格式：chartType 指定图表类型
+        option: {
+          xAxis: { type: 'category', data: ['苹果', '香蕉', '橙子'] },
+          yAxis: { type: 'value', name: '销量' },
+          series: [{ name: '销量', type: 'bar', data: [100, 80, 120] }],
+        },
+      }],
+    };
+
+    const injected = await page.evaluate((schema) => {
+      const store = (window as any).__workbenchStore;
+      if (!store?.getState) return { success: false, reason: 'store not found' };
+      try {
+        store.getState().open(schema);
+        return { success: true };
+      } catch (e: any) {
+        return { success: false, reason: e.message };
+      }
+    }, oldFormatSchema);
+
+    if (!injected.success) {
+      test.skip(true, `注入失败: ${injected.reason}`);
       return;
     }
+    await page.waitForTimeout(2000);
+
+    // 验证 Workbench 打开
+    await expect(wb).toBeVisible({ timeout: 5000 });
 
     const wbText = await wb.innerText();
 
-    // P0-5 修复验证：不应显示原始 JSON
+    // P0-5 核心验证：不应显示原始 JSON
     const hasRawJson = wbText.includes('"chartType"') ||
                        wbText.includes('"type": "chart"') ||
-                       wbText.includes('"series"') && wbText.includes('"option"');
+                       (wbText.includes('"series"') && wbText.includes('"option"'));
 
     expect(hasRawJson, 'P0-5 验证失败：Workbench 不应显示原始 JSON 文本').toBe(false);
 
-    // 应该有图表元素
+    // 应该有图表元素（SVG 或 Canvas）
     const hasChart = await wb.locator('svg, canvas, [_echarts_instance_], [class*="echarts"], [class*="Chart"]').first().isVisible().catch(() => false);
-    expect(hasChart, 'P0-5 验证：应显示渲染的图表元素').toBe(true);
+    expect(hasChart, 'P0-5 验证：应显示渲染的图表元素（SVG/Canvas）').toBe(true);
+  });
+
+  test('V05-02 注入旧格式 + 新格式混合 schema → 都应正确渲染', async ({ page }) => {
+    /**
+     * 验证 transformer 不会破坏新格式 schema
+     */
+    test.setTimeout(90000);
+    await page.goto('/chat');
+    await page.waitForLoadState('networkidle');
+
+    // 创建 session
+    const textarea = page.locator(SEL.chat.textarea);
+    await textarea.fill('你好');
+    await textarea.press('Enter');
+    await page.waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 }).catch(() => {});
+
+    const stopBtn = page.locator(SEL.chat.stopButton);
+    await stopBtn.waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(2000);
+
+    // 清理可能存在的 Workbench
+    const wb = page.locator('.workbench-container');
+    if (await wb.isVisible().catch(() => false)) {
+      await page.evaluate(() => {
+        const store = (window as any).__workbenchStore;
+        if (store?.getState) store.getState().close();
+      });
+      await page.waitForTimeout(500);
+    }
+
+    // 注入新格式 schema（应该直接工作，不需要 transformer）
+    const newFormatSchema = {
+      type: 'workbench',
+      title: '新格式图表',
+      tabs: [{
+        key: 'chart-tab',
+        title: '销售图表',
+        components: [{
+          type: 'BarChart',      // 新格式：直接用 BarChart
+          title: '季度销售',
+          xAxis: ['Q1', 'Q2', 'Q3', 'Q4'],
+          series: [{ name: '销售额', data: [300, 450, 380, 520] }],
+        }],
+      }],
+    };
+
+    const injected = await page.evaluate((schema) => {
+      const store = (window as any).__workbenchStore;
+      if (!store?.getState) return { success: false, reason: 'store not found' };
+      try {
+        store.getState().open(schema);
+        return { success: true };
+      } catch (e: any) {
+        return { success: false, reason: e.message };
+      }
+    }, newFormatSchema);
+
+    if (!injected.success) {
+      test.skip(true, `注入失败: ${injected.reason}`);
+      return;
+    }
+    await page.waitForTimeout(2000);
+
+    await expect(wb).toBeVisible({ timeout: 5000 });
+
+    // 新格式也不应显示 JSON
+    const wbText = await wb.innerText();
+    const hasRawJson = wbText.includes('"BarChart"') || wbText.includes('"series"');
+    expect(hasRawJson, '新格式 schema 也不应显示原始 JSON').toBe(false);
+
+    // 应该有图表
+    const hasChart = await wb.locator('svg, canvas, [_echarts_instance_], [class*="echarts"], [class*="Chart"]').first().isVisible().catch(() => false);
+    expect(hasChart, '新格式图表应正确渲染').toBe(true);
   });
 });
 

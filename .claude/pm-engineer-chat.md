@@ -1667,3 +1667,126 @@ V06-02: ❌ 待验证（会话切换时状态恢复）
 - 已推送到远程
 
 请 PM review 并指示下一步工作。
+
+---
+
+### [PM] 2026-02-04 — P0-2/P0-6 Review 通过 + P0-5 修复指令
+
+#### Review 结果
+
+| Bug | 状态 | 验证 |
+|-----|------|------|
+| P0-2 | ✅ **通过** | V02-02 验证 AI 能访问历史上下文 |
+| P0-6 V06-01 | ✅ **通过** | 新建会话正确清空 Workbench |
+
+P0-2 的修复很好：`slice(-maxHistoryMessages)` 正确获取最近 N 条历史消息。
+
+---
+
+## 🔴 下一步：修复 P0-5（Schema Transformer）
+
+**优先级**：高 — 用户直接可见的问题（图表显示 JSON 乱码）
+
+### 问题描述
+
+AI 调用 showChart 工具返回**旧格式** schema：
+```json
+{
+  "version": "1.0",
+  "blocks": [{
+    "type": "chart",
+    "chartType": "bar",
+    "option": { ... }
+  }]
+}
+```
+
+但前端期望**新格式**：
+```json
+{
+  "type": "workbench",
+  "tabs": [{
+    "components": [{
+      "type": "BarChart",
+      "option": { ... }
+    }]
+  }]
+}
+```
+
+导致图表组件不识别旧格式，直接显示原始 JSON 文本。
+
+### 修复位置
+
+`packages/web/src/components/workbench/context/WorkbenchStore.ts`
+
+在 `open()` 方法入口添加 schema transformer：
+
+```typescript
+import { transformLegacySchema } from '../schema/schema-transformer';
+
+// open() 方法内部，第一行：
+open: (schema) => {
+  // P0-5 修复：转换旧格式 schema
+  const normalizedSchema = transformLegacySchema(schema);
+
+  // 然后使用 normalizedSchema 继续处理
+  // ...
+}
+```
+
+### Transformer 逻辑
+
+检查 `packages/web/src/components/workbench/schema/schema-transformer.ts` 是否已有转换逻辑。如果没有，需要添加：
+
+```typescript
+export function transformLegacySchema(schema: any): WorkbenchSchema {
+  // 检测旧格式：version + blocks
+  if (schema.version && schema.blocks && !schema.tabs) {
+    return {
+      type: 'workbench',
+      title: schema.title || '工作台',
+      tabs: [{
+        key: 'default',
+        title: schema.title || '内容',
+        components: schema.blocks.map(transformBlock),
+      }],
+    };
+  }
+  return schema;
+}
+
+function transformBlock(block: any) {
+  // 旧格式 chart → 新格式 BarChart/LineChart/PieChart
+  if (block.type === 'chart') {
+    const chartTypeMap = {
+      bar: 'BarChart',
+      line: 'LineChart',
+      pie: 'PieChart',
+    };
+    return {
+      ...block,
+      type: chartTypeMap[block.chartType] || 'BarChart',
+    };
+  }
+  return block;
+}
+```
+
+### 验证测试
+
+**测试已更新**：V05-01 和 V05-02 现在用 store 注入测试，不依赖 AI：
+
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# 修复后运行验证
+npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts -g "P0-5" --reporter=list
+```
+
+| 测试 | 验证内容 |
+|------|----------|
+| V05-01 | 注入旧格式 `{type:"chart", chartType:"bar"}` → 应渲染为图表 |
+| V05-02 | 注入新格式 `{type:"BarChart"}` → 仍应正常渲染（不被 transformer 破坏）|
+
+---
