@@ -1371,3 +1371,45 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts -g "S03-02|S03-
 报告格式：每个测试 ✅/❌ + 失败详情（如有）
 
 ---
+
+### [工程师] 2026-02-04 — S03-02/S03-08 回归测试报告
+
+**结果：2 failed**
+
+#### S03-02 ❌ — 仍然失败
+
+**错误**：`.workbench-container` 5秒内未出现
+
+**分析**：
+- `ensureSession` 的修复（等待 stop 按钮消失）可能未生效
+- 截图显示 stop 按钮仍可见（AI 响应可能超过 60 秒或选择器不匹配）
+- `injectSchema` 返回 `success: true`，但 Workbench 未实际打开
+- 可能原因：`window.__workbenchStore.getState().open()` 被调用但未生效
+
+#### S03-08 ❌ — 仍然失败
+
+**错误**：`.monaco-editor` 15秒内未出现
+
+**分析**：
+- 截图显示 Workbench 已打开，Monaco Editor 已渲染代码（fibonacci 函数）
+- 但选择器 `.monaco-editor` 找不到匹配元素
+- 实际 DOM 是 `<code>` 元素包含 `textbox "Editor content"`
+- **选择器问题**：Monaco Editor 的实际 class 可能不是 `.monaco-editor`，或在 accessibility tree 中表现不同
+
+#### 根因分析
+
+1. **S03-02**：`injectSchema` 的 store 注入机制可能有问题
+   - `window.__workbenchStore` 只在 `import.meta.env.DEV` 下暴露
+   - 测试环境可能不是 DEV 模式，或 store 初始化时序问题
+
+2. **S03-08**：Monaco Editor 选择器不匹配
+   - `@monaco-editor/react` 渲染的 DOM class 可能与预期不同
+   - 建议使用更通用的选择器如 `[role="textbox"][aria-label="Editor content"]` 或 `.view-lines`
+
+#### 建议
+
+1. 检查测试环境是否为 DEV 模式（`import.meta.env.DEV === true`）
+2. 在浏览器 DevTools 中检查 Monaco Editor 的实际 DOM class
+3. S03-02 可能需要等待 AI 响应完成后的额外等待时间（超过 60 秒）
+
+---
