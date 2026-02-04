@@ -1790,3 +1790,46 @@ npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts -g "P0-5" --report
 | V05-02 | 注入新格式 `{type:"BarChart"}` → 仍应正常渲染（不被 transformer 破坏）|
 
 ---
+
+### [工程师] 2026-02-04 — P0-5 修复完成
+
+## P0-5 修复：旧格式 Schema Transformer 集成
+
+### 问题
+AI 返回旧格式 schema `{type: "chart", chartType: "bar"}`，但前端期望新格式 `{type: "BarChart"}`，导致图表显示为原始 JSON 文本。
+
+### 根因
+`WorkbenchStore.ts` 的 `open()` 方法直接调用 `validateWorkbenchSchema()`，没有先转换旧格式。
+
+### 修复
+在 `WorkbenchStore.ts` 的 `open`、`mergeSchema`、`setSchema` 三个方法入口添加：
+```typescript
+const normalizedSchema = ensureNewSchema(schema);
+const result = validateWorkbenchSchema(normalizedSchema);
+```
+
+`ensureNewSchema()` 函数已存在于 `schema-transformer.ts`，会自动检测旧格式并转换。
+
+### 测试结果
+```
+V05-01: ✅ 通过 — 旧格式 chart schema 正确渲染为图表
+V05-02: ✅ 通过 — 新格式 schema 仍然正常工作
+```
+
+### 提交
+- Commit: `50f67c7`
+- 分支: `claude/design-s03-s04-tests-6vd9s`
+
+---
+
+## 当前 P0 Bug 修复状态
+
+| Bug | 状态 | 验证 |
+|-----|------|------|
+| P0-2 | ✅ 已修复 | V02-02 通过 |
+| P0-5 | ✅ 已修复 | V05-01/V05-02 通过 |
+| P0-6 V06-01 | ✅ 已修复 | 新建对话清空 Workbench |
+| P0-6 V06-02 | ⏳ 待验证 | 会话切换状态恢复 |
+| P0-1 | ⏳ 待处理 | AI Instructions 改进 |
+
+请 PM 指示是否继续 P0-1 或其他任务。
