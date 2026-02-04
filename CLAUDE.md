@@ -89,6 +89,7 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 5. **P0-2 双重历史注入** — `chat.gateway.ts:324` 手动 history + `mastra-agent.service.ts:483-487` Mastra Memory 同时加载历史，导致 token 窗口被重复消息撑满，第二轮+信息丢失（S02-02/06）
 6. ✅ **P0-4 Validator 有 error 就整体拒绝 schema** — 已修复 `WorkbenchStore.ts:160`（S01-09）
 7. **P0-5 旧格式 schema 无 transformer 自动转换** — Workbench 不识别旧格式 schema（S01-07）
+8. **P0-6 Workbench 状态未与会话绑定** — 新建/切换会话时 WorkbenchStore 状态未清理，显示旧会话内容（S03-09）
 
 ### P1 — 重要优化
 8. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）
