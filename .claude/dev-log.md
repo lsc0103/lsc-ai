@@ -424,3 +424,36 @@
 - **选择器问题**：M4-03, M4-06（sidebar aside 遮挡 pointer events）
 - **DeepSeek 限流/超时**：M3-11, M3-12, M4-09, M4-10（均发生在测试序列后段，累积 API 调用后超时）
 - **无产品 bug**：本轮未发现新的产品 bug
+
+---
+
+## 2026-02-04 — P0-2/P0-6 Bug 修复
+
+### 任务
+修复 PM 指派的 P0-2（多轮对话上下文丢失）和 P0-6（Workbench 会话状态未隔离）bug。
+
+### P0-2 修复
+**根因**: `chat.gateway.ts` 中 `history.slice(..., -1)` 错误地排除了最后一条 AI 回复，导致第二轮对话时 AI 看不到自己在第一轮的回复。
+
+**修复**: 改用 `slice(-maxHistoryMessages)` 获取最近 N 条历史消息。
+
+**验证**: V02-02 测试通过。AI 在第二轮能够正确访问第一轮的上下文（"根据刚才记住的数字42"）并计算 42+8=50。
+
+### P0-6 修复
+**修复**: 
+1. `Sidebar.tsx`: 新建对话时同步调用 `clearWorkbench()`
+2. `socket.ts`: `workbenchHandler` 添加 `isNewChat` 检查
+
+**验证**: V06-01 测试通过（新建对话时 Workbench 被清空）。
+
+### 附带修复
+`ai-retry.helper.ts`: 修复测试助手，发送前记录消息数量，等待数量增加才认为有新回复。
+
+### 提交
+- `687883b`: P0-2/P0-6 Bug 修复代码
+- `537eb55`: 工程师报告更新
+
+### 遗留
+- P0-6 V06-02（会话切换状态恢复）待验证
+- P0-5（Schema transformer）待处理
+- P0-1（AI Instructions）待处理
