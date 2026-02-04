@@ -318,13 +318,25 @@ export class ChatGateway
       }
 
       // 4. 获取会话历史消息（从 Mastra Memory）
+      // P0-2 说明：Mastra Memory 存储消息但不会自动加载到上下文
+      // 因此需要手动获取历史并传递给 Agent
       const history = await this.mastraAgentService.getThreadMessages(sessionId, client.userId);
 
-      // 转换为 Agent 消息格式（排除最后一条，因为最后一条是当前消息）
-      const resumeMessages: Message[] = history.slice(0, -1).map((m: any) => ({
+      // 转换为 Agent 消息格式
+      // P0-2 修复：限制历史消息数量，避免超出 token 窗口
+      // 注意：getThreadMessages 返回的历史不包含当前消息，所以不需要 slice(-1)
+      const maxHistoryMessages = 20; // 最多保留 20 条历史消息
+      const historySlice = history.slice(-maxHistoryMessages); // 取最近 20 条
+      const resumeMessages: Message[] = historySlice.map((m: any) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content || '',
       }));
+
+      this.logger.log(`[P0-2] 加载 ${resumeMessages.length} 条历史消息 (总计 ${history.length})`);
+      // 详细日志：显示历史消息内容（前 200 字符）
+      if (resumeMessages.length > 0) {
+        this.logger.log(`[P0-2] 历史消息: ${JSON.stringify(resumeMessages.map(m => ({ role: m.role, content: m.content.slice(0, 100) })))}`);
+      }
 
       // 5. 注册活跃流式会话
       const streamInfo = { shouldStop: false };
@@ -445,6 +457,7 @@ export class ChatGateway
             },
           },
           {
+            // P0-2 修复：限制历史消息数量，避免 token 窗口溢出
             resumeMessages: resumeMessages.length > 0 ? resumeMessages : undefined,
           }
         );

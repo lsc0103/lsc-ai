@@ -26,7 +26,12 @@ export async function sendAndWaitWithRetry(
 ): Promise<AIRetryResult> {
   const { timeout = 60000, retries = 2, retryDelay = 5000 } = options;
 
+  const assistantBubbles = page.locator('main .message-bubble.assistant');
+
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // 记录发送前的 AI 消息数量
+    const countBefore = await assistantBubbles.count();
+
     if (attempt > 0) {
       // Retry: wait then resend
       await page.waitForTimeout(retryDelay);
@@ -59,12 +64,12 @@ export async function sendAndWaitWithRetry(
 
     await page.waitForTimeout(2000);
 
-    // Check if we got a response
-    const assistantBubbles = page.locator('main .message-bubble.assistant');
-    const count = await assistantBubbles.count();
-    if (count > 0) {
+    // Check if we got a NEW response (count must increase)
+    const countAfter = await assistantBubbles.count();
+    if (countAfter > countBefore) {
       const text = (await assistantBubbles.last().textContent()) || '';
       if (text.length > 0) {
+        console.log(`[ai-retry] Got response (${countBefore} -> ${countAfter}): "${text.slice(0, 50)}..."`);
         return { hasResponse: true, responseText: text };
       }
     }
@@ -76,9 +81,10 @@ export async function sendAndWaitWithRetry(
         await page.locator(SEL.chat.stopButton).waitFor({ state: 'hidden', timeout: 60000 });
         await page.waitForTimeout(2000);
         const retryCount = await assistantBubbles.count();
-        if (retryCount > 0) {
+        if (retryCount > countBefore) {
           const text = (await assistantBubbles.last().textContent()) || '';
           if (text.length > 0) {
+            console.log(`[ai-retry] Got response after extra wait (${countBefore} -> ${retryCount}): "${text.slice(0, 50)}..."`);
             return { hasResponse: true, responseText: text };
           }
         }
@@ -87,6 +93,7 @@ export async function sendAndWaitWithRetry(
       }
     }
 
+    console.log(`[ai-retry] No new response after attempt ${attempt + 1} (count: ${countBefore} -> ${countAfter})`);
     if (attempt < retries) continue;
   }
 

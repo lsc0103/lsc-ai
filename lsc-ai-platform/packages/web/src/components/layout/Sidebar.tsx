@@ -42,7 +42,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const navigate = useNavigate();
   const { sessions, currentSessionId, startNewChat } = useChatStore();
   const { user, logout } = useAuthStore();
-  const { getSerializableState } = useWorkbenchStore();
+  const { getSerializableState, clear: clearWorkbench } = useWorkbenchStore();
 
   // 保存当前会话的 Workbench 状态
   const saveCurrentWorkbenchState = async () => {
@@ -63,8 +63,10 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const handleNewChat = async () => {
     // 保存当前 Workbench 状态
     await saveCurrentWorkbenchState();
-    // 开始新对话（workbench 会由 useSessionWorkbench hook 自动清空）
+    // 开始新对话
     startNewChat();
+    // P0-6 修复：同步清空 Workbench，确保新对话不显示旧内容
+    clearWorkbench();
     // 使用 replace 替换历史记录，避免点击后退时回到历史会话
     navigate('/chat', { replace: true });
   };

@@ -585,6 +585,13 @@ export async function sendChatMessage(
     const workbenchHandler = async (data: { sessionId: string; schema: any }) => {
       if (data.sessionId !== sessionId) return;
 
+      // P0-6 修复：如果当前是新对话模式，不打开 Workbench
+      const chatState = useChatStore.getState();
+      if (chatState.isNewChat || chatState.currentSessionId !== data.sessionId) {
+        console.log('[Socket] 新对话模式或会话不匹配，忽略 Workbench 更新');
+        return;
+      }
+
       console.log('[Socket] 收到 Workbench 更新:', data.schema);
 
       try {
