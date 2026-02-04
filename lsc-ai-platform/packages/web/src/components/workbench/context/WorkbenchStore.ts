@@ -14,6 +14,7 @@ import type {
   WorkbenchAction,
 } from '../schema/types';
 import { validateWorkbenchSchema } from '../schema/validator';
+import { ensureNewSchema } from '../schema/schema-transformer';
 import { ActionHandler, type ActionContext } from '../actions';
 
 // ============================================================================
@@ -156,7 +157,9 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
 
       // ====== 基础操作 ======
       open: (schema) => {
-        const result = validateWorkbenchSchema(schema);
+        // P0-5 修复：转换旧格式 schema（version 1.0 + blocks）为新格式（tabs）
+        const normalizedSchema = ensureNewSchema(schema);
+        const result = validateWorkbenchSchema(normalizedSchema);
         if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
           console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
@@ -182,7 +185,9 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
       },
 
       mergeSchema: (newSchema) => {
-        const result = validateWorkbenchSchema(newSchema);
+        // P0-5 修复：转换旧格式 schema
+        const normalizedSchema = ensureNewSchema(newSchema);
+        const result = validateWorkbenchSchema(normalizedSchema);
         if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
           console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
@@ -278,7 +283,9 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
       },
 
       setSchema: (schema) => {
-        const result = validateWorkbenchSchema(schema);
+        // P0-5 修复：转换旧格式 schema
+        const normalizedSchema = ensureNewSchema(schema);
+        const result = validateWorkbenchSchema(normalizedSchema);
         if (!result.sanitizedSchema || result.sanitizedSchema.tabs.length === 0) {
           console.error('Invalid Workbench Schema: no valid tabs', result.errors);
           return;
