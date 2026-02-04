@@ -1833,3 +1833,107 @@ V05-02: ✅ 通过 — 新格式 schema 仍然正常工作
 | P0-1 | ⏳ 待处理 | AI Instructions 改进 |
 
 请 PM 指示是否继续 P0-1 或其他任务。
+
+---
+
+### [PM] 2026-02-04 — P0-5 Review 通过 + P0-1 修复指令
+
+#### P0-5 Review ✅
+
+修复正确：在 `open()`、`mergeSchema()`、`setSchema()` 三个入口添加 `ensureNewSchema()` 转换。
+
+---
+
+## 🔴 下一步：修复 P0-1（AI Instructions 改进）
+
+**优先级**：高 — 影响 4 个测试（S01-02, S01-03, S03-01, S03-06）
+
+### 问题描述
+
+用户请求"在工作台展示表格/图表/代码"，AI 有时候：
+1. 用纯文本回复而不是调用 Workbench 工具
+2. 调用了工具但生成的 schema 有问题导致渲染失败
+
+### 当前 Instructions 分析
+
+查看 `mastra-agent.service.ts:281-379` 的 `getPlatformInstructions()`，发现：
+- ✅ 已有"强制规则"要求使用 Workbench
+- ❌ 但规则描述偏抽象，缺乏**具体触发词映射**
+- ❌ 没有告诉 AI 如何构造正确的工具参数
+
+### 修复方向
+
+在 `getPlatformInstructions()` 中增加更具体的指导：
+
+```markdown
+## 🚨 关键词触发规则（必须遵守）
+
+当用户消息包含以下关键词时，**必须**调用对应工具：
+
+| 用户关键词 | 必须调用的工具 | 示例 |
+|-----------|---------------|------|
+| "表格展示"、"用表格"、"列表展示" | `showTable` | 用户："用表格展示员工信息" |
+| "图表"、"柱状图"、"折线图"、"饼图" | `showChart` | 用户："用柱状图展示销售数据" |
+| "代码"、"代码展示"、"展示代码" | `showCode` | 用户："展示一段排序代码" |
+| "工作台"、"workbench" | `workbench` | 用户："在工作台展示分析结果" |
+
+⚠️ 禁止行为：
+- 禁止用 markdown 表格代替 `showTable` 工具
+- 禁止用 markdown 代码块代替 `showCode` 工具
+- 禁止描述图表而不调用 `showChart` 工具
+```
+
+同时添加工具参数示例：
+
+```markdown
+## showTable 参数格式
+
+{
+  "title": "员工信息表",
+  "columns": [
+    { "key": "name", "title": "姓名" },
+    { "key": "age", "title": "年龄" }
+  ],
+  "data": [
+    { "name": "张三", "age": 25 }
+  ]
+}
+
+## showChart 参数格式
+
+{
+  "title": "季度销售额",
+  "chartType": "bar",
+  "xAxis": ["Q1", "Q2", "Q3", "Q4"],
+  "series": [{ "name": "销售额", "data": [100, 150, 120, 200] }]
+}
+```
+
+### 修复位置
+
+`packages/server/src/services/mastra-agent.service.ts`
+
+找到 `getPlatformInstructions()` 方法（约第 281 行），在"强制规则"部分添加上述内容。
+
+### 验证测试
+
+```bash
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# 修复后运行验证
+npx playwright test e2e/PM-scenarios/P0-bugfix-verify.spec.ts -g "P0-1" --reporter=list
+```
+
+| 测试 | 验证内容 |
+|------|----------|
+| V01-01 | 用户请求表格 → AI 调用 showTable/workbench |
+| V01-02 | 用户请求图表 → AI 调用 showChart/workbench |
+| V01-03 | 用户请求代码 → AI 调用 showCode/workbench |
+
+### 注意事项
+
+1. **AI 行为有不确定性**：即使 Instructions 很完善，AI 也可能偶尔不遵守
+2. **测试可能需要多次运行**：如果一次失败，可以再运行几次确认
+3. **如果修改 Instructions 后仍然失败**：需要检查工具本身是否有问题
+
+---
