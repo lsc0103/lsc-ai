@@ -157,6 +157,7 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
 
       // ====== 基础操作 ======
       open: (schema) => {
+        console.log('[WorkbenchStore] open() 被调用');
         // P0-5 修复：转换旧格式 schema（version 1.0 + blocks）为新格式（tabs）
         const normalizedSchema = ensureNewSchema(schema);
         const result = validateWorkbenchSchema(normalizedSchema);
@@ -641,7 +642,7 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
       },
 
       loadState: (savedState) => {
-        console.log('[WorkbenchStore] 加载保存的状态:', savedState);
+        console.log('[WorkbenchStore] loadState() 被调用');
 
         const updates: Partial<WorkbenchStore> = {};
 

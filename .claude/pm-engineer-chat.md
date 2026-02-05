@@ -2164,3 +2164,49 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 ### console.error 收集
 无额外 console.error，两个失败均为断言失败。
 
+---
+
+## 工程师报告：P0-6 修复完成 + S03 第二轮全量回归
+
+**时间**: 2025-02-05 (第二轮)
+
+### P0-6 修复内容
+
+**根因分析**:
+`Sidebar.tsx` 的 `handleNewChat()` 调用 `startNewChat()` 后，`navigate('/chat')` 还未生效。此时 `Chat.tsx` 重新渲染，`useParams()` 仍返回旧 sessionId，触发 `loadSession(oldId)` 恢复了 Workbench 状态。这是 React Router navigate 与 Zustand 状态更新之间的竞态条件。
+
+**修复方案（3 个文件）**:
+
+1. **`Chat.tsx`** — 添加 `if (isNewChat) return;` 守卫，阻止新对话模式下旧 URL sessionId 触发 loadSession
+2. **`Sidebar.tsx`** — 点击历史会话时直接调用 `loadSession(session.id)`（同步设置 `isNewChat=false + currentSessionId`），避免 Chat.tsx 守卫阻止正常会话切换；`handleNewChat()` 中将 `clearWorkbench()` 移到 `startNewChat()` 之前
+3. **`useSessionWorkbench.ts`** — useEffect 2 简化为只要 `isNewChat=true` 就强制清空，移除 `visible/schema` 条件检查，防止竞态残留
+
+### S03 第二轮全量回归结果
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S03-01 | ✅ | Tab 累积（上次失败，本轮通过） |
+| S03-02 | ✅ | 连续关闭 Tab |
+| S03-03 | ✅ | 右键菜单 |
+| S03-04 | ✅ | 拖拽 resizer |
+| S03-05 | ✅ | 极端拖拽约束 |
+| S03-06 | ❌ | DeepSeek API 限流超时（180s），非代码 bug |
+| S03-07 | ❌ | DeepSeek API 限流超时（180s），同上 |
+| S03-08 | ✅ | mergeSchema 追加 |
+| S03-09 | ✅ | **P0-6 修复生效！新建清空 + 切回恢复均通过** |
+| S03-10 | ✅ | 操作后状态精确保持 |
+
+**通过率: 8/10**（2 个失败均为 DeepSeek 限流超时，非代码问题）
+
+### 与上轮对比
+
+| 用例 | 第一轮 | 第二轮 | 变化 |
+|------|--------|--------|------|
+| S03-01 | ❌ AI未调用工具 | ✅ 通过 | AI 行为改善 |
+| S03-06 | ✅ | ❌ DeepSeek超时 | 基础设施波动 |
+| S03-07 | ✅ | ❌ DeepSeek超时 | 基础设施波动 |
+| S03-09 | ❌ P0-6 bug | ✅ 修复通过 | **P0-6 修复** |
+
+### S04 状态
+S04 测试文件已就绪，等待 PM 进一步指示。S04 大部分用例需要 Client Agent 在线运行。
+

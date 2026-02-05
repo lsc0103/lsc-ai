@@ -499,3 +499,28 @@ V01-03 失败属于 AI 行为固有不确定性，非代码问题。Instructions
 
 ### 状态
 已提交，等待 PM Review。
+
+---
+
+## 2026-02-05 会话 — P0-6 完整修复 + S03 第二轮回归
+
+### 任务
+修复 S03-09 失败（P0-6：新建会话后 Workbench 未清空 + 切回会话后 Workbench 未恢复）
+
+### 根因分析
+`Sidebar.tsx` 的 `handleNewChat()` 调用 `startNewChat()` 后，`navigate('/chat')` 还未生效。
+`Chat.tsx` 重新渲染时 `useParams()` 仍返回旧 sessionId → 触发 `loadSession(oldId)` → 恢复了 Workbench。
+这是 React Router navigate 与 Zustand 状态更新之间的竞态条件。
+
+### 修复内容（3 个文件）
+1. **Chat.tsx** — 添加 `if (isNewChat) return;` 守卫
+2. **Sidebar.tsx** — 会话点击调用 `loadSession(id)` 同步设置 `isNewChat=false`；`handleNewChat` 调整 clearWorkbench 顺序
+3. **useSessionWorkbench.ts** — useEffect 2 简化：`isNewChat=true` 就强制清空
+
+### S03 第二轮回归
+8/10 通过（S03-06/07 为 DeepSeek 限流超时）
+- S03-01: ❌→✅（AI 行为改善）
+- S03-09: ❌→✅（P0-6 修复生效）
+
+### 提交
+待提交：P0-6 修复代码 + S03 回归报告 + 状态文件

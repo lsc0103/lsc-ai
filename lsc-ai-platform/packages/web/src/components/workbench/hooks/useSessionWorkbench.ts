@@ -269,23 +269,18 @@ export function useSessionWorkbench() {
 
   /**
    * useEffect 2: 确保新对话模式下 workbench 始终清空
-   * 这个 useEffect 独立于会话切换，专门处理新对话模式的清空逻辑
+   * P0-6 修复：不检查当前状态，只要 isNewChat=true 就强制清空
+   * 防止竞态条件导致 Workbench 在新对话中残留
    */
   useEffect(() => {
-    // 只在新对话模式下执行
     if (!isNewChat) return;
 
-    // 检查 workbench 是否需要清空
-    const needsClear = visible || schema !== null;
-
-    if (needsClear) {
-      console.log('[SessionWorkbench] 检测到新对话模式但workbench未清空，立即清空', {
-        visible,
-        hasSchema: schema !== null,
-      });
-      clear();
-    }
-  }, [isNewChat, visible, schema, clear]);
+    console.log('[SessionWorkbench] 新对话模式防护：强制清空 workbench', {
+      visible,
+      hasSchema: schema !== null,
+    });
+    clear();
+  }, [isNewChat, clear]);
 
   /**
    * useEffect 3: Workbench 内容变化时防抖保存

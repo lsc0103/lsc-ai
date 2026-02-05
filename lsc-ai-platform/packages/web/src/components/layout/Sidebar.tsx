@@ -40,7 +40,7 @@ const navItems = [
  */
 export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const navigate = useNavigate();
-  const { sessions, currentSessionId, startNewChat } = useChatStore();
+  const { sessions, currentSessionId, startNewChat, loadSession } = useChatStore();
   const { user, logout } = useAuthStore();
   const { getSerializableState, clear: clearWorkbench } = useWorkbenchStore();
 
@@ -63,10 +63,12 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const handleNewChat = async () => {
     // 保存当前 Workbench 状态
     await saveCurrentWorkbenchState();
+    // P0-6 修复：先清空 Workbench，再切换会话状态
+    // 必须在 startNewChat() 之前执行，避免 useSessionWorkbench effect
+    // 在 clearWorkbench() 之前触发渲染导致竞态条件
+    clearWorkbench();
     // 开始新对话
     startNewChat();
-    // P0-6 修复：同步清空 Workbench，确保新对话不显示旧内容
-    clearWorkbench();
     // 使用 replace 替换历史记录，避免点击后退时回到历史会话
     navigate('/chat', { replace: true });
   };
@@ -237,7 +239,10 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
 
                 // 保存当前 Workbench 状态
                 await saveCurrentWorkbenchState();
-                // 导航到新会话（workbench 和消息会由对应的 hooks 自动处理）
+                // P0-6 修复：直接调用 loadSession 而非仅 navigate
+                // loadSession 同步设置 isNewChat=false + currentSessionId，
+                // 避免 Chat.tsx useEffect 中 isNewChat 守卫阻止会话加载
+                loadSession(session.id);
                 navigate(`/chat/${session.id}`);
               }}
               className={clsx(

@@ -27,6 +27,10 @@ export default function ChatPage() {
 
   // 监听 sessionId 变化，加载会话消息
   useEffect(() => {
+    // P0-6 修复：新对话模式下不加载任何会话
+    // 防止 navigate('/chat') 尚未生效时，旧 URL 中的 sessionId 触发 loadSession
+    if (isNewChat) return;
+
     // 如果 URL 中有 sessionId，优先加载该会话
     if (sessionId && sessionId !== currentSessionId) {
       loadSession(sessionId);
