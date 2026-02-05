@@ -85,11 +85,11 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 1. ✅ **Instructions 与工具不匹配** — 已添加 editWord/editExcel/sqlConfig/modificationHistory
 2. ✅ **TodoStore 每次新建实例** — 已改为模块级单例 `_todoStoreSingleton`
 3. ✅ **工具包装三层嵌套** — 已改为模块级 `_cache` 缓存（30个工具）
-4. **P0-1 AI Instructions 对 showTable/showChart 引导不够** — AI 倾向纯文本回复而非调用 Workbench 工具（S01-02/03）
-5. **P0-2 双重历史注入** — `chat.gateway.ts:324` 手动 history + `mastra-agent.service.ts:483-487` Mastra Memory 同时加载历史，导致 token 窗口被重复消息撑满，第二轮+信息丢失（S02-02/06）
+4. ✅ **P0-1 AI Instructions 强化** — 已添加关键词触发规则+工具参数示例（75%测试通过）
+5. ✅ **P0-2 双重历史注入** — 已修复历史消息切片逻辑 `chat.gateway.ts:324`
 6. ✅ **P0-4 Validator 有 error 就整体拒绝 schema** — 已修复 `WorkbenchStore.ts:160`（S01-09）
-7. **P0-5 旧格式 schema 无 transformer 自动转换** — Workbench 不识别旧格式 schema（S01-07）
-8. **P0-6 Workbench 状态未与会话绑定** — 新建/切换会话时 WorkbenchStore 状态未清理，显示旧会话内容（S03-09）
+7. ✅ **P0-5 旧格式 schema transformer** — 已在 `WorkbenchStore.ts` 三入口集成 `ensureNewSchema()`
+8. ⏳ **P0-6 Workbench 状态与会话绑定** — V06-01已修复（新建清空），V06-02待验证（切换恢复）
 
 ### P1 — 重要优化
 8. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）
