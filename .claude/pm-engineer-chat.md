@@ -2127,3 +2127,40 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 
 等待执行。
 
+
+---
+
+### [工程师] 2026-02-05 — S03 全量回归结果
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S03-01 | ❌ | P0-1: AI 说"使用Workbench工具进行可视化展示"但未实际调用（连续 2 次复现） |
+| S03-02 | ✅ | 连续关闭 Tab → 自动切换 → 最后一个 Tab 不可关闭 |
+| S03-03 | ✅ | 右键 Tab → 上下文菜单 → 禁用状态验证 |
+| S03-04 | ✅ | 拖拽 resizer → Workbench 变宽 |
+| S03-05 | ✅ | 极端拖拽 → 25%-75% 约束 |
+| S03-06 | ✅ | 关闭 Workbench → AI 重新展示 → 重新打开（第2次重试通过） |
+| S03-07 | ✅ | 纯文本对话 → Workbench 保持不变 |
+| S03-08 | ✅ | 注入代码 Tab + mergeSchema 追加表格 Tab → 两个 Tab 都在 |
+| S03-09 | ❌ | P0-6: 新建会话后 Workbench 仍显示旧内容（多Tab测试） |
+| S03-10 | ✅ | 操作 Tab 后切走再切回 → 精确保持 |
+
+**通过率: 8/10**
+
+### 失败用例详情
+
+**S03-01** (P0-1 showCode 场景):
+- AI 回复: "我来为您展示一段Python快速排序算法的代码，使用Workbench工具进行可视化展示。"
+- 但 Workbench 面板未打开，AI 没有实际调用 showCode/workbench 工具
+- 连续 2 次运行都失败，不是随机偶发
+- 注意: S03-06（关闭重开场景）通过了，说明 showCode 不是完全不工作，而是 AI 在"首次展示代码"场景下的工具调用率低
+
+**S03-09** (P0-6 新建会话清空):
+- 截图确认: 左侧显示新对话欢迎界面，右侧 Workbench 仍显示旧"多Tab测试"内容
+- 代码分析: `Sidebar.tsx:handleNewChat()` 中 `await saveCurrentWorkbenchState()` 是异步的，之后才执行 `clearWorkbench()`
+- 可能存在竞态条件: `startNewChat()` 触发 `useSessionWorkbench` effect 重新渲染，在 `clearWorkbench()` 执行前 Workbench 状态又被加载
+- 正在调查修复中
+
+### console.error 收集
+无额外 console.error，两个失败均为断言失败。
+
