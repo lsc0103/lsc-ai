@@ -2075,3 +2075,55 @@ npx playwright test e2e/PM-scenarios/S04-local-mode-depth.spec.ts --reporter=lis
 
 等待工程师执行。
 
+
+---
+
+## [PM] 2026-02-05 — S03 全量回归测试指令
+
+### 背景
+
+S03 V2 上次运行有 4 个测试因 P0-1/P0-6 未修复而失败。现在两个 P0 都已修复：
+- P0-1: AI Instructions 强化 Workbench 工具调用 ✅
+- P0-6: 新建会话清空 Workbench ✅
+
+需要全量回归验证 S03 的 10 个测试全部通过。
+
+### 重点关注
+
+| 测试 | 之前失败原因 | 现在应该 |
+|------|-------------|---------|
+| S03-01 | P0-1: AI 未调用 Workbench | P0-1 修复后 AI 应能调用 |
+| S03-06 | P0-1: AI 重开 Workbench 失败 | 同上 |
+| S03-09 | P0-6: 新建会话显示旧 Workbench | P0-6 修复后新建会话应干净 |
+| S03-10 | P0-6: 切回后状态不对 | 同上 |
+
+### 执行命令
+
+```bash
+cd packages/web
+
+# 先拉最新代码
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# S03 全量运行
+npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
+```
+
+### 预期结果
+
+10/10 通过。如果 S03-01/S03-06 因 AI 行为不确定性失败（AI 说了但没调用），可再运行一次确认。
+
+### 报告格式
+
+```markdown
+### [工程师] 日期 — S03 全量回归结果
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S03-01 ~ S03-10 | ✅/❌ | 具体情况 |
+
+通过率: X/10
+```
+
+等待执行。
+
