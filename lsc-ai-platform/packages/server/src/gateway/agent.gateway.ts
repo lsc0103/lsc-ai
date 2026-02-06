@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, Inject, forwardRef } from '@nestjs/common';
+import crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AgentService, LLMConfig } from '../modules/agent/agent.service.js';
 import { ChatGateway } from './chat.gateway.js';
@@ -153,8 +154,8 @@ export class AgentGateway
       return { success: false, error: result.error };
     }
 
-    // 生成认证 Token
-    const token = `agent_${deviceId}_${Date.now()}`;
+    // 生成认证 Token（加密随机）
+    const token = 'agent_' + crypto.randomBytes(32).toString('hex');
 
     // 设置 Socket 信息
     client.agentInfo = {
@@ -281,8 +282,8 @@ export class AgentGateway
     }
     this.userAgents.get(userId)!.add(deviceId);
 
-    // 生成认证 Token
-    const token = `agent_${deviceId}_${Date.now()}`;
+    // 生成认证 Token（加密随机）
+    const token = 'agent_' + crypto.randomBytes(32).toString('hex');
 
     // 通知 Agent 配对成功，并下发 LLM 配置
     agentSocket.emit('agent:paired', {

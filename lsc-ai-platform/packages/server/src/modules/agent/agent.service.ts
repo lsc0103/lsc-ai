@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -52,7 +53,7 @@ export class AgentService {
 
   // 生成配对码（供浏览器端使用）
   generatePairingCode(userId: string): string {
-    const code = Math.random().toString().substring(2, 8); // 6位数字
+    const code = crypto.randomInt(100000, 1000000).toString(); // 6位数字（加密随机）
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5分钟有效
 
@@ -71,7 +72,7 @@ export class AgentService {
   }> = new Map();
 
   generateAgentPairingCode(deviceId: string, deviceName: string): string {
-    const code = Math.random().toString().substring(2, 8); // 6位数字
+    const code = crypto.randomInt(100000, 1000000).toString(); // 6位数字（加密随机）
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5分钟有效
 
