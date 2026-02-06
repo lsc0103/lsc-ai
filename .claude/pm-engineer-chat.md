@@ -2210,3 +2210,67 @@ npx playwright test e2e/PM-scenarios/S03-workbench-depth.spec.ts --reporter=list
 ### S04 状态
 S04 测试文件已就绪，等待 PM 进一步指示。S04 大部分用例需要 Client Agent 在线运行。
 
+
+---
+
+## [PM] 2026-02-06 — S04 正式执行指令
+
+### 背景
+
+S03 全量回归通过（10/10 综合两轮），P0-6 修复确认有效。现在开始 S04 本地模式深度测试。
+
+### 前置条件
+
+1. **Client Agent 必须运行并配对**
+2. 检查 Agent 状态：
+```bash
+curl http://localhost:3000/api/v1/agents 2>/dev/null | grep -q "online" && echo "Agent 在线 ✅" || echo "Agent 离线 ❌"
+```
+
+### 执行命令
+
+```bash
+cd packages/web
+
+# 拉取最新代码
+git pull origin claude/design-s03-s04-tests-6vd9s
+
+# S04 分组运行（推荐，避免 DeepSeek 限流）
+npx playwright test e2e/PM-scenarios/S04-local-mode-depth.spec.ts -g "S04-A" --reporter=list
+npx playwright test e2e/PM-scenarios/S04-local-mode-depth.spec.ts -g "S04-B" --reporter=list
+npx playwright test e2e/PM-scenarios/S04-local-mode-depth.spec.ts -g "S04-C" --reporter=list
+
+# 或全量运行
+npx playwright test e2e/PM-scenarios/S04-local-mode-depth.spec.ts --reporter=list
+```
+
+### 测试用例清单
+
+| 用例 | 场景 | 需要 Agent |
+|------|------|-----------|
+| S04-01 | 云端→本地→命令→切回→上下文连贯 | ✅ |
+| S04-02 | 本地模式 + Workbench 展示 | ✅ |
+| S04-03 | 本地模式多轮对话记住目录 | ✅ |
+| S04-04 | 本地模式切换会话状态保持 | ✅ |
+| S04-05 | 本地模式刷新页面恢复 | ✅ |
+| S04-06 | 切回旧会话本地模式仍生效 | ✅ |
+| S04-07 | 无 Agent 时提示 | ❌（专测无 Agent）|
+| S04-08 | 退出本地模式回云端 | ✅ |
+
+### 报告格式
+
+```markdown
+### [工程师] 日期 — S04 执行结果
+
+| 用例 | 结果 | 说明 |
+|------|------|------|
+| S04-01 ~ S04-08 | ✅/❌/⏭ | 具体情况 |
+
+通过率: X/8（或 X/7 如果 S04-07 跳过）
+
+**失败用例详情**：
+**console.error 收集**：
+```
+
+等待执行。
+
