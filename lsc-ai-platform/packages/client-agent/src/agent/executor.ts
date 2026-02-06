@@ -12,8 +12,8 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { fastembed } from '@mastra/fastembed';
-import { deepseek } from '@ai-sdk/deepseek';
-import { openai } from '@ai-sdk/openai';
+import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createOpenAI } from '@ai-sdk/openai';
 import { convertAllTools } from './tool-adapter.js';
 import { configManager } from '../config/index.js';
 import { socketClient, AgentTask } from '../socket/client.js';
@@ -324,12 +324,21 @@ export class TaskExecutor {
     const workDir = taskWorkDir || config.workDir || process.cwd();
     console.log(`[Executor] createMastraAgent 使用工作目录: ${workDir}`);
 
+    // 验证 API Key
+    const apiKey = config.apiKey || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || '';
+    if (!apiKey) {
+      throw new Error('API Key 未配置，请使用 `lsc-agent config --set apiKey=your-key` 设置');
+    }
+
     // 选择模型 provider
     const provider = config.apiProvider || 'deepseek';
     const modelName = config.model || (provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
+
+    console.log(`[Executor] API Key loaded: ${!!apiKey}, BaseURL: ${config.apiBaseUrl || 'default'}, Provider: ${provider}, Model: ${modelName}`);
+
     const model = provider === 'deepseek'
-      ? deepseek(modelName)
-      : openai(modelName);
+      ? createDeepSeek({ apiKey, baseURL: config.apiBaseUrl })(modelName)
+      : createOpenAI({ apiKey, baseURL: config.apiBaseUrl })(modelName);
 
     return new Agent({
       id: 'client-agent',
