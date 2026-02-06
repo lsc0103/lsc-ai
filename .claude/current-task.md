@@ -196,7 +196,8 @@ e2e/
 7. ✅ S04 测试设计完成（8 tests）— 本地模式深度 + 模式切换场景
 8. ✅ P0-6 完整修复：Chat.tsx 守卫 + Sidebar loadSession + useSessionWorkbench 简化
 9. ✅ S03 第二轮回归：8/10 通过（2个失败为 DeepSeek 限流超时）
-10. 🔄 等待 PM review S03 修复报告，然后执行 S04 测试
+10. ✅ S04 执行完成：1/8 通过（本地模式 AI 无响应问题）
+11. 🔄 等待 PM 指示：本地模式 AI 调用问题需排查
 
 ---
 
