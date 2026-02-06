@@ -442,6 +442,7 @@ export class TaskExecutor {
       });
 
       let fullContent = '';
+      let hasToolCalls = false;
       const reader = stream.fullStream.getReader();
 
       while (true) {
@@ -456,6 +457,7 @@ export class TaskExecutor {
             }
             break;
           case 'tool-call':
+            hasToolCalls = true;
             if (chunk.payload) {
               socketClient.sendToolCall(
                 task.taskId,
@@ -479,6 +481,18 @@ export class TaskExecutor {
 
       if (!fullContent) {
         fullContent = await stream.text;
+      }
+
+      // 空 stream 检测：没有文本输出且没有工具调用，视为 AI 无响应
+      if (!fullContent && !hasToolCalls) {
+        console.error('[Executor] AI 返回空响应，可能是 API Key 无效或服务不可用');
+        socketClient.sendTaskResult({
+          taskId: task.taskId,
+          sessionId: task.sessionId,
+          status: 'failed',
+          error: '本地 AI 调用无响应，请检查 API Key 配置是否正确（lsc-agent config --set apiKey=your-key）',
+        });
+        return;
       }
 
       socketClient.sendTaskResult({
