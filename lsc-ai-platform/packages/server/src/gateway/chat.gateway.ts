@@ -169,9 +169,12 @@ export class ChatGateway
   // 停止生成
   @SubscribeMessage('chat:stop')
   handleChatStop(
-    @ConnectedSocket() _client: AuthenticatedSocket,
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string },
   ) {
+    if (!client.userId) {
+      return { success: false, error: '未认证' };
+    }
     const { sessionId } = data;
 
     // 标记本地流式会话停止
@@ -207,6 +210,15 @@ export class ChatGateway
     }
 
     const { sessionId, message, fileIds, deviceId, workDir, workbenchContext, useNetwork } = data;
+
+    // B-3: 验证会话归属，防止用户操作他人的会话
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session) {
+      return { success: false, error: '会话不存在' };
+    }
+    if (session.userId !== client.userId) {
+      return { success: false, error: '无权访问此会话' };
+    }
 
     this.logger.log(`收到消息: sessionId=${sessionId}, deviceId=${deviceId}, fileIds=${JSON.stringify(fileIds)}, hasWorkbenchContext=${!!workbenchContext}, useNetwork=${!!useNetwork}`);
 

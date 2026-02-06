@@ -43,28 +43,29 @@ export class SessionController {
 
   @Patch(':id')
   @ApiOperation({ summary: '更新会话标题' })
-  async update(@Param('id') id: string, @Body() body: { title: string }) {
-    return this.sessionService.updateTitle(id, body.title);
+  async update(@Param('id') id: string, @Request() req: any, @Body() body: { title: string }) {
+    return this.sessionService.updateTitle(id, req.user.id, body.title);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除会话' })
-  async remove(@Param('id') id: string) {
-    return this.sessionService.delete(id);
+  async remove(@Param('id') id: string, @Request() req: any) {
+    return this.sessionService.delete(id, req.user.id);
   }
 
   @Get(':id/workbench')
   @ApiOperation({ summary: '获取会话的 Workbench 状态' })
-  async getWorkbenchState(@Param('id') id: string) {
-    return this.sessionService.getWorkbenchState(id);
+  async getWorkbenchState(@Param('id') id: string, @Request() req: any) {
+    return this.sessionService.getWorkbenchState(id, req.user.id);
   }
 
   @Patch(':id/workbench')
   @ApiOperation({ summary: '保存会话的 Workbench 状态' })
   async saveWorkbenchState(
     @Param('id') id: string,
+    @Request() req: any,
     @Body() body: { workbenchState: any },
   ) {
-    return this.sessionService.saveWorkbenchState(id, body.workbenchState);
+    return this.sessionService.saveWorkbenchState(id, req.user.id, body.workbenchState);
   }
 }
