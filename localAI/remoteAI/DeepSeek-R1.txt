@@ -2,5 +2,5 @@ API endpoint URL:
 http://10.18.55.233:30069/deepseek_r1/chi/v1/chat/completions
 
 API Key:
-6deea1b6-1db4-40db-ba86-481c78a4c7d7
+your-internal-api-key-here
 

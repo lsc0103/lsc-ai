@@ -2,6 +2,6 @@ API endpoint URL:
 http://10.18.55.233:30069/deepSeek-r1-distill-qwen-32b/chi/v1
 
 API Key:
-9b663a0d-b32d-4fbb-930e-c372b4113295
+your-internal-api-key-here
 
 
