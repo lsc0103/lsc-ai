@@ -622,8 +622,11 @@ export class ChatGateway
       // 3. 获取会话历史消息（从 Mastra Memory）
       const history = await this.mastraAgentService.getThreadMessages(sessionId, client.userId!);
 
-      // 转换为简化的历史消息格式（不包括当前消息）
-      const historyMessages = history.slice(0, -1).map((m: any) => ({
+      // 转换为简化的历史消息格式
+      // P0-2 修复：与云端模式一致，限制历史消息数量，避免 token 窗口溢出
+      // 注意：getThreadMessages 返回的历史不包含当前消息，所以不需要 slice(0, -1)
+      const maxHistoryMessages = 20; // 最多保留 20 条历史消息
+      const historyMessages = history.slice(-maxHistoryMessages).map((m: any) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content || '',
       }));
