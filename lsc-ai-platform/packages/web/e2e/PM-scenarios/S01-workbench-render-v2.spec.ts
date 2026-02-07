@@ -27,6 +27,7 @@
  * - main.tsx 已在 DEV 模式暴露 window.__workbenchStore（已配置）
  */
 import { test, expect } from '../fixtures/test-base';
+import { SEL } from '../helpers/selectors';
 import { sendAndWaitWithRetry } from '../helpers/ai-retry.helper';
 import {
   setupAndInject,
@@ -62,7 +63,7 @@ test.describe('S01-A: 渲染正确性（注入验证）', () => {
     const r = await setupAndInject(page, SCHEMAS.codeEditor);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb, 'Workbench 应打开').toBeVisible({ timeout: 5000 });
 
     // 核心断言 1: 有代码编辑器或代码块
@@ -84,7 +85,7 @@ test.describe('S01-A: 渲染正确性（注入验证）', () => {
     const r = await setupAndInject(page, SCHEMAS.dataTable);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 核心断言 1: 有表格元素
@@ -105,7 +106,7 @@ test.describe('S01-A: 渲染正确性（注入验证）', () => {
     const r = await setupAndInject(page, SCHEMAS.barChart);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 核心断言 1: 有 ECharts SVG 或 Canvas
@@ -123,7 +124,7 @@ test.describe('S01-A: 渲染正确性（注入验证）', () => {
     const r = await setupAndInject(page, SCHEMAS.markdown);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 核心断言 1: H1 标题渲染
@@ -152,11 +153,11 @@ test.describe('S01-B: 多 Tab 与容错', () => {
     const r = await setupAndInject(page, SCHEMAS.multiTab);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 核心断言 1: 有 3 个 tab
-    const tabs = wb.locator('.workbench-tab');
+    const tabs = wb.locator(SEL.workbench.tab);
     const tabCount = await tabs.count();
     expect(tabCount, '应有 3 个 tab').toBe(3);
 
@@ -182,10 +183,10 @@ test.describe('S01-B: 多 Tab 与容错', () => {
     const r = await setupAndInject(page, SCHEMAS.multiTab);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
-    const tabs = wb.locator('.workbench-tab');
+    const tabs = wb.locator(SEL.workbench.tab);
     const initialCount = await tabs.count();
     expect(initialCount, '初始应有 3 个 tab').toBe(3);
 
@@ -222,7 +223,7 @@ test.describe('S01-B: 多 Tab 与容错', () => {
     const r = await setupAndInject(page, SCHEMAS.malformed);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     const wbVisible = await wb.isVisible().catch(() => false);
 
     // 核心断言 1: P0-4 回归 — 坏组件不应导致整个 Workbench 拒绝
@@ -230,7 +231,7 @@ test.describe('S01-B: 多 Tab 与容错', () => {
 
     if (wbVisible) {
       // 核心断言 2: 至少有 2 个正常 tab
-      const tabs = wb.locator('.workbench-tab');
+      const tabs = wb.locator(SEL.workbench.tab);
       const tabCount = await tabs.count();
       expect(tabCount, '至少应有 2 个正常 tab').toBeGreaterThanOrEqual(2);
     }
@@ -241,7 +242,7 @@ test.describe('S01-B: 多 Tab 与容错', () => {
     const r = await setupAndInject(page, SCHEMAS.oldFormat);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     const wbVisible = await wb.isVisible().catch(() => false);
 
     // 核心断言 1: P0-5 — 旧格式 schema 应被 ensureNewSchema 转换并打开
@@ -285,7 +286,7 @@ test.describe('S01-C: AI 触发 Workbench', () => {
 
     await page.waitForTimeout(3000);
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     const wbVisible = await wb.isVisible().catch(() => false);
 
     if (!wbVisible) {
@@ -333,7 +334,7 @@ test.describe('S01-C: AI 触发 Workbench', () => {
 
     await page.waitForTimeout(3000);
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     const wbVisible = await wb.isVisible().catch(() => false);
 
     if (!wbVisible) {
@@ -371,11 +372,11 @@ test.describe('S01-D: UX 细节与面板交互', () => {
     const r = await setupAndInject(page, SCHEMAS.codeEditor);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 点击关闭按钮（Workbench 头部的 CloseOutlined 按钮）
-    const closeBtn = wb.locator('.workbench-header button').last();
+    const closeBtn = wb.locator(`${SEL.workbench.header} button`).last();
     await closeBtn.click();
     await page.waitForTimeout(500);
 
@@ -388,11 +389,11 @@ test.describe('S01-D: UX 细节与面板交互', () => {
     const r = await setupAndInject(page, SCHEMAS.dataTable);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 找到 resizer 分隔线
-    const resizer = page.locator('.workbench-resizer');
+    const resizer = page.locator(SEL.workbench.resizer);
     const resizerVisible = await resizer.isVisible().catch(() => false);
 
     if (!resizerVisible) {
@@ -438,11 +439,11 @@ test.describe('S01-D: UX 细节与面板交互', () => {
     const r = await setupAndInject(page, SCHEMAS.codeEditor);
     if (!r.ok) { test.skip(true, r.reason); return; }
 
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 核心断言: 标题栏应显示 schema 的 title
-    const header = wb.locator('.workbench-header');
+    const header = wb.locator(SEL.workbench.header);
     await expect(header).toBeVisible();
 
     const headerText = await header.innerText();
@@ -471,7 +472,7 @@ test.describe('S01-D: UX 细节与面板交互', () => {
     }
 
     await page.waitForTimeout(1000);
-    const wb = page.locator('.workbench-container');
+    const wb = page.locator(SEL.workbench.container);
     await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 关闭 Workbench
