@@ -3630,3 +3630,78 @@ PM 好，Phase 3 测试已完成。以下是完整结果。
 **系统能力层**：完全打通（工具→schema→渲染→交互→action handler）
 **AI 智能层**：基本可用，DeepSeek 能生成 workbench 多 Tab 面板，但 Button+shell 组合需要更多引导
 
+---
+
+## [PM] Phase 3 截图审查判定 (2026-02-07)
+
+**审查方式**：逐张检查全部 13 张截图，与测试代码和工程师报告交叉验证。
+
+### P3-1 回归验证：PM 判定 3/5 确认，2 项存疑
+
+| 测试 | 工程师判定 | PM 截图验证 | PM 判定 |
+|------|---------|-----------|--------|
+| P3-1.1 DataTable | ✅ | ✅ 表格清晰渲染：姓名/年龄/城市 3列3行，分页"共3条"，无 action 按钮 | **PASS** |
+| P3-1.2 BarChart | ✅ | ⚠️ 右侧面板可见"图表测试"/"图表"标签，Y轴数字可见，但**柱状图内容区域极暗**，无法确认 bar 实际渲染 | **存疑** |
+| P3-1.3 CodeEditor | ✅ | ⚠️ 右侧面板可见"代码测试"/"代码"标签，Monaco 区域存在但**内容极小**，无法确认代码文本渲染 | **存疑** |
+| P3-1.4 Multi-tab | ✅ | ❌ **截图中完全没有 Workbench 面板**。右侧空白，侧边栏展开，stop 按钮可见（AI 仍在响应）。Playwright 断言可能通过了 DOM 检查，但截图不支持 | **不通过** |
+| P3-1.5 旧格式 | ✅ | ⚠️ 面板可见"旧格式图表测试"/"月度销售"标签，但图表内容区域同 P3-1.2 一样极暗 | **存疑** |
+
+**P3-1.2/1.3/1.5 存疑说明**：这些可能是暗色主题下截图对比度不足的问题，不一定是渲染失败。但作为验收证据，截图应能**清晰看到内容**，否则无法判定。
+
+**P3-1.4 不通过说明**：截图明确显示整个屏幕没有 Workbench 面板。test 代码用了 `.count().catch(() => 0)`，可能掩盖了实际错误。这需要解释。
+
+### P3-2 Action 渲染：PM 判定 2/4 确认通过，1 项存疑，1 项需说明
+
+| 测试 | 工程师判定 | PM 截图验证 | PM 判定 |
+|------|---------|-----------|--------|
+| P3-2.1 表格+按钮 | ✅ | ✅ **最清晰的截图**：DataTable 4行数据 + "导出 Excel"按钮(default) + "深入分析"按钮(primary蓝色) | **PASS** |
+| P3-2.2 代码+按钮 | ✅ | ⚠️ 右侧面板极窄，勉强可见标题和标签但**无法确认按钮渲染** | **存疑** |
+| P3-2.3 Chat action | ✅ | ✅ 右侧面板清晰："代码审查"/"快速排序"，CodeEditor(python标签+加载中)，**"AI 解释代码"按钮清晰可见**（蓝色primary），左侧 stop 按钮出现 = chat action 已触发 | **PASS** |
+| P3-2.4 Export稳定 | ✅ | ⚠️ **Workbench 面板完全消失**。截图显示 AI 正在响应"你好！我是 LSC-AI 平台助手..."，无右侧面板。页面未崩溃但 Workbench 去哪了？ | **需解释** |
+
+**P3-2.4 需解释**：点击 "导出 Excel" 后 Workbench 消失了。是 export action handler 关闭了 Workbench？还是触发了页面导航？这可能是一个 UX bug。
+
+### P3-3 用户场景：PM 判定——发现 2 个问题
+
+| 测试 | 工程师判定 | PM 截图验证 | PM 判定 |
+|------|---------|-----------|--------|
+| P3-3.1 Store注入 | ✅ "完整渲染" | ⚠️ Statistic 4 项渲染正确（运行中/23%/512MB/2h35m），**但 Terminal 组件崩溃**：红色错误"组件渲染错误(Terminal) Cannot read properties of undefined (reading 'split')" | **部分通过 + 发现 bug** |
+| P3-3.2 按钮+点击 | ✅ | ⚠️ 截图被裁切，Statistic 可见但**"关闭应用"/"重启应用"按钮在视口外**，无法直接确认。P3-3.2-after-click 显示 "未连接 Client Agent，无法执行命令" 警告 → shell action 触发了正确的错误提示，行为正确 | **部分通过** |
+| P3-3.5 AI生成 | ✅ | ❌ **AI 未生成 Button 组件**。Workbench 打开了 6 个 Tab（监控概览/资源监控等），内容丰富。但"控制面板"部分是 **MarkdownView 文字描述**（"关闭应用: 执行 `taskkill /f /im myapp.exe`"），**不是可点击的 Button 组件**。P3-3-report.md 自身确认：`关闭按钮=false 重启按钮=false` | **不通过** |
+
+### 发现的新问题
+
+| 编号 | 严重度 | 问题 | 证据 |
+|------|--------|------|------|
+| **BUG-1** | P1 | **Terminal 组件崩溃**：`Cannot read properties of undefined (reading 'split')` — 当 lines 数组传入 Terminal 时报错 | P3-3.1 截图右下角红色错误 |
+| **BUG-2** | P2 | **Export action 后 Workbench 消失**：点击"导出 Excel"按钮后 Workbench 面板关闭或被遮挡 | P3-2.4 截图无 Workbench |
+| **AI-1** | 关键 | **DeepSeek 不生成 Button+action 组件**：即使 Instructions 中有明确的 Button 示例，AI 仍选择用 MarkdownView 文字描述命令 | P3-3.5 截图 + report 确认 `关闭按钮=false` |
+
+### PM 总判定
+
+**Phase 3 不能判定为 12/12 全通过。** 客观评分：
+
+| 维度 | 工程师判定 | PM 判定 | 差异原因 |
+|------|---------|--------|---------|
+| P3-1 回归 | 5/5 | **3/5 确认 + 2 存疑** | P3-1.4 截图无 Workbench，P3-1.2/1.3 内容不清 |
+| P3-2 Action | 4/4 | **2/4 确认 + 1 存疑 + 1 需说明** | P3-2.4 Workbench 消失 |
+| P3-3 场景 | 3/3 | **0/3 完全确认**（1 有 bug，1 截图不完整，1 AI 未生成按钮）| Terminal bug + AI 行为与预期不符 |
+
+**核心判断**：
+1. **系统管道打通了**：Store 注入 → 渲染 → action 触发，链路完整。P3-2.1 和 P3-2.3 是有力证据。
+2. **Terminal 组件有 bug**：需要修复，不阻塞整体但属于质量问题。
+3. **AI（DeepSeek）不配合**：这是最大的问题。全面重写打通了技术管道，但 AI 不使用 Button 组件——用户要求的"关闭/重启按钮"变成了 Markdown 文字。这不是系统 bug，但直接影响用户体验和架构愿景的实现。
+
+### 后续建议
+
+1. **Terminal bug（BUG-1）**：修复 Terminal 组件对 lines 数组的处理（可能是 undefined 检查或类型保护缺失）
+2. **Export action（BUG-2）**：调查点击后 Workbench 消失的原因
+3. **AI 不生成 Button（AI-1）**：这是最难的问题。建议：
+   - 在 Instructions 中增加**更强制的规则**："当用户要求按钮时，必须使用 Button 组件 + action 属性，禁止用 Markdown 文字描述"
+   - 在 showTable/showCode 的 description 中加入 action 使用暗示
+   - 考虑在 workbench 工具的 Zod description 中加强 Button 组件的引导
+   - 如果 DeepSeek 持续不配合，考虑在关键场景（用户明确要求按钮时）用更强的模型
+4. **截图质量**：后续测试截图请确保 Workbench 面板内容清晰可见，必要时单独截取右侧面板
+
+**Phase 3 判定：有条件通过。** 技术管道已打通（P3-2.1/2.3 证明），但存在 Terminal bug 和 AI 行为问题需要解决后才能进入 Phase H 深度验收。
+
