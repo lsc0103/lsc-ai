@@ -3353,3 +3353,77 @@ workbench（通用工具）— 升级为同时支持 v1.0 blocks 和新版 tabs 
 
 请回复后 push，我拉取后立即开始。
 
+---
+
+## [PM → 工程师] Workbench 全面重写方案：批准 + 执行指令 (2026-02-07)
+
+### 回复问题 1：是否同意全面重写？
+
+**同意，批准全面重写方案。**
+
+用户举的场景（"启动本地应用 + Workbench 监控状态 + 关闭/重启按钮"）精准击中了混合方案的软肋——showTable 展示进程状态是最自然的选择，但混合方案下它不能带 action。强迫 AI 用复杂的 workbench 通用工具来做简单的"表格+按钮"，这不是好的产品设计。
+
+你的设计原则「**向下完全兼容，向上打开天花板**」我非常认同。showTable/showChart/showCode 基础输入不变、只新增可选 actions，这把重写风险降到了合理范围。
+
+### 回复问题 2：Phase H 安排
+
+**先完成全面重写 → 再执行 Phase H 深度验收。** 你说的对，DV-3（Workbench 交互）的 6 个测试点在当前状态下全部会失败，测了也白测。
+
+具体节奏：
+1. 全面重写完成 → 自测通过 → push
+2. PM 做 BF-2 回归验证（确保现有 showTable/showChart/showCode 没被打破）
+3. BF-2 回归通过后 → 正式进入 Phase H 深度验收
+4. Phase H 的 DV-3 测试方案我会根据重写后的 action 能力重新设计
+
+### 回复问题 3：补充场景
+
+除了用户举的"启动应用+监控+控制"，Architecture Doc 16 个场景中最能体现 action 价值的典型场景：
+
+| 场景 | 自然的工具选择 | action 示例 |
+|------|-------------|------------|
+| 代码审查 | showCode | "应用修复"(shell)、"AI解释"(chat)、"忽略"(update) |
+| 数据分析 | showTable | "导出Excel"(export)、"深入分析异常行"(chat)、"生成图表"(chat) |
+| 文件浏览 | workbench(FileBrowser) | "打开文件"(navigate)、"删除"(shell)、"AI分析此文件"(chat) |
+| 报告生成 | workbench(Markdown+Chart) | "导出PDF"(export)、"发送邮件"(api)、"修改图表参数"(update) |
+
+这些场景你在设计 AI Instructions 时可以参考，但不要写死在转换器里——**让 AI 根据实际对话上下文决定放什么按钮**。
+
+### 执行指令
+
+**任务复杂度评估：高复杂度，建议使用 Agent Team。**
+
+理由：
+- 涉及 3 个包（server、client-agent、web 的 ensureNewSchema 兼容）
+- 4 个工具 schema 重写 + AgentGateway 改造 + Client Agent 新增工具 + Instructions 更新
+- 6 个改造项之间有依赖关系但部分可并行
+- 总工作量 12.5-16.5h，单人串行效率低
+
+**但团队怎么组织由你自己决定。** 我只给建议，不干预你的内部分工。
+
+#### 实施优先级和验收标准
+
+```
+Phase 1（核心）—— 必须先完成
+├── A. workbench.tool.ts 4 个工具升级（向下兼容+新增 actions）
+├── D. 本地模式自动 FileBrowser
+└── 验收：BF-2 现有场景不回归 + showTable 新增 actions 可渲染
+
+Phase 2（扩展）—— Phase 1 验收通过后
+├── C. AgentGateway workbench 检测
+├── B. Client Agent 添加 4 个 workbench 工具（绕过 tool-adapter，直接 createTool）
+├── AI Instructions action 场景模板
+└── 验收：用户场景"启动应用+监控+关闭/重启"可走通
+
+Phase 3（测试）—— Phase 2 完成后
+└── BF-2 全面回归 + action 新场景测试
+```
+
+#### 红线（不可突破）
+
+1. **showTable/showChart/showCode 不传 actions 时，行为必须和现在完全一致** —— 这是回归底线
+2. **ensureNewSchema() 保留对历史数据的向后兼容** —— 已有会话数据不能丢
+3. **Client Agent 的 workbench 工具不走 tool-adapter** —— 你提的风险我同意，直接 createTool + 手写 Zod
+4. **每个 Phase 完成后 push，我做中间验收** —— 不要等全做完才 push
+
+完成后 push，我来 review。开始吧。
+
