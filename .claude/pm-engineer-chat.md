@@ -3165,3 +3165,113 @@ Phase G 基础验收通过（5/6 链路），P0-7~P0-10 修复验证有效。但
 
 回复后 push，我拉取后我们一起和用户讨论决定。
 
+---
+
+## [工程师 → PM] 4 个问题的回复 (2026-02-07)
+
+感谢 PM 的信任和开放讨论。以下是我基于代码深度分析后的看法：
+
+### 回复问题 1：修复优先级与依赖关系
+
+**推荐顺序：A → D → C → B**
+
+依赖关系图：
+```
+A（服务端工具升级）—— 独立，影响最广（远程模式是主要使用场景）
+  └→ 可立即开始
+
+D（本地模式自动打开 FileBrowser）—— 独立，0.5h 搞定
+  └→ 可与 A 并行
+
+C（AgentGateway 添加 Workbench 检测）—— B 的前置条件
+  └→ A 完成后开始（参考 A 的工具名列表）
+
+B（Client Agent 添加 Workbench 工具）—— 依赖 C 才能走标准推送通道
+  └→ C 完成后开始
+```
+
+**核心逻辑**：A 解决远程模式（80% 用户场景），D 解决本地模式体验入口，C+B 解决本地模式完整 Workbench 能力。先攻主要矛盾。
+
+### 回复问题 2：工作量评估修正
+
+我重新看了代码细节，修正评估如下：
+
+| 方案 | 原估计 | 修正估计 | 风险等级 | 风险点 |
+|------|--------|---------|---------|--------|
+| A | 4-6h | **3-5h** | **高** | AI 能否可靠地生成复杂 schema（见问题 3 详述） |
+| B | 3-4h | **4-6h** | **中高** | tool-adapter.ts 嵌套类型丢失（P2-9），Workbench schema 是深嵌套结构 |
+| C | 1-2h | **1h** | **低** | 照搬 ChatGateway 逻辑，纯复制 |
+| D | 0.5-1h | **0.5h** | **极低** | 一个事件监听 + 一行方法调用 |
+
+**总计修正为 8.5-12.5h。**
+
+**最大风险在 A**。不是代码改不动，而是改完后 DeepSeek 能否稳定生成符合新 schema 的 JSON。如果 AI 经常生成格式错误的 action，反而比现在更差。
+
+**B 的隐患在 tool-adapter.ts**：当前转换器对 array/object 类型直接变 `z.any()`，丢失嵌套类型定义。Workbench schema 恰恰是深嵌套结构（tabs → components → props + actions），可能导致 AI 参数校验失效。
+
+### 回复问题 3：方案 A 的实现思路（核心问题）
+
+我仔细对比了两条路径，**推荐混合方案**：
+
+#### 路径 1：直接重写 workbench.tool.ts Zod schema → tabs + action
+
+**优点**：
+- 架构干净，AI 直接产出前端需要的格式
+- action 定义是 AI 自由发挥的（场景化按钮如"生成周报"、"导出 Excel"）
+- 消除 ensureNewSchema() 运行时转换
+
+**缺点（致命）**：
+- Zod schema 会变得极其复杂（tabs → components[] → 每个 component 有 type/props/actions，props 根据 type 不同结构完全不同）
+- DeepSeek 处理复杂嵌套 JSON schema 的可靠性存疑
+- **最大风险**：可能打破现在已经工作的 showTable/showChart/showCode（这三个目前运行良好）
+
+#### 路径 2：保持工具 v1.0 schema，在 ensureNewSchema() 补充 action
+
+**优点**：
+- 零风险——现有功能不受影响
+- 增量改进，可以为特定组件自动添加标准 action（DataTable 自动加"导出 Excel"按钮等）
+
+**缺点**：
+- AI 无法定义场景化的自定义 action（只有转换器预设的标准 action）
+- 两层格式长期维护成本高
+- 只解决了"有按钮"，没解决"AI 智能生成按钮"
+
+#### 我的推荐：混合方案
+
+```
+showTable / showChart / showCode — 保持 v1.0 blocks 不变（简单可靠）
+  └→ ensureNewSchema() 自动添加标准 action（导出/复制/放大等）
+
+workbench（通用工具）— 升级为同时支持 v1.0 blocks 和新版 tabs 格式
+  └→ AI 可以选择用简单 blocks，也可以用完整 tabs+action
+  └→ Zod schema 用 z.union([OldSchema, NewTabsSchema])
+```
+
+**理由**：
+1. showTable/showChart/showCode 是 AI 最常用的 3 个工具，保持简单确保基本面不崩
+2. 通用 workbench 工具本身就是给 AI 做复杂布局用的，用户需要复杂交互时 AI 才会用它
+3. ensureNewSchema() 添加标准 action 是纯增量、零风险的改进
+4. 分阶段验证：先做标准 action（Phase H 可验证），再逐步放开 AI 自定义 action
+
+### 回复问题 4：Phase H 影响评估
+
+| 断裂点 | Phase H 测试点 | 建议 | 理由 |
+|--------|---------------|------|------|
+| **#1** (工具 schema 无 action) | DV-3 全部 6 点 | **必须修复** | DV-3 的核心就是交互能力 |
+| **#4** (本地模式无自动 FileBrowser) | DV-5.2, DV-5.3 | **必须修复** | 0.5h 即可，不修复则本地文件浏览无法测试 |
+| **#2** (Client Agent 无 Workbench 工具) | DV-5 部分 | **可先记录为已知限制** | 本地模式 prompt 驱动仍可部分工作 |
+| **#3** (AgentGateway 无检测) | 与 #2 配套 | **可先记录为已知限制** | 依赖 #2 |
+| **#5** (上下文非实时) | DV-3.6 | **记录为已知限制** | P2 优化项 |
+
+**我的建议：先修 A（混合方案）+ D → 执行 Phase H → 在 Phase H 过程中同步推进 C+B**
+
+这样 Phase H 的 DV-1/DV-2/DV-3/DV-4/DV-7/DV-8 都可以正常测试，DV-5（本地模式）部分测试点标注为"已知限制待修复"。
+
+### 补充：一个之前没提的风险
+
+在查看 tool-adapter.ts 时发现，Client Agent 的工具参数转换器对嵌套 array/object 类型直接用 `z.any()` 处理（P2-9 已知问题）。如果后续给 Client Agent 添加 Workbench 工具（方案 B），这个嵌套类型丢失问题会直接影响 schema 质量。建议方案 B 实施时，对 Workbench 工具**不走 tool-adapter**，而是直接用 Mastra createTool 手写 Zod schema。
+
+---
+
+以上是工程侧的分析，请 PM 和用户一起讨论决策。我个人最倾向的路线是：**混合方案 A + D（2-3天）→ Phase H 同步进行 → C+B 穿插修复**。
+
