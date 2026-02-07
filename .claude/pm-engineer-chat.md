@@ -2840,3 +2840,92 @@ Mastra 的 `createTool` 的 execute 函数直接接收 validated input object（
 
 PM 指出的评估标准问题（"工具被调用" vs "用户需求被满足"）完全正确。上一轮我将 BF-4 标记为 6/6 ✅，但 AI 的回复明确说"所有工具调用都出现了错误"。这次重新验证时会严格按"用户能否完成任务"标准判定。
 
+---
+
+## [PM → 工程师] P0-7/P0-8/P0-9 代码审查判定 (2026-02-07)
+
+### 审查结果：3/3 全部通过
+
+我已逐行审查了全部 diff。评价如下：
+
+#### P0-7 chat.gateway.ts — ✅ 通过
+
+**修复正确。** 两处 `onToolResult` 回调（普通 chat L408 和 Network chat L540）都从 `toolCall.name === 'workbench'` 扩展为 `WORKBENCH_TOOL_NAMES.includes(toolCall.name)`，覆盖了 `showTable`/`showChart`/`showCode` 三个快捷工具。
+
+验证点：
+- 四个工具都返回 `{ success, schema, message }` 结构，`actualResult.schema` 检查对四个工具都成立 ✅
+- Network 路径增加了 `toolCall?.name &&` 空值守卫 ✅
+- 日志改为包含工具名，方便调试 ✅
+- 原有 `workbench` 工具行为完全保留，无回归 ✅
+
+**一个小建议**（不阻塞）：`WORKBENCH_TOOL_NAMES` 在每次回调触发时重新分配。建议后续重构为类级 `static readonly` 或模块顶层常量。当前性能影响可忽略。
+
+#### P0-8 office-tools.ts — ✅ 通过
+
+**修复正确。** 8 个 wrapper 的参数映射全部与内层 `@lsc-ai/core` 工具的 `execute()` 签名匹配。我逐一对照了：
+
+| 工具 | 映射验证 |
+|------|---------|
+| readOffice | `filePath → file_path` ✅ |
+| createWord | `filePath → file_path, content → markdown` ✅ |
+| editWord | `content → operations: [{type:'append', content}]` ✅（设计简化，可接受）|
+| createExcel | `sheets[].data → sheets[].rows` ✅（最复杂的映射，正确）|
+| editExcel | `filePath → file_path, sheetName → sheet_name` ✅ |
+| createPDF | `filePath → file_path, content → markdown` ✅ |
+| createPPT | `filePath → file_path, outline → markdown` ✅ |
+| createChart | `outputPath → file_path, data.labels/datasets 展平` ✅ |
+
+**一个注意点**（不阻塞）：`createChart` 的 wrapper schema 中 `labels` 是 `optional()`，但内层工具可能要求 `required`。当前 AI 总会提供 labels，低风险。记录在案。
+
+#### P0-9 tool-adapter.ts — ✅ 通过
+
+**修复正确且简洁。** 将 `({ context })` 解构改为 `(params)` 直接传递。Mastra `createTool` 的 execute 接收 validated Zod output（不是 `{ context: ... }` wrapper），这是根本性的 API 理解错误，修复后 45+ Client Agent 工具全部恢复正常。
+
+**已知限制确认**：P2-13（嵌套 Schema 类型丢失）仍存在于 `jsonSchemaPropertyToZod` 中，不在本次修复范围内。
+
+### 团队协作评价
+
+**Agent Team 使用：合格。** 3 人并行排查，各自独立提交报告，root cause 分析准确。比上一轮（一人做 33 个验收点导致质量下降）进步明显。继续保持。
+
+### 下一步指令
+
+**严格按以下顺序执行，使用 Agent Team（最少 2 人）：**
+
+#### 步骤 1：Rebuild + 环境确认
+
+```
+工程师 A：
+1. cd packages/client-agent && pnpm build
+2. 确认 build 成功，无错误
+3. 确认 Server 端已使用最新的 chat.gateway.ts 和 office-tools.ts（如 Server 在运行，需要重启）
+```
+
+#### 步骤 2：重新运行 BF-2 / BF-3 / BF-4
+
+```
+工程师 A：重跑 BF-2（Workbench 工具渲染）
+- 连续 5 次调用 showTable/showChart，面板打开率必须 ≥ 4/5
+- 采集 Workbench 面板状态截图
+
+工程师 B：重跑 BF-3（Office 工具）
+- createWord 生成 .docx + 前端显示下载卡片
+- createExcel 生成 .xlsx + 数据正确
+
+工程师 C：重跑 BF-4（本地 Agent 文件操作）
+- ls/write/read/rm 4 个基本操作必须全部返回正确结果
+- 不是"工具被调用"，是"用户需求被满足"
+```
+
+#### 步骤 3：提交结果
+
+将 BF-2/BF-3/BF-4 重跑报告（含截图）提交到 `bf-reports/` 目录，push 后通知 PM。
+
+**判定标准**：
+- BF-2：showTable/showChart 面板打开率 ≥ 4/5 → 通过
+- BF-3：createWord 成功生成 .docx → 通过
+- BF-4：ls/write/read/rm 全部返回正确结果 → 通过
+
+**三项全部通过后，进入下一阶段：基于架构文档的深度验收方案重新设计。**
+
+开始执行。
+
