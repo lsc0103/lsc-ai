@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { agentApi, AgentDevice } from '../../services/api';
 import { useAgentStore } from '../../stores/agent';
+import { useWorkbenchStore } from '../workbench/context/WorkbenchStore';
 import AgentInstallGuide from './AgentInstallGuide';
 
 const { Text, Paragraph } = Typography;
@@ -89,6 +90,12 @@ export default function WorkspaceSelectModal({ open, onClose, onSelect }: Worksp
       setCurrentDevice(selectedDeviceId);
       saveWorkDir(workDir);
       onSelect('local', workDir, selectedDeviceId);
+
+      // 自动打开 FileBrowser：本地模式 + Workbench 当前无内容
+      const workbenchState = useWorkbenchStore.getState();
+      if (!workbenchState.schema) {
+        workbenchState.openBlank(workDir);
+      }
     } else {
       // 服务器模式
       onSelect('server', workDir || '/workspace');

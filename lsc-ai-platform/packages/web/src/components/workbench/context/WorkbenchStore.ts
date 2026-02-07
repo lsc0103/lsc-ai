@@ -647,13 +647,16 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
         const updates: Partial<WorkbenchStore> = {};
 
         if (savedState.schema !== undefined) {
-          // 验证 schema
+          // 验证 schema（宽容模式：有 sanitizedSchema 且有有效 tabs 即可）
           if (savedState.schema) {
             const result = validateWorkbenchSchema(savedState.schema);
-            if (result.valid && result.sanitizedSchema) {
+            if (result.sanitizedSchema && result.sanitizedSchema.tabs.length > 0) {
+              if (result.errors.length > 0) {
+                console.warn('[WorkbenchStore] 保存的 schema 有非致命警告（部分渲染）:', result.errors);
+              }
               updates.schema = result.sanitizedSchema;
             } else {
-              console.warn('[WorkbenchStore] 保存的 schema 无效，跳过');
+              console.warn('[WorkbenchStore] 保存的 schema 无效，跳过', result.errors);
             }
           } else {
             updates.schema = null;

@@ -610,26 +610,30 @@ export async function sendChatMessage(
           return;
         }
 
-        // 验证转换后的 schema
+        // 验证转换后的 schema（宽容模式：有 sanitizedSchema 且有有效 tabs 即可）
         const validationResult = validateWorkbenchSchema(transformedSchema);
 
-        if (!validationResult.valid) {
-          console.error('[Socket] Schema 验证失败!');
+        if (!validationResult.sanitizedSchema || validationResult.sanitizedSchema.tabs.length === 0) {
+          console.error('[Socket] Schema 验证失败: 没有有效的标签页');
           console.error('[Socket] 验证错误:', validationResult.errors);
           console.error('[Socket] 原始 schema:', data.schema);
           console.error('[Socket] 转换后 schema:', transformedSchema);
           return;
         }
+        if (validationResult.errors.length > 0) {
+          console.warn('[Socket] Schema 有非致命警告（部分渲染）:', validationResult.errors);
+        }
 
-        // 更新 Workbench 状态
+        // 更新 Workbench 状态（使用已验证的 sanitizedSchema）
+        const sanitizedSchema = validationResult.sanitizedSchema;
         const workbenchStore = useWorkbenchStore.getState();
         workbenchStore.loadState({
-          schema: transformedSchema,
+          schema: sanitizedSchema,
           visible: true,
-          activeTabKey: transformedSchema.defaultActiveKey || transformedSchema.tabs[0]?.key || '',
+          activeTabKey: sanitizedSchema.defaultActiveKey || sanitizedSchema.tabs[0]?.key || '',
         });
 
-        console.log('[Socket] Workbench 状态已更新，visible=true, activeTabKey:', transformedSchema.defaultActiveKey);
+        console.log('[Socket] Workbench 状态已更新，visible=true, activeTabKey:', sanitizedSchema.defaultActiveKey);
       } catch (err) {
         console.error('[Socket] Workbench 更新失败:', err);
       }
