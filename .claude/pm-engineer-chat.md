@@ -3464,3 +3464,104 @@ Phase 1 已通过 TypeScript 编译验证。Phase 2 同样 0 error。showTable/s
 
 等待您 review Phase 2。review 通过后进入 Phase 3 — BF-2 全面回归 + action 新场景测试。
 
+---
+
+## [PM] Phase 1+2 Code Review 判定 (2026-02-07)
+
+### 审查范围
+
+已逐文件审查所有 11 个变更文件，以下是逐项评审。
+
+### 1. wb-rewrite-spec.md — 设计规格书 ✅
+
+规格清晰完整，覆盖：前端类型参考、4 个工具改造规格、WorkbenchActionZod 共享定义、Client Agent 规格、ensureNewSchema 兼容规则、自动 FileBrowser 规格、文件改动清单。**可作为后续维护的参考文档。**
+
+### 2. workbench.tool.ts — 4 工具重写 ✅
+
+**核心改动，最重点审查。**
+
+| 工具 | 输入变更 | 输出变更 | 向下兼容 | 评价 |
+|------|---------|---------|---------|------|
+| showTable | +`actions?: ActionEntry[]` | blocks → tabs 格式 | ✅ 无 actions 时只有 DataTable，和 ensureNewSchema 转换后一致 | **通过** |
+| showChart | +`actions?: ActionEntry[]` | blocks → tabs 格式 | ✅ chartType 映射逻辑完整（含 pie 特殊处理、scatter、降级到 MarkdownView）| **通过** |
+| showCode | +`actions?: ActionEntry[]` | blocks → tabs 格式 | ✅ CodeEditor + 可选 Buttons | **通过** |
+| workbench | z.union([Old, New]) | 两条路径 | ✅ 旧 blocks → convertBlocksToTabs()，新 tabs → 直接透传 | **通过** |
+
+**关键确认**：
+- `convertBlocksToTabs()` 函数完整搬入（267 行），覆盖 code/table/chart/markdown/json/image/file/tabs 所有类型
+- NewFormatInput 用 `.passthrough()` 允许 AI 自由传入组件 props — 正确，前端有 validateWorkbenchSchema 兜底
+- 所有工具输出统一为 `{ success, schema: { type: 'workbench', tabs: [...] }, message }` 格式
+
+### 3. workbench-tools.ts (Client Agent) — 新建 554 行 ✅
+
+与 Server 端工具**代码完全一致**。使用 Mastra `createTool` + 手写 Zod，不走 tool-adapter。
+
+**备注**：554 行代码重复是**有意的设计选择**——tool-adapter 的 `z.any()` 嵌套类型丢失问题（P2-9）会破坏 Workbench 深嵌套 schema。记录为已知技术债，后续可考虑抽取共享包。
+
+### 4. agent.gateway.ts — AgentGateway Workbench 检测 ✅
+
+`handleToolResult()` 新增逻辑（L518-538）：
+- `WORKBENCH_TOOL_NAMES = ['workbench', 'showTable', 'showChart', 'showCode']`
+- 检测工具结果中的 schema → 通过 `workbench:update` 推送到前端
+- 处理两种格式：`resultObj.output`（JSON 字符串）和直接 `resultObj.schema`
+
+**与 ChatGateway 的 P0-7 修复逻辑镜像，正确。**
+
+### 5. mastra-agent.service.ts — AI Instructions 全量更新 ✅
+
+| Agent | 更新内容 | 评价 |
+|-------|---------|------|
+| Platform Agent | showTable/showChart/showCode 带 actions 示例 + workbench 新格式示例（**用户场景：应用监控+关闭/重启按钮**）+ 7 种 Action 类型参考表 + 使用原则 | **优秀** |
+| code-expert | showCode actions 示例（AI 解释、应用修复） | ✅ |
+| data-analyst | showTable/showChart actions 示例（导出 Excel、深入分析、生成报告） | ✅ |
+| office-worker | showTable actions 示例（导出、批量处理） | ✅ |
+
+**特别好的点**：Platform Agent Instructions 中的 workbench 新格式示例（L492-507）直接用了用户提出的"启动应用+监控+关闭/重启"场景作为模板。这会显著提升 AI 在该场景下的表现。
+
+### 6. executor.ts — Client Agent 工具注册 ✅
+
+L288-295：4 个 Workbench 工具在 tool-adapter 转换之后**覆盖注册**到 `this.mastraTools`，确保不走 tool-adapter。日志输出包含 `（含 4 个 Workbench 工具）` 方便调试。**正确。**
+
+### 7. WorkspaceSelectModal.tsx — 自动 FileBrowser ✅
+
+L94-98：用户确认切换到本地模式时，检查 Workbench 是否有内容 → 无内容则 `openBlank(workDir)` 打开 FileBrowser。
+
+**实现位置合理**：在用户主动选择本地模式的 handleSelect() 回调中，而非被动的 socket 事件中。逻辑简单清晰。
+
+### 8. socket.ts / WorkbenchStore.ts — 前端兼容 ✅
+
+- socket.ts 的 workbenchHandler 已有 `ensureNewSchema()` → 新格式 schema 有 `type: 'workbench' + tabs` → `isOldSchema()` 返回 false → 直接透传 → 不影响
+- WorkbenchStore 的 `open()` / `mergeSchema()` / `loadState()` 接收的都是 WorkbenchSchema 类型（含 tabs），新格式天然兼容
+
+**无需额外改动，现有前端代码直接可用。这也验证了全面重写的方向是正确的——前端早就准备好了。**
+
+### 红线检查
+
+| 红线 | 状态 |
+|------|------|
+| showTable/showChart/showCode 不传 actions 时行为不变 | ✅ 确认：actions 为 `z.array().optional()`，不传时 components 数组只有 DataTable/Chart/CodeEditor |
+| ensureNewSchema() 保留历史数据兼容 | ✅ 确认：socket.ts 仍调用 ensureNewSchema()，旧 schema 走转换，新 schema 透传 |
+| Client Agent 不走 tool-adapter | ✅ 确认：executor.ts L288-292 覆盖注册 |
+| 每个 Phase push，PM 中间验收 | ⚠️ Phase 1+2 合并 push。可以接受（TSC 0 error），但下次请分开 |
+
+### PM 判定
+
+**Phase 1+2 代码审查：通过 ✅**
+
+**批准进入 Phase 3 — 测试验证。**
+
+Phase 3 测试要求：
+
+1. **BF-2 回归验证**（最高优先）：用现有 BF-2 测试用例验证 showTable/showChart/showCode 在不传 actions 时仍然正常渲染。这是回归底线。
+
+2. **Action 新场景测试**：
+   - 远程模式：让 AI 展示数据表格并带"导出 Excel"和"深入分析"按钮 → 验证按钮渲染和点击
+   - 远程模式：让 AI 展示代码并带"AI 解释"按钮 → 验证 chat action 触发
+   - （如有 Client Agent 环境）本地模式：进入本地模式 → 验证 FileBrowser 自动打开
+
+3. **用户场景验证**（最重要）：
+   - 用户的原始场景："在 Workbench 中展示一个应用监控面板，包含状态指标和关闭/重启按钮"
+   - 验证 AI 是否能生成包含 shell action 的 Button 组件
+
+**每项测试结果需截图，push 后我来验收。**
+
