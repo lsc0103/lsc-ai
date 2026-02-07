@@ -28,7 +28,10 @@ export async function ensureSession(page: Page): Promise<boolean> {
     .waitForURL(/\/chat\/[a-f0-9-]+/, { timeout: 30000 })
     .then(() => true)
     .catch(() => false);
-  if (ok) await page.waitForTimeout(1000);
+  if (ok) {
+    // 等待消息列表 DOM 就绪，替代固定 1000ms 等待
+    await page.locator(SEL.chat.messageList).waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
+  }
   return ok;
 }
 
@@ -55,7 +58,11 @@ export async function ensureCleanSession(page: Page): Promise<string> {
   // 等待 AI 响应完成
   const stopBtn = page.locator(SEL.chat.stopButton);
   await stopBtn.waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(2000);
+  // 等待消息气泡稳定（stop 按钮消失后内容可能仍在渲染）
+  await page.waitForFunction(
+    () => !document.querySelector('button .anticon-stop'),
+    { timeout: 5000 },
+  ).catch(() => {});
 
   // 清理 AI 可能打开的 Workbench
   await closeWorkbench(page);
@@ -90,7 +97,10 @@ export async function injectSchema(
       return { success: false, reason: e.message };
     }
   }, schema);
-  if (result.success) await page.waitForTimeout(1500);
+  if (result.success) {
+    // 等待 Workbench 容器可见，替代固定 1500ms 等待
+    await page.locator(SEL.workbench.container).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  }
   return result;
 }
 
@@ -112,7 +122,10 @@ export async function mergeSchema(
       return { success: false, reason: e.message };
     }
   }, schema);
-  if (result.success) await page.waitForTimeout(1000);
+  if (result.success) {
+    // 等待新 tab 出现，替代固定 1000ms 等待
+    await page.locator(SEL.workbench.tab).first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+  }
   return result;
 }
 
@@ -121,13 +134,14 @@ export async function mergeSchema(
  * 如果 Workbench 不可见则无操作。
  */
 export async function closeWorkbench(page: Page): Promise<void> {
-  const wb = page.locator('.workbench-container');
+  const wb = page.locator(SEL.workbench.container);
   if (await wb.isVisible().catch(() => false)) {
     await page.evaluate(() => {
       const store = (window as any).__workbenchStore;
       if (store?.getState) store.getState().close();
     });
-    await page.waitForTimeout(500);
+    // 等待 Workbench 容器隐藏，替代固定 500ms 等待
+    await wb.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
   }
 }
 
@@ -139,7 +153,8 @@ export async function clearWorkbench(page: Page): Promise<void> {
     const store = (window as any).__workbenchStore;
     if (store?.getState) store.getState().clear();
   });
-  await page.waitForTimeout(500);
+  // 等待 Workbench 容器隐藏，替代固定 500ms 等待
+  await page.locator(SEL.workbench.container).waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
 }
 
 // ============================================================================
@@ -173,7 +188,7 @@ export async function setupAndInject(
     return { ok: false, reason: `无法注入 Store: ${result.reason}。请确认 main.tsx 已暴露 __workbenchStore` };
   }
 
-  await page.waitForTimeout(500); // injectSchema already waits 1500ms
+  // injectSchema 已等待容器可见，无需额外等待
   return { ok: true, reason: '' };
 }
 
