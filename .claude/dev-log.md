@@ -742,6 +742,10 @@ S04 通过率 1/8，唯一通过的 S04-05 是纯前端状态恢复测试（不�
 5. `bf-reports/BF-4-report.md` — 更新验证结果 (6/6)
 6. `bf-reports/screenshots/*.png` — 更新截图
 
+### BF-3 补验（PM 指令）
+- createExcel ✅ (183.5s) — 单步隔离执行成功
+- createPDF ✅ (55.6s) — 单步隔离执行成功，还在 Workbench 展示了 3 个 Tab 预览
+- BF-3 综合：4/4 全部通过
+
 ### 下次继续
-- BF-3 createExcel/createPDF 可能需要单独运行（避免 DeepSeek 限流）
-- 等待 PM 二次判定
+- 等待 PM 最终判定

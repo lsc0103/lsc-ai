@@ -35,25 +35,31 @@
 
 ---
 
-## BF-3 Office 文档生成 — 2/4 (部分通过)
+## BF-3 Office 文档生成 — 4/4 ✅ (补验后完全通过)
+
+### 连续执行结果 (2/4)
 
 | 编号 | 用户输入 | AI 工具调用 | 文件生成 | 结果 |
 |------|---------|-----------|---------|------|
 | BF-3.1 | 写项目周报 Word | **createWord** | ✅ .docx 生成 | ✅ (123.5s) |
-| BF-3.2 | 创建员工表 Excel | updateWorkingMemory | ❌ 未调用 createExcel | ❌ (超时) |
-| BF-3.3 | 生成员工 PDF | updateWorkingMemory | ❌ 未调用 createPDF | ❌ (超时) |
+| BF-3.2 | 创建员工表 Excel | updateWorkingMemory | ❌ 未调用 createExcel | ❌ (限流超时) |
+| BF-3.3 | 生成员工 PDF | updateWorkingMemory | ❌ 未调用 createPDF | ❌ (限流超时) |
 | BF-3.4 | 在 Word 追加内容 | **editWord** | ✅ 文档修改成功 | ✅ (23.2s) |
 
-**与第一次对比**: PM 判定 0/4 → **修复后 2/4** (P0-8 修复使 createWord/editWord 参数正确映射)
+### 单步隔离补验结果 (2/2) — PM 指令执行
 
-**BF-3.2/3.3 失败分析**:
-- BF-3.1 createWord 耗时 123.5s（几乎用尽 123.2s 超时上限）
-- BF-3.2/3.3 在 BF-3.1 之后连续执行，DeepSeek 已触发限流
-- AI 仅调用了 `updateWorkingMemory`（服务端轻量工具），未尝试调用 createExcel/createPDF
-- **根因是 DeepSeek API 限流**，不是 P0-8 代码 bug
-- 第一次 Phase G 用单步隔离执行时 createExcel/createPDF 均成功（4/4）
+按 PM 要求，在新会话中单独执行 createExcel 和 createPDF（间隔 30 秒避免限流）：
 
-**PM 标准回顾**: "createWord 生成 .docx" → ✅ 已满足
+| 编号 | 用户输入 | AI 工具调用 | 文件生成 | 结果 |
+|------|---------|-----------|---------|------|
+| BF-3.2 补验 | 创建5个员工的Excel表格 | **createExcel**, updateWorkingMemory | ✅ .xlsx 生成 | ✅ (183.5s) |
+| BF-3.3 补验 | 生成5个员工信息的PDF | **createPDF**, read, readOffice, ls, workbench | ✅ .pdf 生成 (21.9KB) | ✅ (55.6s) |
+
+**补验结论**: createExcel 和 createPDF 都成功调用且文件正确生成。P0-8 修复对全部 4 个 Office 工具有效。
+
+**连续执行失败原因**: BF-3.1 createWord 耗时 123.5s，DeepSeek 随即限流，导致后续 createExcel/createPDF 无法在超时内完成。单步隔离执行无此问题。
+
+**综合判定**: 4/4 全部通过（连续 2/4 + 补验 2/2 = 4 个工具全部验证成功）
 
 ---
 
@@ -85,10 +91,10 @@
 | 链路 | PM 第一次判定 | 修复后结果 | 变化 |
 |------|-------------|-----------|------|
 | **BF-2 Workbench** | 1/5 ❌ | **4/5 ✅** | +3 (P0-7) |
-| **BF-3 Office** | 0/4 ❌ | **2/4** | +2 (P0-8)，createExcel/PDF 限流超时 |
+| **BF-3 Office** | 0/4 ❌ | **4/4 ✅** (补验后) | +4 (P0-8) |
 | **BF-4 本地 Agent** | 2/6 ❌ | **6/6 ✅** | +4 (P0-9 + P0-10) |
 
-**BF-3 补充说明**: 第一次 Phase G 单步隔离执行时 createExcel/createPDF 都成功了（4/4）。本次连续执行 2/4 是 DeepSeek 限流所致，P0-8 代码修复本身有效（createWord + editWord 证明了这一点）。
+**BF-3**: 连续执行 2/4 + 单步隔离补验 2/2 = **4 个 Office 工具全部验证通过**。
 
 ---
 
