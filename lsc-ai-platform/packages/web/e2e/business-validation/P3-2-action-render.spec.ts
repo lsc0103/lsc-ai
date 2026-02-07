@@ -16,6 +16,7 @@ import {
   clearWorkbench,
   TestSchemas,
 } from '../helpers/workbench.helper';
+import { waitForAIComplete } from '../helpers/ai-retry.helper';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -30,6 +31,8 @@ test.describe.serial('P3-2 Action 按钮渲染与交互', () => {
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
     await ensureSession(page);
+    // 等待 AI 响应完成，防止后续流结束事件干扰注入的 Workbench 状态
+    await waitForAIComplete(page, 30_000);
     await clearWorkbench(page);
   });
 
@@ -128,8 +131,11 @@ test.describe.serial('P3-2 Action 按钮渲染与交互', () => {
     const exportBtn = wb.locator('button:has-text("导出 Excel"), button:has-text("导出")');
     await exportBtn.first().click();
 
-    // 等待任何可能的副作用（export 可能关闭 Workbench 或触发下载）
+    // 等待导出副作用
     await page.waitForTimeout(3000);
+
+    // BUG-2 验证：导出后 Workbench 仍然可见（不消失）
+    await expect(wb).toBeVisible({ timeout: 5000 });
 
     // 验证页面仍然可操作（能找到聊天输入框，未崩溃）
     const textarea = page.locator(SEL.chat.textarea);

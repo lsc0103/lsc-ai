@@ -52,6 +52,13 @@ test.describe.serial('P3-3 用户场景：应用监控面板', () => {
     const cpuText = wb.locator('text=CPU');
     await expect(cpuText.first()).toBeVisible({ timeout: 5000 });
 
+    // BUG-1 验证：Terminal 组件不崩溃，内容正确渲染
+    const terminalContent = wb.locator('.workbench-terminal .terminal-content');
+    await expect(terminalContent.first()).toBeVisible({ timeout: 5000 });
+    // 验证 Terminal 中无错误边界（无 "组件渲染错误" 提示）
+    const errorBoundary = wb.locator('text=组件渲染错误');
+    await expect(errorBoundary).toHaveCount(0);
+
     await page.screenshot({ path: path.join(screenshotDir, 'P3-3.1-monitor-statistics.png'), fullPage: true });
   });
 

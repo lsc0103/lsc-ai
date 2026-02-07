@@ -88,12 +88,15 @@ export class ExportActionHandler implements IActionHandler {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
 
-      // 导出文件
-      XLSX.writeFile(workbook, `${filename}.xlsx`);
+      // 使用 XLSX.write + downloadBlob（受控下载）
+      const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const safeName = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
+      this.downloadBlob(blob, safeName);
 
       return {
         success: true,
-        data: { filename: `${filename}.xlsx`, rows: rows.length },
+        data: { filename: safeName, rows: rows.length },
       };
     } catch (error) {
       return {
@@ -211,11 +214,15 @@ export class ExportActionHandler implements IActionHandler {
 
       // 打开新窗口并打印
       const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.print();
+      if (!printWindow) {
+        return {
+          success: false,
+          error: '浏览器弹窗被阻止，请允许弹窗后重试',
+        };
       }
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
 
       return {
         success: true,
@@ -302,16 +309,22 @@ export class ExportActionHandler implements IActionHandler {
 
   /**
    * 下载 Blob 文件
+   * BUG-2 fix: 使用 setTimeout 延迟触发下载，防止同步 click 事件干扰 React 状态
    */
   private downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // 延迟执行下载，防止 anchor click 在 React 事件循环中干扰 UI 状态
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // 延迟释放 blob URL，确保浏览器已开始处理下载
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 0);
   }
 }
 

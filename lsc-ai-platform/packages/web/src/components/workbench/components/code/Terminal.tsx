@@ -171,13 +171,18 @@ export const Terminal: React.FC<WorkbenchComponentProps<TerminalSchema>> = ({
   schema,
 }) => {
   const {
-    content,
+    content: rawContent,
     title = '终端',
     height = 300,
     autoScroll = true,
     style,
     className,
   } = schema;
+
+  // BUG-1 fix: content 可能是 string、string[] 或 undefined，统一转为 string
+  const content: string = Array.isArray(rawContent)
+    ? rawContent.join('\n')
+    : (typeof rawContent === 'string' ? rawContent : '');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);

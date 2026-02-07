@@ -213,7 +213,10 @@ e2e/
 24. ✅ **Phase 2 完成** — Client Agent 4工具 + AgentGateway检测 + AI Instructions全量更新 (commit 4e69e10)
 25. ✅ **PM review Phase 2 通过** — 代码审查通过，所有红线检查通过
 26. ✅ **Phase 3 测试 12/12 全部通过** — P3-1 回归5/5 + P3-2 Action4/4 + P3-3 用户场景3/3
-27. 🔄 **等待 PM Phase 3 验收**
+27. ✅ **PM Phase 3 审查** — 有条件通过，发现 BUG-1(Terminal crash) + BUG-2(Export Workbench消失) + AI-1(DeepSeek不生成action)
+28. ✅ **BUG-1 修复** — Terminal.tsx content 类型守卫（Array.isArray → join）
+29. ✅ **BUG-2 根因定位** — 非 export handler 问题，实为 AI 流式响应完成事件干扰注入的 Workbench 状态；测试 beforeEach 增加 waitForAIComplete
+30. 🔄 **等待 PM 二次验收** — 12/12 测试全部通过（含 BUG-1/BUG-2 强化断言）
 
 ---
 

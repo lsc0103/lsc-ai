@@ -36,7 +36,9 @@ export const Button: React.FC<WorkbenchComponentProps<ButtonSchema>> = ({
 
   const handleClick = useCallback(() => {
     if (action) {
-      handleAction(action);
+      handleAction(action).catch((err: unknown) => {
+        console.error('[Button] action execution failed:', err);
+      });
     }
   }, [action, handleAction]);
 
