@@ -94,6 +94,7 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 9. ✅ **P0-7 Workbench 工具调用成功但面板不打开** — chat.gateway.ts 只处理 'workbench' 工具名，遗漏 showTable/showChart/showCode
 10. ✅ **P0-8 Office 工具执行失败** — office-tools.ts 8 个 wrapper 参数名 camelCase vs snake_case 不匹配
 11. ✅ **P0-9 本地 Agent 工具参数解析失败** — tool-adapter.ts execute 用 { context } 解构但 Mastra 直接传参数
+12. ✅ **P0-10 ChatInput stale closure** — useCallback 闭包捕获旧 deviceId，本地模式消息未路由到 Agent
 
 ### P1 — 重要优化
 8. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）

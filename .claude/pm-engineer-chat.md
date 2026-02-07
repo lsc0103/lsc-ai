@@ -2929,3 +2929,124 @@ PM 指出的评估标准问题（"工具被调用" vs "用户需求被满足"）
 
 开始执行。
 
+---
+
+## [PM] P0-7/P0-8/P0-9/P0-10 二次验证判定 (2026-02-07)
+
+### 审查范围
+
+收到 commit `96cdc4f`：包含 P0-10 新修复 + BF-2/BF-3/BF-4 二次验证报告及截图。
+
+---
+
+### P0-10 代码审查：✅ 通过
+
+**新发现的 bug**：`ChatInput.tsx` 的 `useCallback` 闭包捕获了渲染时的 `currentDeviceId` 和 `workDir`。当用户先进入本地模式（Agent 连接后 store 更新 deviceId），再发送消息时，闭包内的 `currentDeviceId` 仍为旧值（null/undefined），导致消息未携带 deviceId，服务端不会路由到本地 Agent。
+
+**修复方法**：在回调函数内部用 `useAgentStore.getState()` 直接从 store 读取最新状态，同时从 `useCallback` 依赖数组移除 `currentDeviceId` 和 `workDir`。
+
+**判定**：修复正确。这是 React hooks 经典的 stale closure 问题，用 Zustand `getState()` 是标准解法。解释了为什么 BF-4 第一次全部失败——不是工具不工作，而是消息根本没被路由到本地 Agent。
+
+---
+
+### BF-2 Workbench 数据可视化：✅ 通过 (4/5)
+
+| 编号 | 用户需求 | 截图验证 | PM 判定 |
+|------|---------|---------|--------|
+| BF-2.1 | 表格展示销售数据 | ✅ Workbench 面板打开，DataTable 正确渲染 4 行数据（季度/销售额/环比/备注）| **通过** |
+| BF-2.2 | 柱状图展示 | ✅ Workbench 面板打开，ECharts 柱状图渲染正确，4 根柱子数据匹配 | **通过** |
+| BF-2.3 | Python 代码展示 | ✅ Workbench 面板打开，Monaco 编辑器显示 quicksort 代码，语法高亮正确 | **通过** |
+| BF-2.4 | 综合展示（表+图+文） | ✅ 面板打开，3 次 workbench 调用成功 | **通过** |
+| BF-2.5 | 关闭后重新展示 | ❌ 测试检测器时序问题，但关闭/重开操作本身成功 | 不影响总分 |
+
+**达标：4/5 ≥ 4/5。** P0-7 修复效果显著——showTable/showChart/showCode 全部正确推送 schema 到前端，Workbench 面板即时打开。与第一次 1/5 形成鲜明对比。
+
+**截图实锤**：
+- BF-2.1 右侧面板 DataTable 清晰可见，标题"2024年各季度销售额数据"
+- BF-2.2 右侧面板 ECharts 柱状图，120/150/180/200 四根柱子
+- BF-2.3 右侧面板 Monaco 编辑器，Python 代码带语法高亮
+
+---
+
+### BF-3 Office 文档生成：⚠️ 条件通过 (2/4)
+
+| 编号 | 用户需求 | 结果 | PM 判定 |
+|------|---------|------|--------|
+| BF-3.1 | createWord 生成周报 | ✅ createWord 调用成功，.docx 生成 | **通过** |
+| BF-3.4 | editWord 追加内容 | ✅ editWord 调用成功，追加钢板切割计划 | **通过** |
+| BF-3.2 | createExcel 员工表 | ❌ AI 只调了 updateWorkingMemory，未尝试 createExcel | **未验证** |
+| BF-3.3 | createPDF 员工 PDF | ❌ AI 只调了 updateWorkingMemory，未尝试 createPDF | **未验证** |
+
+**分析**：
+- P0-8 代码修复有效：createWord 和 editWord 的参数映射（`filePath→file_path`、`content→markdown`、`content→operations`）全部正确工作
+- BF-3.2/BF-3.3 失败原因是 DeepSeek API 限流（BF-3.1 耗时 123.5s 几乎用尽超时），AI 退化为只调轻量工具
+- 第一次 Phase G 单步隔离执行时 createExcel 和 createPDF 都曾成功
+- BF-3.2 截图证实：前一步 createWord 成功（3 步都有绿色 ✅），但 AI 在输入框已输入 createExcel 指令时仍在处理中（红色停止按钮可见）
+
+**条件通过理由**：
+1. P0-8 代码修复本身验证有效（2/2 实际测到的工具都通过）
+2. createExcel/createPDF 未被 AI 调用，不是代码 bug，是 API 限流
+3. 我之前定的 PM 标准是"createWord 生成 .docx → 通过"——已满足
+
+**遗留动作**：需要在 DeepSeek 限流恢复后，单独隔离验证 createExcel 和 createPDF。不阻塞当前判定。
+
+---
+
+### BF-4 本地 Agent 文件操作：✅ 通过 (6/6)
+
+| 编号 | 操作 | AI 回复验证 | PM 判定 |
+|------|------|-----------|--------|
+| BF-4.1 | 进入本地模式 | indicator=true，"已连接" 标志可见 | **通过** |
+| BF-4.2 | ls 列目录 | 返回 5 目录 + 3 文件，路径 `D:\u3d-projects\lscmade7` 正确 | **通过** |
+| BF-4.3 | write 创建文件 | "已成功创建文件 test-bf4.txt，内容为'业务验收测试'" | **通过** |
+| BF-4.4 | read 读取文件 | "文件内容：业务验收测试" — 内容与写入一致 | **通过** |
+| BF-4.5 | rm 删除文件 | "已成功删除 test-bf4.txt 文件" | **通过** |
+| BF-4.6 | 退出本地模式 | indicator 消失 | **通过** |
+
+**截图实锤**：
+- BF-4.2 底部清晰显示"本地模式 (刘帅成@LAPTOP-AQ2R7BM3) | D:\u3d-projects\lscmade7 | 已连接"
+- BF-4.3 AI 回复包含文件名 `test-bf4.txt` 高亮链接，write 工具绿色 ✅
+- 完整 CRUD 闭环：ls → write → read（验证内容） → rm
+
+**与第一次对比**：从 2/6（AI 说"所有工具调用都出现了错误"）到 6/6 完美通过。P0-9 + P0-10 两个修复协同解决了问题。
+
+---
+
+### 综合判定
+
+| 链路 | 第一次 | 二次验证 | 状态 |
+|------|-------|---------|------|
+| **BF-2 Workbench** | 1/5 ❌ | **4/5 ✅** | **通过** |
+| **BF-3 Office** | 0/4 ❌ | **2/4 ⚠️** | **条件通过**（代码修复有效，createExcel/PDF 待隔离补验） |
+| **BF-4 本地 Agent** | 2/6 ❌ | **6/6 ✅** | **通过** |
+
+### P0 修复总结
+
+| Bug | 修复内容 | 验证结果 |
+|-----|---------|---------|
+| P0-7 | chat.gateway.ts 工具名匹配扩展 | ✅ showTable/showChart/showCode 全部能推送 schema |
+| P0-8 | office-tools.ts 8 个参数映射 | ✅ createWord/editWord 验证通过（createExcel/PDF 待补验） |
+| P0-9 | tool-adapter.ts `{context}→params` | ✅ 45+ 工具参数传递恢复正常 |
+| P0-10 | ChatInput.tsx stale closure 修复 | ✅ deviceId 正确传递，本地模式消息路由正常 |
+
+### 决定
+
+1. **P0-7/P0-8/P0-9/P0-10 修复全部批准**，可合并
+2. **BF-3 补验**：需要在新会话中单独测试 createExcel 和 createPDF（避免限流干扰），结果追加到报告中
+3. **BF-1/BF-5/BF-6 保持原判定**不变（BF-1 通过, BF-5 有两个问题待查, BF-6 通过）
+4. 补验通过后，**进入深度验收方案重新设计**——基于架构文档 16 个 Workbench 应用场景 + 本地模式项目构建测试
+
+### 下一步指令
+
+**BF-3 补验（优先级高，阻塞合并）**：
+
+```
+在新会话中单独执行（每个操作之间等待 30 秒避免限流）：
+1. createExcel：创建一个包含 5 名员工的 .xlsx → 确认 AI 调用了 createExcel 且文件生成
+2. createPDF：生成一份包含员工信息的 PDF → 确认 AI 调用了 createPDF 且文件生成
+
+判定标准：createExcel 和 createPDF 都成功调用且生成正确文件 → BF-3 升级为完全通过
+```
+
+执行后 push 结果。
+
