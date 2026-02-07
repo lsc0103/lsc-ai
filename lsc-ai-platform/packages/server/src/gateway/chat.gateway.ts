@@ -404,9 +404,10 @@ export class ChatGateway
 
               this.logger.log(`工具结果: ${toolCall.name} - ${isSuccess ? '成功' : '失败'}`);
 
-              // 特殊处理 Workbench 工具
-              if (toolCall.name === 'workbench') {
-                this.logger.log(`[Workbench] actualResult 结构: ${JSON.stringify(actualResult).slice(0, 500)}`);
+              // 特殊处理 Workbench 工具（workbench + showTable/showChart/showCode 快捷工具）
+              const WORKBENCH_TOOL_NAMES = ['workbench', 'showTable', 'showChart', 'showCode'];
+              if (WORKBENCH_TOOL_NAMES.includes(toolCall.name)) {
+                this.logger.log(`[Workbench] ${toolCall.name} actualResult 结构: ${JSON.stringify(actualResult).slice(0, 500)}`);
 
                 if (actualResult.schema) {
                   // 推送 Workbench Schema 到前端
@@ -414,9 +415,9 @@ export class ChatGateway
                     sessionId,
                     schema: actualResult.schema,
                   });
-                  this.logger.log(`Workbench Schema 已推送到前端`);
+                  this.logger.log(`[Workbench] ${toolCall.name} Schema 已推送到前端`);
                 } else {
-                  this.logger.error(`[Workbench] schema 字段不存在！actualResult: ${JSON.stringify(actualResult)}`);
+                  this.logger.error(`[Workbench] ${toolCall.name} schema 字段不存在！actualResult: ${JSON.stringify(actualResult)}`);
                 }
               }
 
@@ -536,14 +537,16 @@ export class ChatGateway
           onToolResult: (toolCall, result) => {
             if (streamInfo.shouldStop) return;
 
-            // 特殊处理 Workbench 工具
-            if (toolCall?.name === 'workbench') {
+            // 特殊处理 Workbench 工具（workbench + showTable/showChart/showCode 快捷工具）
+            const WORKBENCH_TOOL_NAMES_NET = ['workbench', 'showTable', 'showChart', 'showCode'];
+            if (toolCall?.name && WORKBENCH_TOOL_NAMES_NET.includes(toolCall.name)) {
               const actualResult = result?.result || result;
               if (actualResult?.schema) {
                 client.emit('workbench:update', {
                   sessionId,
                   schema: actualResult.schema,
                 });
+                this.logger.log(`[Workbench:Network] ${toolCall.name} Schema 已推送到前端`);
               }
             }
 

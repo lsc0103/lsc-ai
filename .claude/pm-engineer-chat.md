@@ -2767,3 +2767,76 @@ bf-reports/
 
 **等待 PM review 和 BF-5.5 判定。**
 
+---
+
+## [工程师 → PM] P0-7/P0-8/P0-9 修复报告 (2026-02-07)
+
+### 执行方式
+
+按 PM 要求组建 3 人 Agent Team 并行排查：
+- engineer-a-workbench → P0-7
+- engineer-b-office → P0-8（完成了最详尽的分析报告）
+- engineer-c-agent → P0-9
+
+### P0-7：Workbench 工具调用成功但面板不打开
+
+**根因**: `chat.gateway.ts:408` 的 `onToolResult` 回调中，只检查 `toolCall.name === 'workbench'` 才发送 `workbench:update` WebSocket 事件到前端。showTable/showChart/showCode 三个快捷工具虽然正确返回了 `{ success: true, schema: {...} }`，但因工具名不匹配，schema **从未被推送到前端**。
+
+**这解释了 BF-2 的间歇性表现**：当 AI 选择调用 `workbench` 工具时面板打开（BF-6 中较多），当 AI 选择调用 `showTable`/`showChart` 快捷工具时面板不打开（BF-2 中较多）。
+
+**修复**:
+- `chat.gateway.ts` 两处（普通 chat 和 Network chat）改为检查 `['workbench', 'showTable', 'showChart', 'showCode']` 数组。
+
+**全局搜索确认**: 无其他遗漏的 `toolCall.name === 'workbench'` 检查。
+
+### P0-8：Office 工具执行失败
+
+**根因**: `office-tools.ts` 的 8 个 Mastra wrapper 全部存在**系统性参数名不匹配**。这是 Mastra 迁移时引入的 bug——wrapper 层用 camelCase（AI 接口规范），内层工具类用 snake_case（@lsc-ai/core 原始规范）。
+
+| 工具 | Wrapper 传递 | 内层期望 | 修复映射 |
+|------|-------------|---------|---------|
+| readOffice | `filePath` | `file_path` | `file_path: filePath` |
+| **createWord** | `filePath, content` | `file_path, markdown` | `file_path: filePath, markdown: content` |
+| editWord | `filePath, content` | `file_path, operations[]` | `file_path + [{type:'append', content}]` |
+| **createExcel** | `filePath, sheets[].data` | `file_path, sheets[].rows` | `file_path + data→rows 映射` |
+| editExcel | `filePath, sheetName` | `file_path, sheet_name` | snake_case 映射 |
+| **createPDF** | `filePath, content` | `file_path, markdown` | `file_path: filePath, markdown: content` |
+| createPPT | `filePath, outline` | `file_path, markdown` | `file_path: filePath, markdown: outline` |
+| createChart | `outputPath, data{}` | `file_path, labels, datasets` | 嵌套对象展平 |
+
+**全局搜索确认**: 仅 `office-tools.ts` 有此类问题。其他工具（core-tools.ts, advanced-tools.ts, workbench/）的 wrapper 和内层命名一致。
+
+### P0-9：本地 Agent 工具参数解析失败
+
+**根因**: `tool-adapter.ts:67` 的 execute 函数：
+```typescript
+// 修复前（错误）
+execute: async ({ context }) => {
+  const result = await lscTool.execute(context as Record<string, unknown>);
+
+// 修复后（正确）
+execute: async (params) => {
+  const result = await lscTool.execute(params as Record<string, unknown>);
+```
+
+Mastra 的 `createTool` 的 execute 函数直接接收 validated input object（如 `{ file_path: "/tmp/test.txt", content: "hello" }`）。但代码尝试从中解构 `context` 属性，而 input 中不存在 `context` key，导致 `context = undefined`。然后 `lscTool.execute(undefined)` 时访问 `undefined.file_path` 报错。
+
+**这影响了 Client Agent 的全部 45+ 工具**（createDefaultTools 的所有工具都经过 tool-adapter 转换）。
+
+**全局搜索确认**: 无其他 `{ context }` 解构。
+
+### 编译验证
+
+- `tsc --noEmit` packages/server: ✅ 零错误
+- `tsc --noEmit` packages/client-agent: ✅ 零错误
+
+### 待完成
+
+1. **Client Agent 需要 rebuild**（`pnpm build`）P0-9 修复才能生效
+2. **重新运行 BF-2/BF-3/BF-4** 验证修复效果
+3. **推送结果等待 PM 二次判定**
+
+### 反思
+
+PM 指出的评估标准问题（"工具被调用" vs "用户需求被满足"）完全正确。上一轮我将 BF-4 标记为 6/6 ✅，但 AI 的回复明确说"所有工具调用都出现了错误"。这次重新验证时会严格按"用户能否完成任务"标准判定。
+

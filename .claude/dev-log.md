@@ -632,3 +632,68 @@ S04 通过率 1/8，唯一通过的 S04-05 是纯前端状态恢复测试（不�
 **重要决策**:
 - BF-3 采用单步隔离执行策略避免限流（每步独立会话 + 3分钟间隔）
 - 截图作为 Workbench 渲染的辅助证据（弥补自动检测器的时序缺陷）
+
+---
+
+## 2026-02-07 (第4次) | PM Phase G 判定不通过 → P0-7/P0-8/P0-9 修复
+
+**目标**: 修复 PM Phase G 验收中发现的 3 个 P0 bug
+
+### PM Phase G 判定结果（不通过）
+
+| 链路 | 工程师报告 | PM 判定 | 差距 |
+|------|-----------|--------|------|
+| BF-2 Workbench | 5/5 | **1/5** | 工具调用成功但面板不打开 |
+| BF-3 Office | 4/4 | **0/4** | createWord 红色❌失败 |
+| BF-4 本地 Agent | 6/6 | **2/6** | 全部工具 file_path undefined |
+
+**PM 关键批评**：工程师将"工具被调用"标记为✅，而 PM 标准是"用户需求是否被满足"。
+
+### P0-7 修复：Workbench 面板不打开
+
+**根因**: `chat.gateway.ts:408` 只检查 `toolCall.name === 'workbench'` 才推送 `workbench:update` WebSocket 事件。showTable/showChart/showCode 三个快捷工具返回了正确的 schema，但 gateway 没有将它们识别为 Workbench 工具。
+
+**修复**:
+- `chat.gateway.ts:408` — 添加 `WORKBENCH_TOOL_NAMES` 数组 `['workbench', 'showTable', 'showChart', 'showCode']`
+- `chat.gateway.ts:540` — Network chat 路径同步修复
+
+### P0-8 修复：Office 工具执行失败
+
+**根因**: `office-tools.ts` 的 8 个 Mastra wrapper 全部存在参数名不匹配。Wrapper 用 camelCase（`filePath`, `content`），内层工具类用 snake_case（`file_path`, `markdown`）。这是 Mastra 迁移时引入的系统性 bug。
+
+**修复**: 所有 8 个工具的 execute 函数添加参数名映射：
+- `filePath` → `file_path`（全部 8 个）
+- `content` → `markdown`（createWord, createPDF）
+- `outline` → `markdown`（createPPT）
+- `data` → `rows`（createExcel sheets 字段）
+- `outputPath` → `file_path`（createChart）
+- `content` → `[{ type: 'append', content }]`（editWord operations 转换）
+
+**调查功劳**: engineer-b-office 提供了完整的 8 工具参数对照表。
+
+### P0-9 修复：本地 Agent 工具参数解析失败
+
+**根因**: `tool-adapter.ts:67` 的 execute 函数用 `async ({ context }) =>` 解构参数。Mastra 的 `createTool` 的 execute 函数直接接收 validated input（如 `{ file_path: "..." }`），但代码尝试从中取 `context` 属性，结果为 undefined。
+
+**修复**: `({ context }) =>` 改为 `(params) =>`，`lscTool.execute(context)` 改为 `lscTool.execute(params)`。
+
+### 团队协作
+
+按 PM 要求使用 3 人 Agent Team 并行调查：
+- engineer-a-workbench: P0-7 Workbench
+- engineer-b-office: P0-8 Office（完成了最详尽的分析报告）
+- engineer-c-agent: P0-9 Agent
+
+### 编译验证
+- `tsc --noEmit` server: ✅ 零错误
+- `tsc --noEmit` client-agent: ✅ 零错误
+
+**修改的文件**:
+1. `packages/server/src/gateway/chat.gateway.ts` — P0-7（2 处 Workbench 工具名检查）
+2. `packages/server/src/tools/office-tools.ts` — P0-8（8 个工具参数映射）
+3. `packages/client-agent/src/agent/tool-adapter.ts` — P0-9（execute 参数传递）
+
+**下次继续**:
+- 需要 rebuild client-agent（`pnpm build`）使 P0-9 修复生效
+- 重新运行 BF-2/BF-3/BF-4 验证修复效果（使用**修正后的评估标准**：用户需求是否被满足）
+- 推送结果等待 PM 二次判定

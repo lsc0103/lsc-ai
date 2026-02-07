@@ -32,7 +32,7 @@ export const readOfficeTool = createTool({
         const { ReadOfficeTool } = await import('./mastra/office/reader.js');
         _cache.readOffice = new ReadOfficeTool();
       }
-      const result = await _cache.readOffice.execute({ filePath });
+      const result = await _cache.readOffice.execute({ file_path: filePath });
       return result;
     } catch (error) {
       throw new Error(`读取 Office 文件失败: ${(error as Error).message}`);
@@ -65,7 +65,7 @@ export const createWordTool = createTool({
         const { CreateWordTool } = await import('./mastra/office/word.js');
         _cache.createWord = new CreateWordTool();
       }
-      const result = await _cache.createWord.execute({ filePath, content, title });
+      const result = await _cache.createWord.execute({ file_path: filePath, markdown: content, title });
       return result;
     } catch (error) {
       throw new Error(`创建 Word 文档失败: ${(error as Error).message}`);
@@ -86,7 +86,7 @@ export const editWordTool = createTool({
         const { EditWordTool } = await import('./mastra/office/wordEdit.js');
         _cache.editWord = new EditWordTool();
       }
-      const result = await _cache.editWord.execute({ filePath, content });
+      const result = await _cache.editWord.execute({ file_path: filePath, operations: [{ type: 'append', content }] });
       return result;
     } catch (error) {
       throw new Error(`编辑 Word 文档失败: ${(error as Error).message}`);
@@ -115,7 +115,13 @@ export const createExcelTool = createTool({
         const { CreateExcelTool } = await import('./mastra/office/excel.js');
         _cache.createExcel = new CreateExcelTool();
       }
-      const result = await _cache.createExcel.execute({ filePath, sheets });
+      // 映射 sheets: wrapper 用 "data" 字段，内层用 "rows" 字段
+      const mappedSheets = sheets.map(s => ({
+        name: s.name,
+        headers: s.headers,
+        rows: s.data,
+      }));
+      const result = await _cache.createExcel.execute({ file_path: filePath, sheets: mappedSheets });
       return result;
     } catch (error) {
       throw new Error(`创建 Excel 表格失败: ${(error as Error).message}`);
@@ -142,7 +148,7 @@ export const editExcelTool = createTool({
         const { EditExcelTool } = await import('./mastra/office/excelEdit.js');
         _cache.editExcel = new EditExcelTool();
       }
-      const result = await _cache.editExcel.execute({ filePath, sheetName, operations });
+      const result = await _cache.editExcel.execute({ file_path: filePath, sheet_name: sheetName, operations });
       return result;
     } catch (error) {
       throw new Error(`编辑 Excel 表格失败: ${(error as Error).message}`);
@@ -168,7 +174,7 @@ export const createPDFTool = createTool({
         const { CreatePDFTool } = await import('./mastra/office/pdf.js');
         _cache.createPDF = new CreatePDFTool();
       }
-      const result = await _cache.createPDF.execute({ filePath, content, title });
+      const result = await _cache.createPDF.execute({ file_path: filePath, markdown: content, title });
       return result;
     } catch (error) {
       throw new Error(`创建 PDF 文档失败: ${(error as Error).message}`);
@@ -194,7 +200,7 @@ export const createPPTTool = createTool({
         const { CreatePPTTool } = await import('./mastra/office/ppt.js');
         _cache.createPPT = new CreatePPTTool();
       }
-      const result = await _cache.createPPT.execute({ filePath, outline, title });
+      const result = await _cache.createPPT.execute({ file_path: filePath, markdown: outline, title });
       return result;
     } catch (error) {
       throw new Error(`创建 PPT 失败: ${(error as Error).message}`);
@@ -227,7 +233,13 @@ export const createChartTool = createTool({
         const { CreateChartTool } = await import('./mastra/office/chart.js');
         _cache.createChart = new CreateChartTool();
       }
-      const result = await _cache.createChart.execute({ type, data, outputPath, title });
+      const result = await _cache.createChart.execute({
+        file_path: outputPath,
+        type,
+        title,
+        labels: data.labels,
+        datasets: data.datasets,
+      });
       return result;
     } catch (error) {
       throw new Error(`创建图表失败: ${(error as Error).message}`);

@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase 5 — 闭环测试验证 + 产品经理场景测试 ✅ 全部完成
-**状态**：E2E 全量测试 **169个测试用例**（原102 + 新增67），分组验证全部通过 ✅
+**阶段**：Phase G — P0-7/P0-8/P0-9 修复 + 等待 PM 二次判定
+**状态**：3 个 P0 修复已完成，编译通过，待验证 + 提交 PM 审阅
 
 ### 已完成事项
 
@@ -201,7 +201,11 @@ e2e/
 12. ✅ **阶段 C 全面回归验证完成**：C-1 14/16 绿灯，C-2/C-3 无代码回归
 13. ✅ 总结报告已写入 `pm-engineer-chat.md`
 14. ✅ **Phase G 业务验收采集完成**：BF-1(6/6) BF-2(5/5) BF-3(4/4) BF-4(6/6) BF-5(5/6) BF-6(6/6)
-15. 🔄 等待 PM 审阅 Phase G 报告，判定 BF-5.5（删除会话操作入口）
+15. ❌ **PM Phase G 判定不通过**：BF-2(1/5) BF-3(0/4) BF-4(2/6)，识别 3 个新 P0 bug
+16. ✅ **P0-7 修复**：chat.gateway.ts 添加 showTable/showChart/showCode 的 workbench:update 推送
+17. ✅ **P0-8 修复**：office-tools.ts 8 个 wrapper 参数名映射（camelCase → snake_case）
+18. ✅ **P0-9 修复**：tool-adapter.ts execute 参数传递修复（{ context } → params 直接传递）
+19. 🔄 等待 PM 二次判定（需重新运行 BF-2/BF-3/BF-4 验证）
 
 ---
 

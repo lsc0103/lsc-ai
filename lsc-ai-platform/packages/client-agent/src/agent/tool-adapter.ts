@@ -64,8 +64,8 @@ export function convertLscToolToMastra(lscTool: LscTool) {
     id: def.name,
     description: def.description,
     inputSchema,
-    execute: async ({ context }) => {
-      const result = await lscTool.execute(context as Record<string, unknown>);
+    execute: async (params) => {
+      const result = await lscTool.execute(params as Record<string, unknown>);
       return {
         success: result.success,
         output: result.output,
