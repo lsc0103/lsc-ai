@@ -26,14 +26,8 @@ test.describe.serial('BF-4 本地 Agent 文件操作', () => {
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
-    // 先创建一个会话
-    const textarea = page.locator(SEL.chat.textarea);
-    await textarea.fill('你好');
-    await textarea.press('Enter');
-    await page.waitForURL('**/chat/**', { timeout: 30_000 }).catch(() => {});
-    await page.waitForTimeout(10_000); // 等待 AI 回复完成
-
     // ==================== BF-4.1 进入本地模式 ====================
+    // 先进入本地模式，再创建会话（避免初始消息的 isLoading 阻塞后续发送）
     {
       const result = await enterLocalMode(page);
       const inLocal = await isInLocalMode(page);
@@ -51,40 +45,41 @@ test.describe.serial('BF-4 本地 Agent 文件操作', () => {
       }
     }
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(3_000);
 
     // ==================== BF-4.2 列出文件 ====================
+    // 第一条消息会同时创建会话并路由到 Client Agent
     await collector.sendAndCollect(
       'BF-4.2',
       '列出当前工作目录下的文件',
-      { timeout: 90_000 },
+      { timeout: 120_000 },
     );
 
-    await page.waitForTimeout(30_000);
+    await page.waitForTimeout(10_000);
 
     // ==================== BF-4.3 创建文件 ====================
     await collector.sendAndCollect(
       'BF-4.3',
       '在当前目录创建一个文件 test-bf4.txt，内容写"业务验收测试"',
-      { timeout: 90_000 },
+      { timeout: 120_000 },
     );
 
-    await page.waitForTimeout(30_000);
+    await page.waitForTimeout(10_000);
 
     // ==================== BF-4.4 读取文件 ====================
     await collector.sendAndCollect(
       'BF-4.4',
       '读取刚才创建的 test-bf4.txt',
-      { timeout: 90_000 },
+      { timeout: 120_000 },
     );
 
-    await page.waitForTimeout(30_000);
+    await page.waitForTimeout(10_000);
 
     // ==================== BF-4.5 删除文件 ====================
     await collector.sendAndCollect(
       'BF-4.5',
       '删除 test-bf4.txt',
-      { timeout: 90_000 },
+      { timeout: 120_000 },
     );
 
     await page.waitForTimeout(10_000);

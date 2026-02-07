@@ -160,6 +160,11 @@ export default function ChatInput() {
       const fileIds = uploadedFiles.map(f => f.id);
       setUploadedFiles([]);
 
+      // 从 Zustand store 直接读取最新 Agent 状态，避免 useCallback 闭包捕获旧值
+      const agentState = useAgentStore.getState();
+      const latestDeviceId = agentState.currentDeviceId;
+      const latestWorkDir = agentState.workDir;
+
       await sendChatMessage(
         sessionId,
         messageContent,
@@ -186,8 +191,8 @@ export default function ChatInput() {
         },
         {
           fileIds: fileIds.length > 0 ? fileIds : undefined,
-          deviceId: currentDeviceId || undefined,
-          workDir: workDir || undefined,
+          deviceId: latestDeviceId || undefined,
+          workDir: latestWorkDir || undefined,
         }
       );
     } catch (error: any) {
@@ -195,7 +200,7 @@ export default function ChatInput() {
       message.error(error.response?.data?.message || '发送消息失败');
       setLoading(false);
     }
-  }, [isLoading, isNewChat, currentSessionId, addSession, setCurrentSession, addMessage, navigate, setLoading, uploadedFiles, currentDeviceId, workDir]);
+  }, [isLoading, isNewChat, currentSessionId, addSession, setCurrentSession, addMessage, navigate, setLoading, uploadedFiles]);
 
   // 监听待发送消息
   useEffect(() => {

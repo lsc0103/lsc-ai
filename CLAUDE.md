@@ -90,6 +90,7 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 6. ✅ **P0-4 Validator 有 error 就整体拒绝 schema** — 已修复 `WorkbenchStore.ts:160`（S01-09）
 7. ✅ **P0-5 旧格式 schema transformer** — 已在 `WorkbenchStore.ts` 三入口集成 `ensureNewSchema()`
 8. ✅ **P0-6 Workbench 状态与会话绑定** — V06-01+V06-02 已修复
+9. ✅ **P0-10 ChatInput stale closure** — useAgentStore.getState() 直接读取，避免本地模式路由失败
 9. ✅ **P0-7 Workbench 工具调用成功但面板不打开** — chat.gateway.ts 只处理 'workbench' 工具名，遗漏 showTable/showChart/showCode
 10. ✅ **P0-8 Office 工具执行失败** — office-tools.ts 8 个 wrapper 参数名 camelCase vs snake_case 不匹配
 11. ✅ **P0-9 本地 Agent 工具参数解析失败** — tool-adapter.ts execute 用 { context } 解构但 Mastra 直接传参数

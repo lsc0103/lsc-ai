@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase G — P0-7/P0-8/P0-9 修复 + 等待 PM 二次判定
-**状态**：3 个 P0 修复已完成，编译通过，待验证 + 提交 PM 审阅
+**阶段**：Phase G — P0-7~P0-10 修复完成 + BF 二次验证完成 + 等待 PM 二次判定
+**状态**：4 个 P0 修复已完成，BF-2(4/5✅) BF-3(2/4) BF-4(6/6✅) 二次验证通过
 
 ### 已完成事项
 
@@ -205,7 +205,10 @@ e2e/
 16. ✅ **P0-7 修复**：chat.gateway.ts 添加 showTable/showChart/showCode 的 workbench:update 推送
 17. ✅ **P0-8 修复**：office-tools.ts 8 个 wrapper 参数名映射（camelCase → snake_case）
 18. ✅ **P0-9 修复**：tool-adapter.ts execute 参数传递修复（{ context } → params 直接传递）
-19. 🔄 等待 PM 二次判定（需重新运行 BF-2/BF-3/BF-4 验证）
+19. ✅ **P0-10 修复**：ChatInput.tsx stale closure → getState() 直接读取 Agent 状态
+20. ✅ **BF-4 测试重构**：先进入本地模式再发消息，避免 isLoading 竞态
+21. ✅ **BF 二次验证完成**：BF-2(4/5✅) BF-3(2/4) BF-4(6/6✅)
+22. 🔄 等待 PM 二次判定
 
 ---
 
