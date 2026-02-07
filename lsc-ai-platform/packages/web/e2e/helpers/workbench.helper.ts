@@ -394,6 +394,114 @@ export const TestSchemas = {
     };
   },
 
+  /** 单 tab: 表格 + action 按钮（Phase 3 回归：验证 actions 渲染） */
+  dataTableWithActions() {
+    return {
+      type: 'workbench',
+      title: '带操作按钮的表格',
+      tabs: [{
+        key: 'table-action-1',
+        title: '销售数据',
+        components: [
+          {
+            type: 'DataTable',
+            title: '季度销售数据',
+            columns: [
+              { key: '季度', title: '季度', dataIndex: '季度' },
+              { key: '销售额', title: '销售额(万)', dataIndex: '销售额' },
+              { key: '增长率', title: '增长率', dataIndex: '增长率' },
+            ],
+            data: [
+              { key: 0, '季度': 'Q1', '销售额': 120, '增长率': '15%' },
+              { key: 1, '季度': 'Q2', '销售额': 150, '增长率': '25%' },
+              { key: 2, '季度': 'Q3', '销售额': 180, '增长率': '20%' },
+              { key: 3, '季度': 'Q4', '销售额': 200, '增长率': '11%' },
+            ],
+            sortable: true,
+          },
+          {
+            type: 'Button',
+            text: '导出 Excel',
+            variant: 'default',
+            action: { type: 'export', format: 'excel', filename: '销售数据.xlsx' },
+          },
+          {
+            type: 'Button',
+            text: '深入分析',
+            variant: 'primary',
+            action: { type: 'chat', message: '请深入分析这些季度销售数据的趋势' },
+          },
+        ],
+      }],
+    };
+  },
+
+  /** 单 tab: 代码 + chat action 按钮 */
+  codeWithActions() {
+    return {
+      type: 'workbench',
+      title: '代码审查',
+      tabs: [{
+        key: 'code-action-1',
+        title: '快速排序',
+        components: [
+          {
+            type: 'CodeEditor',
+            language: 'python',
+            code: 'def quicksort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    middle = [x for x in arr if x == pivot]\n    right = [x for x in arr if x > pivot]\n    return quicksort(left) + middle + quicksort(right)',
+            readOnly: true,
+          },
+          {
+            type: 'Button',
+            text: 'AI 解释代码',
+            variant: 'primary',
+            action: { type: 'chat', message: '请逐行解释这段快速排序代码' },
+          },
+        ],
+      }],
+    };
+  },
+
+  /** 多 tab: 应用监控面板（用户场景验证） */
+  appMonitorDashboard() {
+    return {
+      type: 'workbench',
+      title: '应用监控',
+      tabs: [{
+        key: 'monitor-1',
+        title: '状态总览',
+        components: [
+          { type: 'Statistic', title: '应用状态', value: '运行中', status: 'success' },
+          { type: 'Statistic', title: 'CPU 占用', value: '23', suffix: '%' },
+          { type: 'Statistic', title: '内存占用', value: '512', suffix: 'MB' },
+          { type: 'Statistic', title: '运行时间', value: '2h 35m' },
+          {
+            type: 'Terminal',
+            lines: [
+              '[2026-02-07 10:00:01] [INFO] 应用已启动',
+              '[2026-02-07 10:00:01] [INFO] 监听端口 8080',
+              '[2026-02-07 10:15:30] [INFO] 处理请求 GET /api/health → 200',
+              '[2026-02-07 10:20:45] [WARN] 内存使用率达到 60%',
+            ],
+          },
+          {
+            type: 'Button',
+            text: '关闭应用',
+            variant: 'default',
+            danger: true,
+            action: { type: 'shell', command: 'taskkill /f /im myapp.exe' },
+          },
+          {
+            type: 'Button',
+            text: '重启应用',
+            variant: 'primary',
+            action: { type: 'shell', command: 'taskkill /f /im myapp.exe && start myapp.exe' },
+          },
+        ],
+      }],
+    };
+  },
+
   /** 畸形 schema（含不存在的组件类型）— 用于 P0-4 容错回归测试 */
   malformed() {
     return {
