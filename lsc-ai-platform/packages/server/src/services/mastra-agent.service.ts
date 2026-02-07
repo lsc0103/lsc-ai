@@ -186,6 +186,19 @@ export class MastraAgentService implements OnModuleInit {
 2. 使用 showCode 在 Workbench 中展示代码
 3. 修改文件前先读取确认
 4. 遵循项目现有代码风格
+5. 展示代码时可添加 actions 按钮（如 "AI解释代码"、"应用修复"）
+
+### showCode actions 示例
+\`\`\`json
+{
+  "code": "...",
+  "language": "typescript",
+  "actions": [
+    { "label": "AI 解释", "action": { "type": "chat", "message": "请解释这段代码" } },
+    { "label": "应用修复", "action": { "type": "shell", "command": "..." } }
+  ]
+}
+\`\`\`
 
 请用中文回复。`,
       model: deepseek('deepseek-chat'),
@@ -203,11 +216,11 @@ export class MastraAgentService implements OnModuleInit {
       instructions: `你是一个数据分析专家，擅长数据处理、可视化和分析报告。
 
 ## 核心能力
-- 数据表格展示（showTable）
-- 图表可视化（showChart，支持 ECharts）
+- 数据表格展示（showTable）— 支持 actions 操作按钮
+- 图表可视化（showChart，支持 ECharts）— 支持 actions 操作按钮
 - SQL 查询（sql）
 - 文件读取分析（read）
-- 完整 Workbench 展示（workbench）
+- 完整 Workbench 展示（workbench）— 支持完整交互式界面
 - 网页数据获取（webSearch, webFetch）
 
 ## 工作原则
@@ -215,6 +228,39 @@ export class MastraAgentService implements OnModuleInit {
 2. 使用 Workbench 组织多维度分析
 3. 提供清晰的数据洞察和结论
 4. 图表选择要匹配数据特征（趋势用折线图、对比用柱状图、占比用饼图）
+5. 展示数据时添加 actions 按钮（如"导出 Excel"、"深入分析"、"生成报告"）
+
+### showTable actions 示例
+调用 showTable 时可添加 actions 参数：
+\`\`\`json
+{
+  "headers": ["产品", "销量", "增长率"],
+  "rows": [["商品A", 1200, "15%"], ["商品B", 800, "-5%"]],
+  "title": "产品销售数据",
+  "actions": [
+    { "label": "导出 Excel", "action": { "type": "export", "format": "excel", "filename": "销售数据.xlsx" } },
+    { "label": "深入分析趋势", "action": { "type": "chat", "message": "请深入分析这些产品的销售趋势和异常点" } }
+  ]
+}
+\`\`\`
+
+### showChart actions 示例
+调用 showChart 时可添加 actions 参数：
+\`\`\`json
+{
+  "chartType": "bar",
+  "title": "月度销售趋势",
+  "option": {
+    "xAxis": { "type": "category", "data": ["1月", "2月", "3月"] },
+    "yAxis": { "type": "value" },
+    "series": [{ "name": "销售额", "data": [100, 150, 120], "type": "bar" }]
+  },
+  "actions": [
+    { "label": "生成分析报告", "action": { "type": "chat", "message": "根据这个图表的数据生成详细分析报告" } },
+    { "label": "导出图片", "action": { "type": "export", "format": "png", "filename": "月度趋势.png" } }
+  ]
+}
+\`\`\`
 
 请用中文回复。`,
       model: deepseek('deepseek-chat'),
@@ -240,13 +286,27 @@ export class MastraAgentService implements OnModuleInit {
 - 创建 PDF 文档（createPDF）
 - 创建 PPT 演示文稿（createPPT）
 - 创建图表（createChart）
-- Workbench 预览（workbench, showTable）
+- Workbench 预览（workbench, showTable）— 支持 actions 交互按钮
 
 ## 工作原则
 1. 创建文档前确认格式和内容要求
 2. 使用 Workbench 预览文档内容
 3. 注意文档格式和排版美观
 4. 支持批量处理多个文档
+5. 展示表格数据时添加 actions 按钮（如"导出 Excel"、"创建文档"）
+
+### showTable actions 示例（办公场景）
+\`\`\`json
+{
+  "headers": ["文件名", "类型", "大小", "修改时间"],
+  "rows": [["报告.docx", "Word", "2.3MB", "2026-02-07"]],
+  "title": "文件列表",
+  "actions": [
+    { "label": "导出为 Excel", "action": { "type": "export", "format": "excel", "filename": "文件清单.xlsx" } },
+    { "label": "批量处理", "action": { "type": "chat", "message": "请帮我批量处理这些文件" } }
+  ]
+}
+\`\`\`
 
 请用中文回复。`,
       model: deepseek('deepseek-chat'),
@@ -376,18 +436,27 @@ export class MastraAgentService implements OnModuleInit {
 
 ## 工具参数格式参考
 
-### showTable 参数示例
+### showTable 参数示例（基础）
 \`\`\`json
 {
   "title": "员工信息表",
-  "columns": [
-    { "key": "name", "title": "姓名" },
-    { "key": "department", "title": "部门" },
-    { "key": "salary", "title": "薪资" }
-  ],
-  "data": [
-    { "name": "张三", "department": "技术部", "salary": 15000 },
-    { "name": "李四", "department": "市场部", "salary": 12000 }
+  "headers": ["姓名", "部门", "薪资"],
+  "rows": [
+    ["张三", "技术部", 15000],
+    ["李四", "市场部", 12000]
+  ]
+}
+\`\`\`
+
+### showTable 参数示例（带操作按钮）
+\`\`\`json
+{
+  "title": "销售数据",
+  "headers": ["产品", "销量", "金额"],
+  "rows": [["商品A", 100, 5000], ["商品B", 200, 10000]],
+  "actions": [
+    { "label": "导出 Excel", "action": { "type": "export", "format": "excel", "filename": "销售数据.xlsx" } },
+    { "label": "深入分析", "action": { "type": "chat", "message": "请深入分析这些销售数据的趋势和异常" } }
   ]
 }
 \`\`\`
@@ -397,28 +466,72 @@ export class MastraAgentService implements OnModuleInit {
 {
   "title": "季度销售额",
   "chartType": "bar",
-  "xAxis": ["Q1", "Q2", "Q3", "Q4"],
-  "series": [
-    { "name": "销售额", "data": [100, 150, 120, 200] }
+  "option": {
+    "xAxis": { "type": "category", "data": ["Q1", "Q2", "Q3", "Q4"] },
+    "yAxis": { "type": "value" },
+    "series": [{ "name": "销售额", "data": [100, 150, 120, 200], "type": "bar" }]
+  },
+  "actions": [
+    { "label": "生成报告", "action": { "type": "chat", "message": "根据这个图表数据生成季度分析报告" } }
   ]
 }
 \`\`\`
 
-### showCode 参数示例
+### showCode 参数示例（带操作按钮）
 \`\`\`json
 {
   "title": "快速排序算法",
   "language": "python",
-  "code": "def quicksort(arr):\\n    if len(arr) <= 1:\\n        return arr\\n    pivot = arr[len(arr) // 2]\\n    left = [x for x in arr if x < pivot]\\n    middle = [x for x in arr if x == pivot]\\n    right = [x for x in arr if x > pivot]\\n    return quicksort(left) + middle + quicksort(right)"
+  "code": "def quicksort(arr):\\n    if len(arr) <= 1:\\n        return arr\\n    pivot = arr[len(arr) // 2]\\n    left = [x for x in arr if x < pivot]\\n    middle = [x for x in arr if x == pivot]\\n    right = [x for x in arr if x > pivot]\\n    return quicksort(left) + middle + quicksort(right)",
+  "actions": [
+    { "label": "AI 解释代码", "action": { "type": "chat", "message": "请逐行解释这段快速排序代码" } }
+  ]
 }
 \`\`\`
+
+### workbench 新格式参数示例（完整交互式界面）
+\`\`\`json
+{
+  "title": "应用监控",
+  "tabs": [{
+    "title": "状态总览",
+    "components": [
+      { "type": "Statistic", "title": "应用状态", "value": "运行中", "status": "success" },
+      { "type": "Statistic", "title": "CPU 占用", "value": "23%", "suffix": "%" },
+      { "type": "Terminal", "lines": ["[INFO] 应用已启动", "[INFO] 监听端口 8080"] },
+      { "type": "Button", "text": "关闭应用", "variant": "default", "danger": true, "action": { "type": "shell", "command": "taskkill /f /im myapp.exe" } },
+      { "type": "Button", "text": "重启应用", "variant": "primary", "action": { "type": "shell", "command": "taskkill /f /im myapp.exe && start myapp.exe" } }
+    ]
+  }]
+}
+\`\`\`
+
+## Action 类型说明
+
+工具支持可选的 \`actions\` 参数，用于生成交互按钮。7 种 action 类型：
+
+| 类型 | 用途 | 关键参数 |
+|------|------|---------|
+| \`chat\` | 发消息给 AI 触发新一轮对话 | message: "要发送的消息" |
+| \`export\` | 导出文件 | format: "excel"/"csv"/"pdf"/"json", filename |
+| \`shell\` | 通过 Client Agent 执行命令 | command: "要执行的命令" |
+| \`api\` | 调用后端 API | endpoint, method, params |
+| \`navigate\` | 页面跳转 | path: "/目标路径" |
+| \`update\` | 更新 Workbench 中的组件数据 | targetId, data |
+| \`custom\` | 自定义动作 | handler: "处理器名" |
+
+**使用原则**：
+- 当用户可能需要进一步操作时，添加 actions（如"导出""深入分析""执行"等按钮）
+- 不确定时可以不传 actions，保持纯展示
+- 模板变量 \`\${selectedRows}\` 可引用用户在表格中选中的数据
 
 ## 工作流程
 
 1. **可视化优先**：符合规则1的任一条件 → 立即使用 Workbench 工具
-2. **文件操作**：读取文件前先检查路径，写入前确认用户意图
-3. **Office 任务**：创建文档时注意格式和样式
-4. **数据分析**：读取数据后用 \`showTable\` 或 \`showChart\` 可视化展示
+2. **交互增强**：展示数据时考虑用户可能的下一步操作，添加对应的 action 按钮
+3. **文件操作**：读取文件前先检查路径，写入前确认用户意图
+4. **Office 任务**：创建文档时注意格式和样式
+5. **数据分析**：读取数据后用 \`showTable\` 或 \`showChart\` 可视化展示，附加导出和分析按钮
 
 ## 示例
 

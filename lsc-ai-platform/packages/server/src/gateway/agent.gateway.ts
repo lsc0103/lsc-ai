@@ -513,7 +513,29 @@ export class AgentGateway
     const taskInfo = this.taskRegistry.get(data.taskId);
     if (taskInfo) {
       // 解析结果
-      const resultObj = data.result as { success?: boolean; output?: string; error?: string };
+      const resultObj = data.result as { success?: boolean; output?: string; error?: string; schema?: any };
+
+      // 特殊处理 Workbench 工具（workbench + showTable/showChart/showCode 快捷工具）
+      const WORKBENCH_TOOL_NAMES = ['workbench', 'showTable', 'showChart', 'showCode'];
+      if (WORKBENCH_TOOL_NAMES.includes(data.toolName)) {
+        // 工具结果可能在 output 字段中（JSON 序列化后），也可能直接在 resultObj 上
+        let actualResult = resultObj;
+        if (typeof resultObj?.output === 'string') {
+          try {
+            actualResult = JSON.parse(resultObj.output);
+          } catch {
+            // ignore parse error
+          }
+        }
+
+        if (actualResult?.schema) {
+          this.chatGateway.emitToUser(taskInfo.userId, 'workbench:update', {
+            sessionId: taskInfo.sessionId,
+            schema: actualResult.schema,
+          });
+          this.logger.log(`[Workbench:Agent] ${data.toolName} Schema 已推送到前端`);
+        }
+      }
 
       // 通过 ChatGateway 转发工具结果，使用 chat:stream 格式
       this.chatGateway.emitToUser(taskInfo.userId, 'chat:stream', {

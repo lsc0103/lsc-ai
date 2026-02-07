@@ -15,6 +15,7 @@ import { fastembed } from '@mastra/fastembed';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createOpenAI } from '@ai-sdk/openai';
 import { convertAllTools } from './tool-adapter.js';
+import { workbenchTool, showTableTool, showChartTool, showCodeTool } from './workbench-tools.js';
 import { configManager } from '../config/index.js';
 import { socketClient, AgentTask } from '../socket/client.js';
 import path from 'path';
@@ -284,8 +285,14 @@ export class TaskExecutor {
       ...this.lscMcpTools,
     ]);
 
+    // 5. 注入 Workbench 工具（直接用 Mastra createTool，不走 tool-adapter）
+    this.mastraTools['workbench'] = workbenchTool;
+    this.mastraTools['showTable'] = showTableTool;
+    this.mastraTools['showChart'] = showChartTool;
+    this.mastraTools['showCode'] = showCodeTool;
+
     const totalTools = Object.keys(this.mastraTools).length;
-    console.log(`[Executor] 工具转换完成: ${totalTools} 个 Mastra 工具`);
+    console.log(`[Executor] 工具转换完成: ${totalTools} 个 Mastra 工具（含 4 个 Workbench 工具）`);
 
     // 5. 初始化本地 Memory（SQLite）
     const dataDir = path.join(os.homedir(), '.lsc-ai');
