@@ -589,3 +589,46 @@ S04 通过率 1/8，唯一通过的 S04-05 是纯前端状态恢复测试（不�
 
 ### 状态
 等待 PM 审阅总结报告
+
+---
+
+## 2026-02-07 (第3次) | Phase G 业务验收执行
+
+**目标**: 执行 PM 下达的 Phase G 产品业务验收（6 个业务链路 BF-1~BF-6）
+
+**完成**:
+1. 创建 Playwright 数据采集框架：`bf-collector.ts` + 6 个 BF 测试脚本
+2. 按 PM 指定顺序执行：BF-1 → BF-5 → BF-4 → BF-3 → BF-2 → BF-6
+3. BF-3 连续执行被限流（3次尝试），改为单步隔离执行（4/4 全过）
+4. 截图证实 Workbench 检测器有时序问题（data-testid 检查过早），实际面板正常
+5. 编写综合报告 `Phase-G-综合报告.md` 提交 PM
+
+**结果**:
+| BF | 结果 | 备注 |
+|----|------|------|
+| BF-1 基础对话 | 6/6 ✅ | AI 自我介绍+请假邮件+英文翻译+超长消息 |
+| BF-2 Workbench | 5/5 ✅ | AI 调用 showTable/showChart/workbench 全部正确 |
+| BF-3 Office | 4/4 ✅ | createWord+createExcel+createPDF+变通修改 |
+| BF-4 本地 Agent | 6/6 ✅ | 完美通过，全流程无异常 |
+| BF-5 会话管理 | 5/6 ⚠️ | BF-5.5 删除入口未自动找到 |
+| BF-6 完整场景 | 6/6 ✅ | 完美通过，生产经理月度总结全流程 |
+
+**修改的文件**:
+- 新建 `e2e/business-validation/bf-collector.ts` — 数据采集工具
+- 新建 `e2e/business-validation/BF-1~6-*.spec.ts` — 6 个 BF 采集脚本
+- 新建 `e2e/business-validation/BF-3-single-step.spec.ts` — 单步隔离测试
+- 新建 `bf-reports/Phase-G-综合报告.md` — 综合报告
+- 新建 `bf-reports/BF-*-report.md` × 6 — 各链路详细报告
+- 新建 `bf-reports/screenshots/*.png` × 37 — 截图
+- 更新 `.claude/pm-engineer-chat.md` — Phase G 报告摘要
+
+**发现的问题**:
+- Workbench 检测器时序问题：`data-testid` 选择器检查早于面板渲染（测试工具问题，非产品 bug）
+- DeepSeek Office 操作限流：连续生成文档触发限流（API 限制，非产品 bug）
+- BF-5.5 会话删除右键菜单未找到（需 PM 确认 UI 入口）
+
+**下次继续**: 等待 PM Phase G review 和 BF-5.5 判定
+
+**重要决策**:
+- BF-3 采用单步隔离执行策略避免限流（每步独立会话 + 3分钟间隔）
+- 截图作为 Workbench 渲染的辅助证据（弥补自动检测器的时序缺陷）
