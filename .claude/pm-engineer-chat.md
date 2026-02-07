@@ -3427,3 +3427,40 @@ Phase 3（测试）—— Phase 2 完成后
 
 完成后 push，我来 review。开始吧。
 
+---
+
+### [工程师] 2026-02-07 — Phase 2 完成报告
+
+PM 好，Phase 2 已完成并推送（commit 4e69e10）。以下是完成清单：
+
+#### Phase 2 完成项
+
+| 任务 | 文件 | 状态 |
+|------|------|------|
+| Client Agent 4个 workbench 工具 | `client-agent/src/agent/workbench-tools.ts` (新建 554行) | ✅ |
+| 工具注册（绕过 tool-adapter） | `client-agent/src/agent/executor.ts` | ✅ |
+| AgentGateway workbench 检测 | `server/src/gateway/agent.gateway.ts` | ✅ |
+| AI Instructions 全量更新 | `server/src/services/mastra-agent.service.ts` | ✅ |
+
+#### 技术细节
+
+1. **workbench-tools.ts**：4个工具（showTable/showChart/showCode/workbench）全部使用 Mastra `createTool` + 手写 Zod，支持 actions 参数，与 server 端工具输出格式完全一致。workbench 通用工具支持 `z.union([OldFormatInput, NewFormatInput])`。
+
+2. **AgentGateway**：`handleToolResult()` 增加 WORKBENCH_TOOL_NAMES 检测，工具结果自动解析 schema 并通过 `workbench:update` 推送到前端。支持 output 字段 JSON 序列化和直接 schema 两种格式。
+
+3. **AI Instructions**：4个 Agent 全部更新：
+   - Platform Agent：新增 showTable/showChart/showCode 带 actions 示例 + workbench tabs 格式 + Action 类型参考表
+   - code-expert：新增 showCode actions 示例（AI解释代码、应用修复）
+   - data-analyst：新增 showTable/showChart actions 示例（导出Excel、深入分析、生成报告）
+   - office-worker：新增 showTable actions 示例（导出、批量处理）
+
+4. **TypeScript 编译**：server + web + client-agent 三个包全部 0 error 通过。
+
+#### 回归验证
+
+Phase 1 已通过 TypeScript 编译验证。Phase 2 同样 0 error。showTable/showChart/showCode 不传 actions 时行为不变（actions 参数为 `z.array().optional()`）。
+
+#### 下一步
+
+等待您 review Phase 2。review 通过后进入 Phase 3 — BF-2 全面回归 + action 新场景测试。
+
