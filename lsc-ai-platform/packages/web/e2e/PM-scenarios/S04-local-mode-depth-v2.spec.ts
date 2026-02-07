@@ -129,30 +129,44 @@ async function enterLocalMode(
   const isDisabled = await confirmBtn.isDisabled().catch(() => true);
   if (isDisabled) return { success: false, reason: '确定按钮被禁用（可能工作目录为空）' };
   await confirmBtn.click();
-  await page.waitForTimeout(2000);
+  // 等待 Modal 关闭 + Framer Motion 动画完成（initial opacity:0→animate opacity:1）
+  await page.waitForTimeout(3000);
 
-  // 验证"本地模式"文字可见
-  const indicator = page.locator('text=本地模式');
+  // 验证 AgentStatusIndicator 组件可见（用 data-testid 精确定位，避免匹配侧边栏历史标题）
+  const indicator = page.locator('[data-testid="agent-status-indicator"]');
   const entered = await indicator.isVisible().catch(() => false);
-  if (!entered) return { success: false, reason: '本地模式指示器未显示' };
+  if (!entered) {
+    // 二次检查：可能动画还没完成，再等一下
+    await page.waitForTimeout(2000);
+    const retryEntered = await indicator.isVisible().catch(() => false);
+    if (!retryEntered) return { success: false, reason: '本地模式指示器未显示（agent-status-indicator 不可见）' };
+  }
 
   return { success: true };
 }
 
 /** 退出本地模式 */
 async function exitLocalMode(page: import('@playwright/test').Page): Promise<boolean> {
-  const exitBtn = page.locator('button:has-text("退出")').first();
-  if (!await exitBtn.isVisible().catch(() => false)) return false;
-  await exitBtn.click();
-  await page.waitForTimeout(1000);
+  // 在 AgentStatusIndicator 内找"退出"按钮，避免误点其他按钮
+  const indicator = page.locator('[data-testid="agent-status-indicator"]');
+  const exitBtn = indicator.locator('button:has-text("退出")').first();
+  if (!await exitBtn.isVisible().catch(() => false)) {
+    // fallback: 全局搜索
+    const globalExit = page.locator('button:has-text("退出")').first();
+    if (!await globalExit.isVisible().catch(() => false)) return false;
+    await globalExit.click();
+  } else {
+    await exitBtn.click();
+  }
+  await page.waitForTimeout(1500);
   // 验证指示器消失
-  const still = await page.locator('text=本地模式').isVisible().catch(() => false);
+  const still = await page.locator('[data-testid="agent-status-indicator"]').isVisible().catch(() => false);
   return !still;
 }
 
 /** 检查当前是否在本地模式 */
 async function isInLocalMode(page: import('@playwright/test').Page): Promise<boolean> {
-  return await page.locator('text=本地模式').isVisible().catch(() => false);
+  return await page.locator('[data-testid="agent-status-indicator"]').isVisible().catch(() => false);
 }
 
 // ============================================================================
@@ -202,8 +216,8 @@ test.describe('S04-A: 入口体验与 Modal 交互', () => {
     await page.waitForTimeout(500);
     await expect(localDesc).toBeVisible();
 
-    // 点取消关闭
-    await modal.getByRole('button', { name: /取消/ }).click();
+    // 点取消关闭（Ant Design 按钮文本可能含空格如"取 消"）
+    await modal.getByRole('button', { name: /取\s*消/ }).click();
     await page.waitForTimeout(500);
     await expect(modal).not.toBeVisible();
   });
@@ -305,7 +319,7 @@ test.describe('S04-A: 入口体验与 Modal 交互', () => {
     // 云端模式下确定按钮应始终可用
     await expect(confirmBtn).toBeEnabled();
 
-    await modal.getByRole('button', { name: /取消/ }).click();
+    await modal.getByRole('button', { name: /取\s*消/ }).click();
   });
 
   test('S04-A04 云端模式选择 — 确定后不显示本地模式指示器', async ({ page }) => {
@@ -333,8 +347,8 @@ test.describe('S04-A: 入口体验与 Modal 交互', () => {
     await confirmBtn.click();
     await page.waitForTimeout(1000);
 
-    // 不应显示"本地模式"指示器
-    const localIndicator = page.locator('text=本地模式');
+    // 不应显示"本地模式"指示器（用 data-testid 精确匹配 AgentStatusIndicator 组件）
+    const localIndicator = page.locator('[data-testid="agent-status-indicator"]');
     await expect(localIndicator).not.toBeVisible();
 
     // 输入框应仍然可用
@@ -373,20 +387,23 @@ test.describe('S04-B: 模式生命周期管理', () => {
       return;
     }
 
-    // 验证指示器各元素
-    await expect(page.locator('text=本地模式')).toBeVisible();
-    await expect(page.locator('text=已连接')).toBeVisible();
+    // 验证指示器各元素（使用 data-testid 精确定位）
+    const statusIndicator = page.locator('[data-testid="agent-status-indicator"]');
+    await expect(statusIndicator).toBeVisible();
+    await expect(statusIndicator.locator('text=本地模式')).toBeVisible();
+    await expect(statusIndicator.locator('text=已连接')).toBeVisible();
 
     // 工作路径应包含 WORK_DIR 的最后一段
     const pathSegment = WORK_DIR.split(/[/\\]/).pop()!;
-    const pathDisplay = page.locator(`text=${pathSegment}`);
+    // 使用 :has-text() 做子串匹配（text= 是精确匹配，不适合匹配完整路径中的片段）
+    const pathDisplay = statusIndicator.locator(`:has-text("${pathSegment}")`).first();
     // 路径可能在指示器的完整模式或紧凑模式中显示
     const pathVisible = await pathDisplay.isVisible().catch(() => false);
     expect(pathVisible, `工作路径应包含"${pathSegment}"`).toBe(true);
 
-    // "切换"和"退出"按钮应存在
-    await expect(page.locator('button:has-text("切换")')).toBeVisible();
-    await expect(page.locator('button:has-text("退出")')).toBeVisible();
+    // "切换"和"退出"按钮应存在（在 AgentStatusIndicator 内部查找）
+    await expect(statusIndicator.locator('button:has-text("切换")')).toBeVisible();
+    await expect(statusIndicator.locator('button:has-text("退出")')).toBeVisible();
   });
 
   test('S04-B02 本地模式跨操作持久 — 新建会话 + 刷新页面 + 切回旧会话', async ({ page, api }) => {
@@ -458,9 +475,8 @@ test.describe('S04-B: 模式生命周期管理', () => {
     const exited = await exitLocalMode(page);
     expect(exited, '应成功退出本地模式').toBe(true);
 
-    // 验证所有本地模式 UI 元素消失
-    await expect(page.locator('text=本地模式')).not.toBeVisible();
-    await expect(page.locator('text=已连接')).not.toBeVisible();
+    // 验证所有本地模式 UI 元素消失（用 data-testid 精确匹配）
+    await expect(page.locator('[data-testid="agent-status-indicator"]')).not.toBeVisible();
 
     // 输入框仍可用
     await expect(page.locator(SEL.chat.textarea)).toBeVisible();
@@ -506,7 +522,7 @@ test.describe('S04-B: 模式生命周期管理', () => {
       '重新打开 Modal 时工作目录应保留上次输入的值',
     ).toBe(true);
 
-    await modal.getByRole('button', { name: /取消/ }).click();
+    await modal.getByRole('button', { name: /取\s*消/ }).click();
   });
 });
 

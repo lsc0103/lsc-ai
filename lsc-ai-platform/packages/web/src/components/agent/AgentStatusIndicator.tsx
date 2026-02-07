@@ -79,6 +79,7 @@ export default function AgentStatusIndicator({ onChangeWorkspace, compact = fals
   // 完整模式 - 支持响应式换行
   return (
     <div
+      data-testid="agent-status-indicator"
       style={{
         padding: '8px 12px',
         background: isConnected
