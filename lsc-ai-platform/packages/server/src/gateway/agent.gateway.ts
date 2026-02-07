@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, Inject, forwardRef } from '@nestjs/common';
+import crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AgentService, LLMConfig } from '../modules/agent/agent.service.js';
 import { ChatGateway } from './chat.gateway.js';
@@ -41,7 +42,23 @@ interface AgentSocket extends Socket {
  */
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Agent connections may come from internal network IPs without an origin header (e.g. Node.js clients)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const allowed = (process.env.AGENT_CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173')
+        .split(',')
+        .map(s => s.trim());
+      // Allow explicitly listed origins and private network ranges (10.x, 172.16-31.x, 192.168.x)
+      const isPrivateNetwork = /^https?:\/\/(10\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+|192\.168\.\d+|127\.0\.0\.1|localhost)/.test(origin);
+      if (allowed.includes(origin) || isPrivateNetwork) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed for agent namespace'));
+      }
+    },
     credentials: true,
   },
   namespace: '/agent',
@@ -137,8 +154,8 @@ export class AgentGateway
       return { success: false, error: result.error };
     }
 
-    // 生成认证 Token
-    const token = `agent_${deviceId}_${Date.now()}`;
+    // 生成认证 Token（加密随机）
+    const token = 'agent_' + crypto.randomBytes(32).toString('hex');
 
     // 设置 Socket 信息
     client.agentInfo = {
@@ -265,8 +282,8 @@ export class AgentGateway
     }
     this.userAgents.get(userId)!.add(deviceId);
 
-    // 生成认证 Token
-    const token = `agent_${deviceId}_${Date.now()}`;
+    // 生成认证 Token（加密随机）
+    const token = 'agent_' + crypto.randomBytes(32).toString('hex');
 
     // 通知 Agent 配对成功，并下发 LLM 配置
     agentSocket.emit('agent:paired', {

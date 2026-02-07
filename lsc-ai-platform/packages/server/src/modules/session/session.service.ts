@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { MastraAgentService } from '../../services/mastra-agent.service.js';
 
@@ -8,6 +8,22 @@ export class SessionService {
     private readonly prisma: PrismaService,
     private readonly mastraAgentService: MastraAgentService,
   ) {}
+
+  /**
+   * Verify session exists and belongs to the user. Throws if not found or unauthorized.
+   */
+  private async verifyOwnership(id: string, userId: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { id },
+    });
+    if (!session) {
+      throw new NotFoundException('会话不存在');
+    }
+    if (session.userId !== userId) {
+      throw new ForbiddenException('无权访问此会话');
+    }
+    return session;
+  }
 
   async create(userId: string, title?: string, projectId?: string) {
     return this.prisma.session.create({
@@ -28,14 +44,7 @@ export class SessionService {
   }
 
   async findById(id: string, userId: string) {
-    // 获取会话元数据（不包含消息）
-    const session = await this.prisma.session.findUnique({
-      where: { id },
-    });
-
-    if (!session) {
-      return null;
-    }
+    const session = await this.verifyOwnership(id, userId);
 
     // 从 Mastra Memory 加载消息历史
     const messages = await this.mastraAgentService.getThreadMessages(id, userId);
@@ -54,14 +63,17 @@ export class SessionService {
     };
   }
 
-  async updateTitle(id: string, title: string) {
+  async updateTitle(id: string, userId: string, title: string) {
+    await this.verifyOwnership(id, userId);
     return this.prisma.session.update({
       where: { id },
       data: { title },
     });
   }
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
+    await this.verifyOwnership(id, userId);
+
     // 同步清理 Mastra Memory 中的线程数据
     await this.mastraAgentService.deleteThread(id);
 
@@ -73,13 +85,8 @@ export class SessionService {
   /**
    * 保存 Workbench 状态到会话
    */
-  async saveWorkbenchState(id: string, workbenchState: any) {
-    const session = await this.prisma.session.findUnique({
-      where: { id },
-      select: { extraData: true, updatedAt: true },
-    });
-
-    if (!session) return null;
+  async saveWorkbenchState(id: string, userId: string, workbenchState: any) {
+    const session = await this.verifyOwnership(id, userId);
 
     const extraData = (session.extraData as Record<string, any>) || {};
     extraData.workbenchState = workbenchState;
@@ -98,7 +105,9 @@ export class SessionService {
   /**
    * 获取会话的 Workbench 状态
    */
-  async getWorkbenchState(id: string) {
+  async getWorkbenchState(id: string, userId: string) {
+    await this.verifyOwnership(id, userId);
+
     const session = await this.prisma.session.findUnique({
       where: { id },
       select: { extraData: true },

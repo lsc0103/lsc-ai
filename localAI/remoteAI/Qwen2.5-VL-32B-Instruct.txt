@@ -2,6 +2,6 @@ API endpoint URL:
 http://10.18.55.233:30069/qwen2.5-vl-32b-instruct/chi/v1
 
 API Key:
-abfdd900-4c1e-4a39-9608-633cbc4dd44b
+your-internal-api-key-here
 
 

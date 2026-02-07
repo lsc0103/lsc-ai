@@ -46,7 +46,9 @@ interface AuthenticatedSocket extends Socket {
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173')
+      .split(',')
+      .map(s => s.trim()),
     credentials: true,
   },
   namespace: '/',
@@ -167,9 +169,12 @@ export class ChatGateway
   // 停止生成
   @SubscribeMessage('chat:stop')
   handleChatStop(
-    @ConnectedSocket() _client: AuthenticatedSocket,
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string },
   ) {
+    if (!client.userId) {
+      return { success: false, error: '未认证' };
+    }
     const { sessionId } = data;
 
     // 标记本地流式会话停止
@@ -205,6 +210,15 @@ export class ChatGateway
     }
 
     const { sessionId, message, fileIds, deviceId, workDir, workbenchContext, useNetwork } = data;
+
+    // B-3: 验证会话归属，防止用户操作他人的会话
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session) {
+      return { success: false, error: '会话不存在' };
+    }
+    if (session.userId !== client.userId) {
+      return { success: false, error: '无权访问此会话' };
+    }
 
     this.logger.log(`收到消息: sessionId=${sessionId}, deviceId=${deviceId}, fileIds=${JSON.stringify(fileIds)}, hasWorkbenchContext=${!!workbenchContext}, useNetwork=${!!useNetwork}`);
 
@@ -622,8 +636,11 @@ export class ChatGateway
       // 3. 获取会话历史消息（从 Mastra Memory）
       const history = await this.mastraAgentService.getThreadMessages(sessionId, client.userId!);
 
-      // 转换为简化的历史消息格式（不包括当前消息）
-      const historyMessages = history.slice(0, -1).map((m: any) => ({
+      // 转换为简化的历史消息格式
+      // P0-2 修复：与云端模式一致，限制历史消息数量，避免 token 窗口溢出
+      // 注意：getThreadMessages 返回的历史不包含当前消息，所以不需要 slice(0, -1)
+      const maxHistoryMessages = 20; // 最多保留 20 条历史消息
+      const historyMessages = history.slice(-maxHistoryMessages).map((m: any) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content || '',
       }));

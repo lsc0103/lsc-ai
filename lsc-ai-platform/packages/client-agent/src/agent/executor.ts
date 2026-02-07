@@ -12,8 +12,8 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { fastembed } from '@mastra/fastembed';
-import { deepseek } from '@ai-sdk/deepseek';
-import { openai } from '@ai-sdk/openai';
+import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createOpenAI } from '@ai-sdk/openai';
 import { convertAllTools } from './tool-adapter.js';
 import { configManager } from '../config/index.js';
 import { socketClient, AgentTask } from '../socket/client.js';
@@ -324,12 +324,21 @@ export class TaskExecutor {
     const workDir = taskWorkDir || config.workDir || process.cwd();
     console.log(`[Executor] createMastraAgent 使用工作目录: ${workDir}`);
 
+    // 验证 API Key
+    const apiKey = config.apiKey || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || '';
+    if (!apiKey) {
+      throw new Error('API Key 未配置，请使用 `lsc-agent config --set apiKey=your-key` 设置');
+    }
+
     // 选择模型 provider
     const provider = config.apiProvider || 'deepseek';
     const modelName = config.model || (provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
+
+    console.log(`[Executor] API Key loaded: ${!!apiKey}, BaseURL: ${config.apiBaseUrl || 'default'}, Provider: ${provider}, Model: ${modelName}`);
+
     const model = provider === 'deepseek'
-      ? deepseek(modelName)
-      : openai(modelName);
+      ? createDeepSeek({ apiKey, baseURL: config.apiBaseUrl })(modelName)
+      : createOpenAI({ apiKey, baseURL: config.apiBaseUrl })(modelName);
 
     return new Agent({
       id: 'client-agent',
@@ -433,6 +442,7 @@ export class TaskExecutor {
       });
 
       let fullContent = '';
+      let hasToolCalls = false;
       const reader = stream.fullStream.getReader();
 
       while (true) {
@@ -447,6 +457,7 @@ export class TaskExecutor {
             }
             break;
           case 'tool-call':
+            hasToolCalls = true;
             if (chunk.payload) {
               socketClient.sendToolCall(
                 task.taskId,
@@ -470,6 +481,18 @@ export class TaskExecutor {
 
       if (!fullContent) {
         fullContent = await stream.text;
+      }
+
+      // 空 stream 检测：没有文本输出且没有工具调用，视为 AI 无响应
+      if (!fullContent && !hasToolCalls) {
+        console.error('[Executor] AI 返回空响应，可能是 API Key 无效或服务不可用');
+        socketClient.sendTaskResult({
+          taskId: task.taskId,
+          sessionId: task.sessionId,
+          status: 'failed',
+          error: '本地 AI 调用无响应，请检查 API Key 配置是否正确（lsc-agent config --set apiKey=your-key）',
+        });
+        return;
       }
 
       socketClient.sendTaskResult({
