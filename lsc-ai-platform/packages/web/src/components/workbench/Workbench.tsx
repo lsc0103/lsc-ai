@@ -359,6 +359,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({ className }) => {
 
   return (
     <motion.div
+      data-testid="workbench-container"
       className={clsx(
         'workbench-container',
         'h-full flex flex-col relative',
@@ -402,6 +403,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({ className }) => {
       </AnimatePresence>
       {/* 顶部标题栏 */}
       <div
+        data-testid="workbench-header"
         className={clsx(
           'workbench-header',
           'flex items-center justify-between',
@@ -449,6 +451,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({ className }) => {
           {/* 关闭按钮 */}
           <Tooltip title="关闭">
             <Button
+              data-testid="workbench-close-btn"
               type="text"
               size="small"
               icon={<CloseOutlined />}
@@ -466,7 +469,7 @@ export const Workbench: React.FC<WorkbenchProps> = ({ className }) => {
           <WorkbenchTabs />
 
           {/* 内容区域 */}
-          <div className="workbench-content flex-1 min-h-0 overflow-auto p-4 flex flex-col">
+          <div data-testid="workbench-content" className="workbench-content flex-1 min-h-0 overflow-auto p-4 flex flex-col">
             <AnimatePresence mode="wait">
               {activeTab && (
                 <motion.div

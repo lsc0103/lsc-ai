@@ -124,6 +124,7 @@ export const WorkbenchTabs: React.FC = () => {
   return (
     <div
       ref={tabsRef}
+      data-testid="workbench-tabs"
       className={clsx(
         'workbench-tabs',
         'flex items-center',
@@ -158,6 +159,7 @@ export const WorkbenchTabs: React.FC = () => {
             }}
           >
             <div
+              data-testid="workbench-tab"
               data-tab-key={tab.key}
               className={clsx(
                 'workbench-tab',
@@ -188,6 +190,7 @@ export const WorkbenchTabs: React.FC = () => {
               {/* 关闭按钮 */}
               {canClose && (
                 <button
+                  data-testid="workbench-tab-close"
                   className={clsx(
                     'w-4 h-4 flex items-center justify-center',
                     'rounded-sm',

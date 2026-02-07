@@ -108,6 +108,7 @@ export const WorkbenchLayout: React.FC<WorkbenchLayoutProps> = ({
   return (
     <div
       ref={containerRef}
+      data-testid="workbench-layout"
       className={clsx(
         'workbench-layout',
         'flex h-full w-full',
@@ -129,6 +130,7 @@ export const WorkbenchLayout: React.FC<WorkbenchLayoutProps> = ({
       <AnimatePresence>
         {visible && (
           <motion.div
+            data-testid="workbench-resizer"
             className={clsx(
               'workbench-resizer',
               'relative flex-shrink-0 cursor-col-resize',
@@ -163,6 +165,7 @@ export const WorkbenchLayout: React.FC<WorkbenchLayoutProps> = ({
       <AnimatePresence>
         {visible && (
           <motion.div
+            data-testid="workbench-area"
             className="workbench-area h-full overflow-hidden"
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: workbenchWidth, opacity: 1 }}
