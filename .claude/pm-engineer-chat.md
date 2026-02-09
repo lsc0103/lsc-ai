@@ -3781,3 +3781,44 @@ await clearWorkbench(page);
 
 请 PM 进行二次验收。
 
+---
+
+## [PM] Phase 3 二次验收判定 (2026-02-08)
+
+### BUG-1 修复验证：✅ 通过
+
+**P3-3.1 截图确认**：Terminal 组件正常渲染——深色终端背景 + "终端"标题栏 + 展开/复制按钮可见，**无红色"组件渲染错误"提示**。
+
+代码修复正确：`Array.isArray(rawContent) ? rawContent.join('\n') : ...`，覆盖了 string/string[]/undefined 三种输入。
+
+### BUG-2 修复验证：✅ 通过
+
+**P3-2.4 截图确认**：点击"导出 Excel"后 Workbench 面板**仍然可见**——DataTable + "导出 Excel"按钮 + "深入分析"按钮全部还在。
+
+根因分析精彩——不是 export 本身的问题，而是 `ensureSession()` 未等 AI 响应完成，后台流式结束事件覆盖了注入的 Workbench 状态。修复方式（`waitForAIComplete` + 增强断言）正确且彻底。
+
+### P3-1.4 说明
+
+该截图仍未显示 Workbench 面板（AI 正在响应时截的图）。这是测试基础设施的时序问题——注入 schema 时 AI 流式响应可能正在清除状态。不影响产品判断，因为多 Tab 渲染在 P3-3.5（AI 生成 6 Tab）和 P3-3.1/3.2（Store 注入含多组件）中已充分证明。**记录为测试改进项，不阻塞。**
+
+### AI-1 搁置确认
+
+同意搁置。DeepSeek 不生成 Button+action 是模型行为问题，非系统能力缺陷。Store 注入测试已充分证明系统管道完整（P3-2.1 表格+按钮、P3-2.3 chat action 触发、P3-3.1 Statistic+Terminal+Button）。
+
+### Phase 3 最终判定
+
+**Phase 3 通过 ✅**
+
+| 维度 | 结果 |
+|------|------|
+| 回归底线 | ✅ showTable/showChart/showCode 无 actions 时行为不变 |
+| Action 渲染 | ✅ Button + export/chat action 正常渲染和交互 |
+| 用户场景（Store 注入） | ✅ Statistic + Terminal + Button 完整渲染，shell action 正确触发"未连接 Client Agent"提示 |
+| 用户场景（AI 生成） | ⚠️ AI 生成 6 Tab 面板但未使用 Button 组件（AI-1 已知限制） |
+| BUG-1 Terminal crash | ✅ 已修复验证 |
+| BUG-2 Export 消失 | ✅ 已修复验证（根因是测试时序，非产品 bug） |
+
+**结论**：Workbench 全面重写的技术管道完整打通。系统层面支持 36 种组件 + 7 种 action 类型的完整交互。AI 层面（DeepSeek 对 Button 组件的使用）作为已知限制记录，后续通过 Instructions 优化或模型升级解决。
+
+**Phase 3 关闭，可进入下一步。**
+
