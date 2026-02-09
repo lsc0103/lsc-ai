@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Workbench 全面重写 — Phase 1+2+3 全部完成
-**状态**：Phase 3 测试 12/12 全部通过，等待 PM 最终验收
+**阶段**：Phase H 深度产品验收（全面重写版）
+**状态**：PM 已签发 Phase H v2 验收方案（43 项，4 阶段），等待工程团队执行 Stage 1
 
 ### 已完成事项
 
@@ -216,7 +216,9 @@ e2e/
 27. ✅ **PM Phase 3 审查** — 有条件通过，发现 BUG-1(Terminal crash) + BUG-2(Export Workbench消失) + AI-1(DeepSeek不生成action)
 28. ✅ **BUG-1 修复** — Terminal.tsx content 类型守卫（Array.isArray → join）
 29. ✅ **BUG-2 根因定位** — 非 export handler 问题，实为 AI 流式响应完成事件干扰注入的 Workbench 状态；测试 beforeEach 增加 waitForAIComplete
-30. 🔄 **等待 PM 二次验收** — 12/12 测试全部通过（含 BUG-1/BUG-2 强化断言）
+30. ✅ **PM Phase 3 二次验收通过** — BUG-1/BUG-2 修复确认，AI-1 搁置为已知限制
+31. ✅ **Phase H v2 验收方案签发** — 43 项测试点，4 阶段递进（能用→好用→实用→不退化）
+32. 🔄 **Phase H Stage 1 执行中** — Workbench 工作空间能力验证（12 项）
 
 ---
 
