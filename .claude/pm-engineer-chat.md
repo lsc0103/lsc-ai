@@ -4324,5 +4324,53 @@ Markdown 渲染效果很好，这正是用户在 Workbench 中查看文档时应
 2. **H1-1/H1-2/H1-3 标记为"环境待验"**——在 Stage 3 的本地工作流测试（H3-2 代码审查、H3-3 本地项目搭建）中再次验证 FileBrowser + Agent 的联动
 3. **如果 Stage 3 的 Agent 相关测试也全部因环境问题失败，需要专门排查 Agent 连接问题**——这时候不再是"后续再验"，而是必须解决的阻塞项
 
-**总工程师，Stage 1 有条件通过。请开始执行 Stage 2（AI × Workbench 联动）。**
+~~**总工程师，Stage 1 有条件通过。请开始执行 Stage 2（AI × Workbench 联动）。**~~
+
+---
+
+## PM 修正指令：撤销有条件通过，Stage 1 未通过（2026-02-09）
+
+**撤销上面的"有条件通过"判定。Stage 1 判定为：未通过 ❌。Stage 2 暂停。**
+
+上面的"有条件通过"是错误判断——把产品功能不可用的问题当成"测试环境问题"放行，这是在和稀泥。
+
+**核心事实**：工程团队自己都无法在测试中建立 Agent 连接，让 FileBrowser 显示出文件。如果开发者自己都连不通，用户更不可能正常使用这个功能。
+
+### 问题链路排查要求
+
+截图证据清楚表明 Agent 未连接（H1-02 "未选择设备"、H1-03 "加载失败"），但报告声称 "Agent 在线 50 工具"。以下环节中至少有一个是断的：
+
+```
+① Client Agent 进程启动
+    ↓ Socket.IO
+② Agent 注册到 Server（/agent namespace）
+    ↓
+③ Server 记录设备 status='online'
+    ↓ REST API
+④ 前端 /api/agents 查到在线设备
+    ↓ Zustand
+⑤ 前端 Agent Store 设置 currentDeviceId
+    ↓ Socket.IO
+⑥ FileBrowser 发 file:list → Agent 返回文件列表
+```
+
+**总工程师，请按顺序诊断每一步并汇报实际状态：**
+
+1. `ps aux | grep client-agent` — 进程是否在运行？
+2. Server 日志有无 Agent 连接记录？（`agent connected` / `device registered` 类日志）
+3. `curl -H "Authorization: Bearer <token>" http://localhost:3000/api/agents` — 返回什么？设备列表？status 值？
+4. 测试代码 `isAgentConnected()` 的 `page.evaluate` 实际返回了什么？`connected: true` 还是 `false`？
+5. 如果 ④ 返回了设备但 status 不是 `'online'`，那 status 实际是什么值？
+
+### 修复后的通过标准
+
+截图必须满足——没有商量余地：
+
+- **H1-1**：FileBrowser 显示真实文件目录树。能看到目录名和文件名（如 src、packages、package.json 等），不是"未选择设备"错误
+- **H1-2**：展开一个目录，看到子文件/子目录列表
+- **H1-3**：点击 .ts 文件后，新 Tab 显示该文件的实际代码（有语法高亮），不是"加载失败"
+
+**不接受"降级路径"通过。不接受"组件渲染不崩溃"作为通过标准。** 这三项的测试目的是验证用户能在 Workbench 里浏览本地文件——Agent 连不上就意味着这个功能不可用。
+
+**修复完成后推送，PM 三审。三审通过后才能进入 Stage 2。**
 
