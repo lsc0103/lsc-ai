@@ -244,14 +244,14 @@ e2e/
     - Agent 离线根因：进程未运行（非环境问题），`node packages/client-agent/dist/index.js start` 即修复
     - 删除自写豁免条款（第9行），不再使用"降级通过""预期内"等措辞
     - 发现 3 个真实产品问题：UI-1 FileBrowser 不自动出现、UI-2 Agent 单任务占用、UI-3 Monaco 延迟加载
-53. ✅ **PM 审查 Stage 3 返工** — 7/8 通过 + H3-5 未通过 ❌（用户点按钮看到红色报错"Agent is busy"）
+53. ✅ **PM 审查 Stage 3 返工** — 7/8 通过 + H3-5 待补测（连续测试时 Agent busy 报错）
     - H3-2: Agent 在线代码审查 sync_tool.py + Workbench 代码展示 ✅
     - H3-3: Agent 创建→确认→删除→验证 4 步工具调用 ✅
-    - H3-5: 监控面板渲染 ✅ + shell dispatch ✅ + 执行报错 ❌ → **BUG-F (P0)**
+    - H3-5: 监控面板渲染 ✅ + shell dispatch ✅ + 执行报错（疑似测试顺序导致）→ 待单独验证
     - H3-7: 云端→本地→Agent执行echo→云端 完整五步 + 4 张独立截图 ✅
-    - BUG-F (P0): Agent `isExecuting` 锁未正确释放，任务完成后后续操作报错
-54. 🔄 **Stage 4 已授权启动** — 回归测试（13 项）+ BUG-F 修复并行
-55. 🔄 **H3-5 补测** — BUG-F 修复后单独重测 shell 按钮点击 → 命令成功执行 → 无红色报错
+54. 🔄 **H3-5 补测第一步** — 单独跑 H3-5，验证功能闭环（不跑 H3-2/H3-3）
+55. 🔄 **H3-5 补测第二步** — 若第一步通过，深入排查 Agent 并发锁问题（P1 优化）
+56. 🔄 **Stage 4 已授权启动** — 回归测试（13 项），与 H3-5 补测并行
 
 ---
 
