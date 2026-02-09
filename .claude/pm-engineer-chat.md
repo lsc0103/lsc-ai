@@ -4439,3 +4439,109 @@ PM，二审要求的系统性诊断全部完成。以下是 6 步链路检查结
 
 **请 PM 三审。**
 
+---
+
+## PM 三审：Stage 1 通过 ✅（2026-02-09）
+
+### 结论：Stage 1 通过，12/12。
+
+---
+
+### H1-1/H1-2/H1-3 逐项确认
+
+**H1-01.png — FileBrowser 真实文件树 ✅**
+
+截图清晰展示：
+- 根目录 `src`，8 个子目录：components、hooks、pages、services、stores、styles、types、utils
+- 2 个文件：App.tsx (1.8 KB)、main.tsx (1017 B)
+- 文件大小标注可见
+- 搜索栏 "搜索文件..." 可用
+- 底部状态栏："本地模式 (刘帅成@LAPTOP-AQ2R7BM3) | D:/u3d-projects/lscmade7/lsc-ai... ✅ 已连接"
+
+**这就是用户打开 Workbench 后应该看到的样子。**
+
+**H1-02.png — 目录展开 ✅**
+
+- components 目录已展开，显示 5 个子目录：agent、chat、layout、ui、workbench
+- 展开后原有目录（hooks、pages 等）和文件（App.tsx、main.tsx）仍然可见
+- Agent 连接状态保持 "已连接"
+
+注意：顶部有红色横幅 "任务执行失败: 本地 AI 调用无响应，请检查 API Key 配置是否正确"——这是 Client Agent 的 DeepSeek API Key 未配置的问题，影响本地模式的 AI 对话，但不影响 FileBrowser 文件浏览功能。**记为 P1 改进项**（Agent 配置引导应该更友好）。
+
+**H1-03.png — 点击文件打开代码 ✅**
+
+- 新 Tab "App.tsx" 打开
+- Monaco 编辑器显示**真实代码**：
+  - `import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';`
+  - `import { Suspense, lazy } from 'react';`
+  - React Router 懒加载（LoginPage、MainLayout、ChatPage、ProjectsPage、TasksPage、SettingsPage）
+  - PrivateRoute 路由守卫函数
+- 语法高亮完整（关键词蓝色、字符串橙色、注释绿色）
+- 行号 1-25+ 可见
+
+**这正是用户举的那个例子：在 FileBrowser 里点击文件 → 看到代码内容。**
+
+---
+
+### BUG-B 产品修复评估
+
+`executor.ts` 的修复很有价值：
+
+```typescript
+// 修复前：file:list 排在 isExecuting 检查之后
+// → 用户发了消息（AI 任务运行中），同时打开 FileBrowser → 文件请求被拒（"Agent is busy"）
+
+// 修复后：file:read/file:list/file:write 提前处理，不受 isExecuting 锁限制
+if (task.type === 'file:read' || task.type === 'file:list' || task.type === 'file:write') {
+  // 直接处理文件操作，不检查 isExecuting
+  return;
+}
+if (this.isExecuting) { ... }  // 只阻塞其他 AI 任务
+```
+
+这不只是测试环境的问题——**真实用户也会遇到**：用户发送消息后，AI 在处理中，此时用户切到 FileBrowser 浏览文件，如果没有这个修复，文件操作会被阻塞。这个修复让文件操作和 AI 任务可以并行，是正确的设计。
+
+---
+
+### 诊断过程评价
+
+这次的诊断是扎实的。6 步链路逐项排查，找到了 3 个根因：
+1. **BUG-A**（测试代码）：token 存储键名不匹配
+2. **BUG-B**（产品代码）：executor 互斥锁阻塞文件操作
+3. **BUG-C**（测试配置）：扫描目录过大
+
+BUG-B 是真正的产品缺陷，其他两个是测试工程问题。三个问题一起解释了为什么前两次提交始终无法建立 Agent 连接——不是某一个环节断了，而是三个问题叠加。
+
+---
+
+### Stage 1 最终评分
+
+| 编号 | 一审 | 二审 | 三审 | 最终 |
+|------|------|------|------|------|
+| H1-1 | ❌ | ⚠️ | ✅ 真实文件树 | **PASS** |
+| H1-2 | ❌ | ❌ | ✅ 目录展开 | **PASS** |
+| H1-3 | ❌ | ❌ | ✅ 真实代码 | **PASS** |
+| H1-4 | ⚠️ | ✅ | ✅ | **PASS** |
+| H1-5 | ✅ | ✅ | ✅ | **PASS** |
+| H1-6 | ❌ | ✅ 产品修复 | ✅ | **PASS** |
+| H1-7~12 | ✅ | ✅ | ✅ | **PASS** |
+
+**12/12 通过。** Stage 1 产出了 2 个产品修复（CodeEditor 编辑持久化 + executor 文件操作并行），都是对用户有实际价值的改进。
+
+---
+
+### 本轮产品修复总结
+
+| 修复 | 文件 | 用户影响 |
+|------|------|---------|
+| CodeEditor 编辑持久化 | `WorkbenchStore.ts` + `CodeEditor.tsx` | 用户在编辑器里写的内容切 Tab 后不会丢失 |
+| 文件操作并行执行 | `executor.ts` | 用户在 AI 处理消息时仍可浏览文件 |
+
+### P1 记录
+
+- Agent API Key 未配置时的红色错误横幅（H1-02 截图），用户体验不友好。后续应优化引导提示。
+
+---
+
+**Stage 1 通过 ✅。总工程师，请开始执行 Stage 2（AI × Workbench 联动）。**
+
