@@ -4669,3 +4669,79 @@ lsctest4 (2 tests):
 
 **请 PM 审查。**
 
+---
+
+## PM 审查：Stage 1 跨路径一致性补充验证 — 通过 ✅（2026-02-09）
+
+### 审查结论：补充验证通过，9/9。
+
+---
+
+### 逐项截图审查
+
+**CP-1 三路径一致性（lscmade14）✅**
+- 底部状态栏显示 `D:/u3d-projects/lscmade14` + `已连接`
+- 路径是与 LSC-AI 完全无关的外部项目
+
+**CP-2 lscmade14 真实文件树 ✅**
+- 根目录 `lscmade14`，含 `file_sync`（目录）+ `nul`（文件，0B）
+
+**CP-3 展开 file_sync 目录 ✅（关键截图）**
+- 3 个子目录（build/dist/output）+ 9 个文件
+- 文件大小完整标注（sync_tool.py 21.3KB、README.md 1.6KB、build.bat 1.1KB 等）
+- 底部 `D:/u3d-projects/lscmade14 | 已连接`
+
+**CP-4 点击 sync_tool.py → Python 源码 ✅（关键截图）**
+- Tab 栏 `文件浏览器` + `sync_tool.py`
+- Monaco 编辑器显示 Python 源码：docstring + `import os/sys/json/shutil/threading` + tkinter/PIL/pystray/watchdog 导入
+- Python 语法高亮正确
+
+**CP-5 README.md 内容显示 ✅**
+- FileViewer 渲染 Markdown：标题、功能特性列表、代码块
+
+**CP-7 lsctest4 路径一致性 ✅**
+- 底部 `D:/u3d-projects/lsctest4 | 已连接`
+
+**CP-8 空目录 ✅**
+- FileBrowser 正确显示空状态
+
+**CP-9 编辑功能 ✅**
+- 三张截图完整展示：只读查看（铅笔图标）→ 编辑模式（"编辑中"标签 + 保存/取消按钮）→ 取消后恢复只读
+
+---
+
+### BUG-D 产品修复评估
+
+修复设计正确：
+- `agent.gateway.ts:771` — `getOnlineAgentInfo()` 从内存 `onlineAgents` Map 读取在线 Agent 信息
+- `agent.service.ts:232-249` — `getUserAgents()` 合并 DB 持久化数据与内存实时数据（workDir/status）
+
+这是**正确的架构决策**：DB 存持久化信息，内存存实时信息，REST API 合并两者返回。用户切换工作目录后前端能立即获知新路径。
+
+---
+
+### Stage 1 综合评分
+
+| 验证轮次 | 测试项 | 结果 |
+|---------|--------|------|
+| Stage 1 三审 | H1-1 ~ H1-12（Workbench 工作空间） | 12/12 ✅ |
+| 跨路径补充 | CP-1 ~ CP-9（外部项目验证） | 9/9 ✅ |
+| **合计** | **21 项** | **21/21 ✅** |
+
+### 产品修复总计（Stage 1 全程）
+
+| # | 修复 | 文件 | 用户影响 |
+|---|------|------|---------|
+| 1 | CodeEditor 编辑持久化 | WorkbenchStore.ts + CodeEditor.tsx | 编辑内容切 Tab 后不丢失 |
+| 2 | Executor 文件操作并行 | executor.ts | AI 处理中仍可浏览文件 |
+| 3 | REST API 返回 workDir | agent.gateway.ts + agent.service.ts | 前端自动获知 Agent 工作目录 |
+| 4 | Token 读取键名修正 | 测试代码 | 测试工程修复 |
+
+### 跨路径验证意义
+
+之前的测试仅在 LSC-AI 项目内部路径下浏览文件，存在"自说自话"的风险。本次通过两个完全独立的外部路径（lscmade14 代码项目 + lsctest4 空项目）验证，**证明 FileBrowser 能够服务于任何工作目录**，真正满足用户"打开自己的项目浏览和编辑文件"的需求。
+
+---
+
+**Stage 1 完整通过。总工程师，请开始执行 Stage 2（AI × Workbench 联动）。**
+
