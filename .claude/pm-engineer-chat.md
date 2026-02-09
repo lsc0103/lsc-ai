@@ -5159,3 +5159,63 @@ Stage 2 的 H2-5/H2-6/H2-7 验证了"AI 能生成带 Action 按钮的 Workbench 
 
 **完成后推送，PM 复审。Stage 3 在此项完成前暂不启动。**
 
+---
+
+### [工程师] 2026-02-09 — Stage 2 Action 按钮闭环验证完成
+
+#### 执行摘要
+
+按 PM 补充指令，完成 H2-5/H2-6/H2-7 按钮点击验证 + H2-4 断言加严。**全量 11 passed (13.6m)**。
+
+#### 修改内容
+
+| 修改项 | 详情 |
+|--------|------|
+| H2-4 Tab 断言 | `≥ 2` → `≥ 3`（已验证 3 Tab：数据表格/折线图/代码示例）|
+| H2-5 导出按钮 | `expect(hasExportBtn).toBeTruthy()` + 点击 → `page.waitForEvent('download')` |
+| H2-6 解释按钮 | `expect(hasChatBtn).toBeTruthy()` + 点击 → 等待 AI 新回复 |
+| H2-7 重启按钮 | `expect(hasButton).toBeTruthy()` + 点击 → 检查 UI 反馈 |
+| 2B 组结构 | `test.describe.serial` → `test.describe`（避免串行限流）|
+| 超时增加 | H2-6: 240s, H2-9: 240s, H2-10: 240s |
+
+#### 按钮点击验证结果
+
+| 测试 | 按钮 | 点击后行为 | 验证方式 | 结果 |
+|------|------|-----------|---------|------|
+| **H2-5** | "导出Excel" | 触发文件下载 | `page.waitForEvent('download')` 捕获 | ✅ 下载 `销售数据报表_2024年度.xlsx` |
+| **H2-6** | "请AI解释这段代码" | chat action → AI 回复 | 消息数 2→4（新消息+AI回复）| ✅ AI 返回代码解释 |
+| **H2-7** | "重启监控服务" | shell action → Agent 检查 | Ant Design message toast | ✅ "未连接 Client Agent，无法执行命令" |
+
+#### 截图
+
+| 文件 | 说明 |
+|------|------|
+| `H2-05-after-click.png` | 导出按钮点击后（下载已触发）|
+| `H2-06-after-click.png` | 解释按钮点击后（AI 在聊天区回复代码解释）|
+| `H2-07-after-click.png` | 重启按钮点击后（Toast "未连接 Client Agent"）|
+
+#### 技术说明
+
+1. **H2-5 Export**: export handler 从 componentStates 取数据 → XLSX 生成 → Blob download。Playwright `waitForEvent('download')` 成功捕获。
+2. **H2-6 Chat**: chat handler 调用 `chatStore.setPendingMessage(message)` → ChatInput useEffect 自动发送 → AI 流式回复。验证消息计数增加。
+3. **H2-7 Shell**: shell handler 检查 `useAgentStore.currentDeviceId`（云端模式无 Agent）→ `message.warning()` 弹出 Ant Design toast。验证 `.ant-message` 可见且包含文字。
+
+#### 全量运行结果
+
+```
+11 passed (13.6m)
+
+H2-1  ✅ DataTable 5大城市 (31s)
+H2-2  ✅ BarChart GDP (1.1m)
+H2-3  ✅ CodeEditor Python (1.7m)
+H2-4  ✅ 三种 Tab ≥3 (1.7m)
+H2-5  ✅ DataTable + 导出按钮 + 点击下载 (43s)
+H2-6  ✅ CodeEditor + 解释按钮 + 点击→AI回复 (2.0m)
+H2-7  ✅ 监控面板 + 重启按钮 + 点击→Toast (44s)
+H2-8  ✅ 内容更新替换 (1.3m)
+H2-9  ✅ 会话隔离+恢复 (2.5m)
+H2-10 ✅ 关闭→重开 (1.3m)
+```
+
+**请 PM 复审，确认后进入 Stage 3。**
+

@@ -242,7 +242,7 @@ test.describe('Stage 2A-2: AI 生成 CodeEditor + Multi-Tab', () => {
     // 验证有多个 Tab
     const tabTitles = await getTabTitles(page);
     console.log(`[H2-4] Tab titles: ${JSON.stringify(tabTitles)}`);
-    expect(tabTitles.length).toBeGreaterThanOrEqual(2);
+    expect(tabTitles.length).toBeGreaterThanOrEqual(3);
 
     // 检查第一个 Tab 内容
     const wb = page.locator(SEL.workbench.container);
@@ -274,8 +274,9 @@ test.describe('Stage 2A-2: AI 生成 CodeEditor + Multi-Tab', () => {
 // 2B: AI 生成带 Action 的内容 (H2-5 ~ H2-7)
 // ============================================================================
 
-test.describe.serial('Stage 2B: AI 生成带 Action 内容', () => {
-  test.setTimeout(180_000);
+// H2-5/6/7 独立运行，避免 DeepSeek 限流导致的串行超时（H2-6 需要两次 AI 调用）
+test.describe('Stage 2B: AI 生成带 Action 内容', () => {
+  test.setTimeout(240_000);
 
   test('H2-5: AI 生成 DataTable + 导出 Excel 按钮', async ({ page }) => {
     test.setTimeout(120_000);
@@ -296,19 +297,37 @@ test.describe.serial('Stage 2B: AI 生成带 Action 内容', () => {
     const table = wb.locator('.ant-table, table, [class*="DataTable"]').first();
     await expect(table).toBeVisible({ timeout: 10_000 });
 
-    // 检查是否有导出按钮（AI-1 已知限制：DeepSeek 可能不生成 Button）
+    // 验证导出按钮存在（BUG-E 修复后 AI 稳定生成 Button）
     const exportBtn = wb.locator('button:has-text("导出"), button:has-text("Export"), button:has-text("下载")').first();
     const hasExportBtn = await exportBtn.isVisible().catch(() => false);
     console.log(`[H2-5] Export button visible: ${hasExportBtn}`);
-    if (!hasExportBtn) {
-      console.log('[H2-5] AI-1 limitation: AI did not generate export Button');
-    }
+    expect(hasExportBtn).toBeTruthy();
 
     await screenshot(page, 'H2-05');
+
+    // 点击导出按钮 → 验证文件下载触发
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 15_000 }).catch(() => null),
+      exportBtn.click(),
+    ]);
+
+    if (download) {
+      console.log(`[H2-5] Download triggered: ${download.suggestedFilename()}`);
+    } else {
+      // 导出可能通过 Blob URL 或 print dialog 触发，检查是否有新窗口/弹窗
+      console.log('[H2-5] No download event, checking for alternative feedback...');
+      // 等待可能的 toast/notification 反馈
+      await page.waitForTimeout(2000);
+    }
+    // 下载事件触发（export handler 创建 blob → 触发 download）
+    expect(download).toBeTruthy();
+    console.log(`[H2-5] Download file: ${download!.suggestedFilename()}`);
+
+    await screenshot(page, 'H2-05-after-click');
   });
 
   test('H2-6: AI 生成 CodeEditor + 解释代码按钮', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000); // 需要两次 AI 调用：生成 + 解释
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
@@ -326,15 +345,41 @@ test.describe.serial('Stage 2B: AI 生成带 Action 内容', () => {
     const codeEditor = wb.locator('.monaco-editor, [class*="CodeEditor"]').first();
     await expect(codeEditor).toBeVisible({ timeout: 20_000 });
 
-    // 检查是否有解释按钮
+    // 验证解释按钮存在（BUG-E 修复后 AI 稳定生成 Button）
     const chatBtn = wb.locator('button:has-text("解释"), button:has-text("分析"), button:has-text("说明")').first();
     const hasChatBtn = await chatBtn.isVisible().catch(() => false);
     console.log(`[H2-6] Chat button visible: ${hasChatBtn}`);
-    if (!hasChatBtn) {
-      console.log('[H2-6] AI-1 limitation: AI did not generate chat Button');
-    }
+    expect(hasChatBtn).toBeTruthy();
 
     await screenshot(page, 'H2-06');
+
+    // 记录点击前的消息数量（.message-bubble 是每条消息的容器）
+    const msgsBefore = await page.locator('.message-bubble').count();
+    console.log(`[H2-6] Messages before click: ${msgsBefore}`);
+
+    // 点击解释按钮 → chat action 设置 pendingMessage → ChatInput 自动发送 → AI 回复
+    await chatBtn.click();
+
+    // 等待新消息出现（chat handler 设置 pendingMessage → 自动发送）
+    await page.waitForFunction(
+      (prevCount) => {
+        const bubbles = document.querySelectorAll('.message-bubble');
+        return bubbles.length > prevCount;
+      },
+      msgsBefore,
+      { timeout: 90_000 },
+    ).catch(() => {});
+
+    // 等待 AI 回复完成
+    await waitForAIComplete(page, 60_000);
+    await page.waitForTimeout(2000);
+
+    const msgsAfter = await page.locator('.message-bubble').count();
+    console.log(`[H2-6] Messages after click: ${msgsAfter}`);
+    // 应该有新消息（chat action 发送的消息 + AI 回复）
+    expect(msgsAfter).toBeGreaterThan(msgsBefore);
+
+    await screenshot(page, 'H2-06-after-click');
   });
 
   test('H2-7: AI 生成监控面板 — 统计卡片+终端+按钮', async ({ page }) => {
@@ -362,16 +407,57 @@ test.describe.serial('Stage 2B: AI 生成带 Action 内容', () => {
     const hasTerminal = await terminal.first().isVisible().catch(() => false);
     console.log(`[H2-7] Terminal visible: ${hasTerminal}`);
 
-    // 检查按钮
-    const buttons = wb.locator('button:has-text("重启"), button:has-text("关闭"), button:has-text("执行")');
-    const hasButton = await buttons.first().isVisible().catch(() => false);
+    // 验证按钮存在（BUG-E 修复后 AI 稳定生成 Button）
+    const actionBtn = wb.locator('button:has-text("重启"), button:has-text("关闭"), button:has-text("执行"), button:has-text("刷新"), button:has-text("监控")');
+    const hasButton = await actionBtn.first().isVisible().catch(() => false);
     console.log(`[H2-7] Action button visible: ${hasButton}`);
+    expect(hasButton).toBeTruthy();
 
     // 至少有统计卡片或终端渲染（组件本体必须渲染）
     const hasContent = statCount > 0 || hasTerminal;
     expect(hasContent).toBeTruthy();
 
     await screenshot(page, 'H2-07');
+
+    // 点击按钮 → shell action 在云端模式下应显示提示
+    // （shell handler 检查 Agent 连接状态，未连接时返回错误信息）
+    await actionBtn.first().click();
+    await page.waitForTimeout(3000);
+
+    // 验证界面有反馈（toast/notification/message，不能静默无反应）
+    const feedbackSelectors = [
+      '.ant-message',           // Ant Design message
+      '.ant-notification',      // Ant Design notification
+      '.ant-modal',             // Modal dialog
+      '[class*="toast"]',       // Toast
+      '[class*="Toast"]',       // Toast variant
+      '[role="alert"]',         // ARIA alert
+    ];
+    let hasFeedback = false;
+    for (const sel of feedbackSelectors) {
+      const el = page.locator(sel).first();
+      if (await el.isVisible().catch(() => false)) {
+        const text = await el.textContent().catch(() => '');
+        console.log(`[H2-7] Feedback found (${sel}): ${text?.slice(0, 100)}`);
+        hasFeedback = true;
+        break;
+      }
+    }
+
+    // 如果没有 toast/notification，检查终端是否有新输出（命令下发反馈）
+    if (!hasFeedback) {
+      const terminalOutput = wb.locator('[class*="Terminal"] pre, [class*="terminal"] pre, .terminal-container pre');
+      const hasOutput = await terminalOutput.first().isVisible().catch(() => false);
+      if (hasOutput) {
+        console.log('[H2-7] Feedback: terminal output visible');
+        hasFeedback = true;
+      }
+    }
+
+    console.log(`[H2-7] Has feedback after click: ${hasFeedback}`);
+    expect(hasFeedback).toBeTruthy();
+
+    await screenshot(page, 'H2-07-after-click');
   });
 });
 
@@ -380,7 +466,7 @@ test.describe.serial('Stage 2B: AI 生成带 Action 内容', () => {
 // ============================================================================
 
 test.describe.serial('Stage 2C: Workbench 状态管理', () => {
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
 
   test('H2-8: AI 再次生成 → Workbench 更新为新内容', async ({ page }) => {
     test.setTimeout(180_000);
@@ -433,7 +519,7 @@ test.describe.serial('Stage 2C: Workbench 状态管理', () => {
   });
 
   test('H2-9: 会话隔离 — A 有 Workbench，切到 B，切回 A 恢复', async ({ page }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(240_000); // 需要两次 AI 调用 + 会话切换
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
@@ -498,7 +584,7 @@ test.describe.serial('Stage 2C: Workbench 状态管理', () => {
   });
 
   test('H2-10: 关闭 Workbench → AI 再次生成 → 重新打开', async ({ page }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(240_000); // 在 serial 组末尾，DeepSeek 可能限流
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
 
