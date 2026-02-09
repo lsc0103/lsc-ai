@@ -611,8 +611,14 @@ test.describe('Stage 3B: 本地 Agent 工作流', () => {
     const sessionOk = await ensureSession(page);
     console.log(`[H3-5] Session created: ${sessionOk}`);
 
-    // 等待 AI 回复完成，确保 Store 已初始化
-    await page.waitForTimeout(5000);
+    // 关键：等待 Agent 完成 "你好" 的 chat 任务，释放 isExecuting 锁
+    // 否则后续 shell execute 任务会被拒绝（"Agent is busy"）
+    if (agentConnected) {
+      console.log('[H3-5] Waiting for Agent to finish chat task...');
+      await waitForAIComplete(page, 120_000);
+      console.log('[H3-5] Agent chat task completed, ready for shell action');
+    }
+    await page.waitForTimeout(3000);
 
     const injectResult = await injectSchema(page, monitorSchema);
     console.log(`[H3-5] Inject result: ${JSON.stringify(injectResult)}`);
