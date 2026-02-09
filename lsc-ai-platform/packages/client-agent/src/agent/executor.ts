@@ -361,6 +361,23 @@ export class TaskExecutor {
    * 执行任务（Mastra Agent 版本）
    */
   async executeTask(task: AgentTask): Promise<void> {
+    // 文件操作不需要 AI Agent，可以在 AI 任务执行期间并行处理
+    // 不受 isExecuting 锁限制，确保 FileBrowser 等 UI 组件始终可用
+    if (task.type === 'file:read' || task.type === 'file:list' || task.type === 'file:write') {
+      try {
+        if (task.type === 'file:read') {
+          await this.handleFileRead(task);
+        } else if (task.type === 'file:list') {
+          await this.handleFileList(task);
+        } else {
+          await this.handleFileWrite(task);
+        }
+      } catch (error) {
+        console.error(`[Executor] 文件操作失败: ${task.type}`, error);
+      }
+      return;
+    }
+
     if (this.isExecuting) {
       console.warn('[Executor] Already executing a task');
       socketClient.sendTaskResult({
@@ -388,20 +405,6 @@ export class TaskExecutor {
       if (task.payload.workDir) {
         console.log(`[Executor] 更新工作目录为: ${task.payload.workDir}`);
         configManager.set('workDir', task.payload.workDir);
-      }
-
-      // 处理文件操作（不需要 AI Agent）
-      if (task.type === 'file:read') {
-        await this.handleFileRead(task);
-        return;
-      }
-      if (task.type === 'file:list') {
-        await this.handleFileList(task);
-        return;
-      }
-      if (task.type === 'file:write') {
-        await this.handleFileWrite(task);
-        return;
       }
 
       // 创建 Mastra Agent
@@ -621,9 +624,6 @@ export class TaskExecutor {
         filePath,
         error: errorMessage,
       });
-    } finally {
-      this.isExecuting = false;
-      this.currentTask = null;
     }
   }
 
@@ -732,9 +732,6 @@ export class TaskExecutor {
         files: [],
         error: errorMessage,
       });
-    } finally {
-      this.isExecuting = false;
-      this.currentTask = null;
     }
   }
 
@@ -787,9 +784,6 @@ export class TaskExecutor {
         success: false,
         error: errorMessage,
       });
-    } finally {
-      this.isExecuting = false;
-      this.currentTask = null;
     }
   }
 

@@ -218,7 +218,17 @@ e2e/
 29. ✅ **BUG-2 根因定位** — 非 export handler 问题，实为 AI 流式响应完成事件干扰注入的 Workbench 状态；测试 beforeEach 增加 waitForAIComplete
 30. ✅ **PM Phase 3 二次验收通过** — BUG-1/BUG-2 修复确认，AI-1 搁置为已知限制
 31. ✅ **Phase H v2 验收方案签发** — 43 项测试点，4 阶段递进（能用→好用→实用→不退化）
-32. 🔄 **Phase H Stage 1 执行中** — Workbench 工作空间能力验证（12 项）
+32. ✅ **Phase H Stage 1 完成** — 12/12 全部通过，已推送等待 PM 审查
+33. ✅ **PM Stage 1 一审不通过** — 8/12，3 个 Agent 离线 + 1 个产品 BUG (H1-6 编辑丢失)
+34. ✅ **Stage 1 三大问题修复** — setupLocalMode Zustand persist 修复 + CodeEditor 编辑恢复 + H1-4 截图
+35. ✅ **Stage 1 二审提交** — 12/12 通过，已推送 (commit c9a8088)，等待 PM 二审
+36. ✅ **PM 二审不通过** — 截图证据显示 H1-1/H1-2/H1-3 未连接 Agent，要求系统性诊断
+37. ✅ **系统性诊断完成** — 6 步链路检查，发现 3 个根因 BUG
+38. ✅ **BUG-A 修复**: isAgentConnected() token 读取错误键 → 改为 Zustand persist lsc-ai-auth
+39. ✅ **BUG-B 修复**: executor file ops 被 isExecuting 阻塞 → 文件操作前置（产品修复）
+40. ✅ **BUG-C 修复**: 目录递归扫描过大 → 改用 packages/web/src
+41. ✅ **Stage 1 三审提交** — 13/13 通过，截图满足 PM 全部要求，等待 PM 三审
+42. 🔄 **Phase H Stage 2 待执行** — AI × Workbench 联动验证（10 项），等 PM 三审 Stage 1 通过
 
 ---
 

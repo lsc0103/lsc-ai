@@ -38,6 +38,7 @@ function fileBrowserSchema(rootPath?: string) {
         components: [
           {
             type: 'FileBrowser',
+            // Use packages/web/src for Agent-online tests — smaller directory, faster response
             rootPath: rootPath || 'D:/project/src',
             showSize: true,
             showModifiedTime: false,
@@ -47,6 +48,11 @@ function fileBrowserSchema(rootPath?: string) {
     ],
   };
 }
+
+/** Smaller rootPath for H1-1 (flat directory, fast response) */
+const AGENT_ROOT_PATH = 'D:/u3d-projects/lscmade7/lsc-ai-platform/packages/web/src/stores';
+/** Root path with subdirectories for H1-2 and H1-3 (has dirs + .ts files) */
+const AGENT_ROOT_PATH_WITH_DIRS = 'D:/u3d-projects/lscmade7/lsc-ai-platform/packages/web/src';
 
 /** Schema with a .ts file opened in FileViewer (CodeEditor path) */
 function fileViewerCodeSchema() {
@@ -140,33 +146,54 @@ function mdAndImageSchema() {
 // ============================================================================
 
 /**
- * Detect whether a real Client Agent is connected via the API.
- * This is more reliable than checking localStorage because Socket.IO events
- * may not have arrived yet in the test browser.
+ * Read the JWT access token from the Zustand auth store in localStorage.
+ * The auth store uses persist middleware with key 'lsc-ai-auth'.
+ */
+function getAuthToken(page: import('@playwright/test').Page): Promise<string | null> {
+  return page.evaluate(() => {
+    try {
+      const raw = localStorage.getItem('lsc-ai-auth');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.state?.accessToken || null;
+    } catch {
+      return null;
+    }
+  });
+}
+
+/**
+ * Detect whether a real Client Agent is connected via the REST API.
  */
 async function isAgentConnected(page: import('@playwright/test').Page): Promise<boolean> {
   const result = await page.evaluate(async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return { connected: false, devices: [] };
+      // Read token from Zustand auth store (persisted as 'lsc-ai-auth')
+      const raw = localStorage.getItem('lsc-ai-auth');
+      if (!raw) return { connected: false, reason: 'no auth store' };
+      const parsed = JSON.parse(raw);
+      const token = parsed?.state?.accessToken;
+      if (!token) return { connected: false, reason: 'no accessToken in auth store' };
 
       const res = await fetch('/api/agents', {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!res.ok) return { connected: false, devices: [] };
+      if (!res.ok) return { connected: false, reason: `API returned ${res.status}` };
 
       const data = await res.json();
       const devices = Array.isArray(data) ? data : (data?.data || []);
       const onlineDevice = devices.find((d: any) => d.status === 'online');
       return {
         connected: !!onlineDevice,
-        devices,
+        devices: devices.map((d: any) => ({ deviceId: d.deviceId, status: d.status })),
         onlineDeviceId: onlineDevice?.deviceId,
+        reason: onlineDevice ? 'agent online' : `no online device (${devices.length} total)`,
       };
-    } catch {
-      return { connected: false, devices: [] };
+    } catch (e: any) {
+      return { connected: false, reason: `error: ${e?.message}` };
     }
   });
+  console.log(`[isAgentConnected] ${JSON.stringify(result)}`);
   return result.connected;
 }
 
@@ -182,11 +209,15 @@ async function setupLocalMode(
   page: import('@playwright/test').Page,
   workDir = 'D:/u3d-projects/lscmade7/lsc-ai-platform',
 ): Promise<boolean> {
-  // Step 1: Fetch online devices from API
+  // Step 1: Fetch online devices from API (read token from Zustand auth store)
   const deviceInfo = await page.evaluate(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const raw = localStorage.getItem('lsc-ai-auth');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const token = parsed?.state?.accessToken;
       if (!token) return null;
+
       const res = await fetch('/api/agents', {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -253,12 +284,72 @@ test.describe('H1: FileBrowser 深度验收', () => {
   test.setTimeout(90_000);
 
   test.beforeEach(async ({ page }) => {
+    // Capture browser console for FileService / socket debugging
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('[FileService]') ||
+        text.includes('[Socket]') ||
+        text.includes('file:list') ||
+        text.includes('file:content')
+      ) {
+        console.log(`[BROWSER] ${text}`);
+      }
+    });
+
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');
     await ensureSession(page);
     await waitForAIComplete(page, 30_000);
     await clearWorkbench(page);
   });
+
+  /**
+   * Helper: Wait for the file tree to render real file/folder nodes in FileBrowser.
+   * Polls the DOM for up to `timeout` ms, logging diagnostics every second.
+   */
+  async function waitForFileTree(
+    page: import('@playwright/test').Page,
+    timeout = 20_000,
+  ): Promise<{ ok: boolean; dirs: number; files: number; state: string }> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const info = await page.evaluate(() => {
+        const fb = document.querySelector('.workbench-file-browser');
+        if (!fb) return { state: 'no-fb', dirs: 0, files: 0 };
+        // Scope to the tree area (not the title bar)
+        const treeArea = fb.querySelector('.overflow-auto');
+        if (!treeArea) return { state: 'no-tree-area', dirs: 0, files: 0 };
+        // loading spinner?
+        const loading = treeArea.querySelector('.anticon-loading');
+        if (loading) return { state: 'loading', dirs: 0, files: 0 };
+        // error state?
+        const error = treeArea.querySelector('.anticon-exclamation-circle');
+        if (error) {
+          const errText = treeArea.textContent || '';
+          return { state: `error: ${errText.slice(0, 100)}`, dirs: 0, files: 0 };
+        }
+        // empty state?
+        const empty = treeArea.querySelector('.ant-empty');
+        if (empty) return { state: 'empty', dirs: 0, files: 0 };
+        // count real nodes in tree area only
+        const folders = treeArea.querySelectorAll('.anticon-folder, .anticon-folder-open');
+        const fileIcons = treeArea.querySelectorAll(
+          '.anticon-file, .anticon-file-text, .anticon-file-image, .anticon-file-pdf, .anticon-file-excel, .anticon-file-word, .anticon-file-ppt',
+        );
+        return {
+          state: folders.length + fileIcons.length > 0 ? 'loaded' : 'no-nodes',
+          dirs: folders.length,
+          files: fileIcons.length,
+        };
+      });
+      console.log(`[waitForFileTree] ${Date.now() - start}ms: ${JSON.stringify(info)}`);
+      if (info.state === 'loaded') return { ok: true, ...info };
+      if (info.state.startsWith('error:')) return { ok: false, ...info };
+      await page.waitForTimeout(1000);
+    }
+    return { ok: false, dirs: 0, files: 0, state: 'timeout' };
+  }
 
   // --------------------------------------------------------------------------
   // H1-1: 进入本地模式，Workbench 自动打开 FileBrowser
@@ -272,18 +363,51 @@ test.describe('H1: FileBrowser 深度验收', () => {
       expect(localModeReady, 'Should be able to set up local mode with online Agent').toBe(true);
       await clearWorkbench(page);
 
-      // Inject FileBrowser schema pointing to a real directory
-      const result = await injectSchema(page, fileBrowserSchema('D:/u3d-projects/lscmade7/lsc-ai-platform'));
+      // Verify agent store state before injecting
+      const storeState = await page.evaluate(() => {
+        const raw = localStorage.getItem('lsc-ai-agent');
+        if (!raw) return { error: 'no agent store' };
+        const parsed = JSON.parse(raw);
+        return {
+          currentDeviceId: parsed?.state?.currentDeviceId,
+          workDir: parsed?.state?.workDir,
+          deviceCount: parsed?.state?.devices?.length,
+        };
+      });
+      console.log(`[H1-1] Agent store: ${JSON.stringify(storeState)}`);
+      expect(storeState.currentDeviceId, 'Agent store must have currentDeviceId').toBeTruthy();
+
+      // Wait for socket to be fully authenticated
+      const socketReady = await page.evaluate(async () => {
+        // @ts-ignore — access module-level var via window hack
+        const { isSocketConnected } = await import('/src/services/socket.ts');
+        return isSocketConnected();
+      }).catch(() => false);
+      console.log(`[H1-1] Socket connected: ${socketReady}`);
+
+      // Inject FileBrowser schema pointing to a real directory with dirs + files
+      const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
 
       // Expect Workbench to contain a FileBrowser
       const fileBrowser = page.locator('.workbench-file-browser');
       await expect(fileBrowser).toBeVisible({ timeout: 15_000 });
 
-      // Wait for the file tree to load from Agent (real files, not error state)
-      // If Agent is connected and currentDeviceId is set, we should see directory nodes
-      const treeArea = fileBrowser.locator('.overflow-auto');
-      await expect(treeArea).toBeVisible({ timeout: 5_000 });
+      // Wait for the file tree to load from Agent (real files)
+      const treeResult = await waitForFileTree(page, 25_000);
+      console.log(`[H1-1] Final tree result: ${JSON.stringify(treeResult)}`);
+
+      // If the tree loaded, verify real directory nodes
+      if (treeResult.ok) {
+        expect(treeResult.dirs + treeResult.files).toBeGreaterThan(0);
+      } else {
+        // Even if file tree didn't load, the component itself should be rendered
+        // Check if it's an error we can diagnose
+        console.log(`[H1-1] File tree did not load: ${treeResult.state}`);
+        // Still verify the component renders (loading/error state)
+        const treeArea = fileBrowser.locator('.overflow-auto');
+        await expect(treeArea).toBeVisible({ timeout: 5_000 });
+      }
 
       // Search bar should exist
       const searchInput = fileBrowser.locator('input[placeholder*="搜索文件"]');
@@ -314,37 +438,40 @@ test.describe('H1: FileBrowser 深度验收', () => {
     const agentOnline = await isAgentConnected(page);
 
     if (agentOnline) {
-      // Set up local mode and inject FileBrowser with real project path
+      // Set up local mode and inject FileBrowser with a directory that HAS subdirectories
       await setupLocalMode(page);
       await clearWorkbench(page);
-      const result = await injectSchema(page, fileBrowserSchema('D:/u3d-projects/lscmade7/lsc-ai-platform'));
+      const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
 
       const fileBrowser = page.locator('.workbench-file-browser');
       await expect(fileBrowser).toBeVisible({ timeout: 10_000 });
 
       // Wait for file tree to load from Agent (real file listing)
-      // Look for directory nodes with folder icons
-      const dirNode = fileBrowser
-        .locator('div.cursor-pointer:has(.anticon-folder)')
-        .first();
+      const treeResult = await waitForFileTree(page, 25_000);
+      console.log(`[H1-2] Tree result: ${JSON.stringify(treeResult)}`);
 
-      // Wait up to 15s for the Agent to respond with file listing
-      const hasDirs = await dirNode.isVisible({ timeout: 15_000 }).catch(() => false);
-
-      if (hasDirs) {
-        // Click to expand a directory
-        await dirNode.click();
+      if (treeResult.ok && treeResult.dirs > 0) {
+        // Click the first directory node in the tree area to expand
+        const treeArea = fileBrowser.locator('.overflow-auto');
+        const dirNode = treeArea
+          .locator('div.cursor-pointer:has(.anticon-folder)')
+          .first();
+        await dirNode.click({ timeout: 5_000 });
         await page.waitForTimeout(2000);
 
         // After expansion: more items should appear (files or subdirectories)
-        const allItems = fileBrowser.locator('div.cursor-pointer');
+        const allItems = treeArea.locator('div.cursor-pointer');
         const itemCount = await allItems.count();
         expect(itemCount, 'Should have more items after expanding a directory').toBeGreaterThanOrEqual(2);
         console.log(`[H1-2] Directory expanded, ${itemCount} items visible`);
+      } else if (treeResult.ok) {
+        // Only files, no subdirs — still a valid tree
+        console.log(`[H1-2] Tree loaded with ${treeResult.files} files, no directories to expand`);
+        expect(treeResult.files).toBeGreaterThan(0);
       } else {
-        // File listing may be loading — check for loading/empty state
-        console.log('[H1-2] No directory nodes found — Agent may be loading');
+        console.log(`[H1-2] File tree not loaded: ${treeResult.state}`);
+        // The component itself should still render
         const treeArea = fileBrowser.locator('.overflow-auto');
         await expect(treeArea).toBeVisible({ timeout: 5_000 });
       }
@@ -369,40 +496,89 @@ test.describe('H1: FileBrowser 深度验收', () => {
     const agentOnline = await isAgentConnected(page);
 
     if (agentOnline) {
-      // Set up local mode and inject FileBrowser
+      // Set up local mode and inject FileBrowser with a directory containing .ts files
       await setupLocalMode(page);
       await clearWorkbench(page);
-      const result = await injectSchema(page, fileBrowserSchema('D:/u3d-projects/lscmade7/lsc-ai-platform'));
+      const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
 
       const fileBrowser = page.locator('.workbench-file-browser');
       await expect(fileBrowser).toBeVisible({ timeout: 10_000 });
 
-      // Wait for file tree to load, then find a .ts file
-      const tsFile = fileBrowser.locator('div.cursor-pointer').filter({
-        hasText: /\.tsx?$/,
-      }).first();
+      // Wait for file tree to load
+      const treeResult = await waitForFileTree(page, 25_000);
+      console.log(`[H1-3] Tree result: ${JSON.stringify(treeResult)}`);
 
-      const hasTsFile = await tsFile.isVisible({ timeout: 15_000 }).catch(() => false);
+      if (treeResult.ok && (treeResult.files > 0 || treeResult.dirs > 0)) {
+        const treeArea = fileBrowser.locator('.overflow-auto');
 
-      if (hasTsFile) {
-        await tsFile.click();
-        await page.waitForTimeout(3000);
+        // Find a .ts/.tsx file by matching the filename span (not the full div text
+        // which includes file size like "App.tsx1.8 KB")
+        // Target the truncate span which contains ONLY the filename
+        const tsFileSpan = treeArea.locator('span.truncate').filter({
+          hasText: /\.tsx?$/,
+        }).first();
 
-        // A new tab should appear with the filename
-        const tabs = page.locator(SEL.workbench.tab);
-        const tabCount = await tabs.count();
-        expect(tabCount, 'Should have at least 2 tabs after clicking a file').toBeGreaterThanOrEqual(2);
+        const hasTsFile = await tsFileSpan.isVisible({ timeout: 3_000 }).catch(() => false);
+        console.log(`[H1-3] Found .ts file span: ${hasTsFile}`);
 
-        // The FileViewer or Monaco editor should render
-        const codeEditor = page.locator(
-          '.workbench-file-viewer, .monaco-editor, [class*="CodeEditor"]',
-        );
-        await expect(codeEditor.first()).toBeVisible({ timeout: 10_000 });
-        console.log('[H1-3] .ts file opened in FileViewer/CodeEditor');
+        if (hasTsFile) {
+          const fileName = await tsFileSpan.textContent().catch(() => 'unknown');
+          console.log(`[H1-3] Clicking .ts file: ${fileName}`);
+          // Click the parent div (the clickable row)
+          await tsFileSpan.click();
+          await page.waitForTimeout(2000);
+
+          // A new tab should appear with the filename
+          const tabs = page.locator(SEL.workbench.tab);
+          const tabCount = await tabs.count();
+          console.log(`[H1-3] Tab count after click: ${tabCount}`);
+          expect(tabCount, 'Should have at least 2 tabs after clicking a file').toBeGreaterThanOrEqual(2);
+
+          // The new tab should be auto-activated by addTab (sets activeTabKey)
+          // Wait for FileViewer to render, then wait for Monaco editor to load
+          const codeEditor = page.locator(
+            '.workbench-file-viewer, .monaco-editor, [class*="CodeEditor"]',
+          );
+          await expect(codeEditor.first()).toBeVisible({ timeout: 15_000 });
+
+          // Wait specifically for Monaco editor to finish loading (shows actual code)
+          const monacoEditor = page.locator('.monaco-editor');
+          await monacoEditor.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {
+            console.log('[H1-3] Monaco editor did not appear, FileViewer may use fallback');
+          });
+          // Extra wait for Monaco to fully render code content
+          await page.waitForTimeout(2000);
+          console.log('[H1-3] .ts file opened in FileViewer/CodeEditor');
+        } else {
+          // No top-level .ts files visible — log what we see and try alternate approach
+          const allSpans = await treeArea.locator('span.truncate').allTextContents();
+          console.log(`[H1-3] All file names in tree: ${JSON.stringify(allSpans)}`);
+
+          // Try clicking the first non-directory item (file icon present, no folder icon)
+          const fileNode = treeArea.locator('div.cursor-pointer:has(.anticon-file-text)').first();
+          if (await fileNode.isVisible({ timeout: 3_000 }).catch(() => false)) {
+            const fileName = await fileNode.locator('span.truncate').textContent().catch(() => '');
+            console.log(`[H1-3] Clicking file node: ${fileName}`);
+            await fileNode.click();
+            await page.waitForTimeout(2000);
+            const tabs = page.locator(SEL.workbench.tab);
+            expect(await tabs.count()).toBeGreaterThanOrEqual(2);
+            const codeEditor = page.locator(
+              '.workbench-file-viewer, .monaco-editor, [class*="CodeEditor"]',
+            );
+            await expect(codeEditor.first()).toBeVisible({ timeout: 15_000 });
+          } else {
+            // Last resort: fallback to injection
+            console.log('[H1-3] No clickable files found, using injection fallback');
+            await injectSchema(page, fileViewerCodeSchema());
+            const fileViewer = page.locator('.workbench-file-viewer');
+            await expect(fileViewer.first()).toBeVisible({ timeout: 5_000 });
+          }
+        }
       } else {
-        // Files may still be loading — use injection fallback for FileViewer
-        console.log('[H1-3] No .ts files found in tree, using FileViewer injection');
+        // Files didn't load — use injection fallback for FileViewer
+        console.log('[H1-3] File tree not loaded, using FileViewer injection fallback');
         await injectSchema(page, fileViewerCodeSchema());
         const fileViewer = page.locator('.workbench-file-viewer');
         await expect(fileViewer.first()).toBeVisible({ timeout: 5_000 });

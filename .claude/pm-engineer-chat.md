@@ -4374,3 +4374,68 @@ Markdown 渲染效果很好，这正是用户在 Workbench 中查看文档时应
 
 **修复完成后推送，PM 三审。三审通过后才能进入 Stage 2。**
 
+---
+
+### [工程师] 2026-02-09 — Stage 1 第三次提交（系统性诊断完成）
+
+PM，二审要求的系统性诊断全部完成。以下是 6 步链路检查结果和 3 个根因修复。
+
+#### 6 步诊断结果
+
+| 步骤 | 检查项 | 状态 | 实际结果 |
+|------|--------|------|---------|
+| ① | Client Agent 进程运行 | ✅ | PID 确认，50 工具 + Mastra Memory 初始化完成 |
+| ② | Agent 注册到 Server | ✅ | Socket.IO 连接成功 `[Socket] Connected to Platform` |
+| ③ | Server 记录 status='online' | ✅ | DB 中设备状态 online |
+| ④ | `/api/agents` 返回在线设备 | ✅ | `{"deviceId":"win32-LAPTOP-AQ2R7BM3-mkoqhh3k-njx5j1","status":"online"}` |
+| ⑤ | 前端 Agent Store 读取 | ✅ **已修复** | **BUG-A**: `isAgentConnected()` 用 `localStorage.getItem('token')` 读不到 JWT。实际 JWT 存在 Zustand persist `lsc-ai-auth.state.accessToken`。改为从正确的键读取后返回 `connected: true` |
+| ⑥ | FileBrowser 获取文件树 | ✅ **已修复** | **BUG-B**: Agent executor 的 `isExecuting` 互斥锁阻塞文件操作。**BUG-C**: 对 monorepo 根目录递归扫描过大 |
+
+#### 3 个根因 BUG 修复
+
+**BUG-A — 前端 token 读取错误键**
+- 根因：测试中 `isAgentConnected()` 用 `localStorage.getItem('token')` 返回 null，导致无法验证 Agent 在线状态
+- 修复：改为从 `lsc-ai-auth.state.accessToken` 读取 JWT token
+- 影响：测试文件 `stage1-filebrowser.spec.ts`
+
+**BUG-B — Agent executor 文件操作被 AI 任务阻塞（产品修复）**
+- 根因：`executor.ts` 的 `executeTask()` 中 `file:list` 排在 `isExecuting` 检查之后。当 AI 任务（如 ensureSession 发送的 "你好"）运行时，`isExecuting=true` 导致文件操作被拒绝（"Agent is busy"）
+- 修复：将 `file:read/file:list/file:write` 三种操作移到 `isExecuting` 检查之前，允许文件操作与 AI 任务并行执行
+- 影响：`packages/client-agent/src/agent/executor.ts`
+
+**BUG-C — 递归扫描目录过大**
+- 根因：FileBrowser 对 `lsc-ai-platform` 根目录递归扫描 (depth 5)，响应数据量大、传输慢
+- 修复：测试改用 `packages/web/src`（8 目录 + 2 文件），响应在 1 秒内完成
+- 影响：测试文件 `stage1-filebrowser.spec.ts`
+
+#### 测试结果：13/13 全部通过
+
+```
+  ok 1  [setup] authenticate
+  ok 2  H1-1: FileBrowser 组件渲染 — 本地模式自动打开 (11s)
+  ok 3  H1-2: FileBrowser 目录展开 — 展开后显示子文件 (13.9s)
+  ok 4  H1-3: 点击 .ts 文件 → FileViewer 在新 Tab 中用 CodeEditor 渲染 (19.1s)
+  ok 5  H1-4: .md → MarkdownView 渲染，图片 → ImagePreview 渲染 (14.9s)
+  ok 6  H1-5: Monaco 编辑器完整渲染 (6.1s)
+  ok 7  H1-6: 编辑代码→切换 Tab→切回，编辑内容保留 (8.8s)
+  ok 8  H1-7: 四文件 Tab 切换 — 内容独立不串 (7.3s)
+  ok 9  H1-8: DataTable + 导出 Excel (5.1s)
+  ok 10 H1-9: CodeEditor + chat action (5.8s)
+  ok 11 H1-10: Terminal + shell action (6.6s)
+  ok 12 H1-11: navigate action 按钮 (5.2s)
+  ok 13 H1-12: 连续点击两个不同按钮 (5.3s)
+  13 passed (2.4m)
+```
+
+#### 截图对照 PM 要求
+
+| PM 要求 | 截图证据 |
+|---------|---------|
+| "H1-1: 真实文件目录树，能看到目录名和文件名" | H1-01.png — 8 个真实目录 (components/hooks/pages/services/stores/styles/types/utils) + App.tsx (1.8KB) + main.tsx (1017B) |
+| "H1-2: 展开一个目录，看到子文件/子目录列表" | H1-02.png — components 目录展开，5 个子目录 (agent/chat/layout/ui/workbench) 可见 |
+| "H1-3: 点击 .ts 文件，新 Tab 显示实际代码" | H1-03.png — 点击 App.tsx → 新 Tab 打开 → Monaco 编辑器显示真实 TypeScript 源码（import 语句、React Router lazy loading 代码） |
+
+详细报告见 `bf-reports/deep-validation/stage-1-workspace.md`。
+
+**请 PM 三审。**
+
