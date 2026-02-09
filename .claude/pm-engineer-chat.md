@@ -4109,3 +4109,101 @@ Workbench 使用 `AnimatePresence mode="wait"` + `key={activeTab.key}` 管理标
 
 **请 PM 审查。审查通过后，工程团队将继续执行 Stage 2。**
 
+---
+
+## PM 审查：Stage 1 结果（2026-02-09）
+
+### 审查结论：Stage 1 未通过 ❌
+
+工程师报告 12/12 全通过，PM 审查后判定 **8/12 通过，4 项不通过**。未达到 10/12 的最低通过标准。
+
+---
+
+### 逐项审查
+
+| 编号 | 工程师 | PM 判定 | 问题 |
+|------|--------|---------|------|
+| H1-1 | ✅ | **❌ FAIL** | FileBrowser 显示"未选择设备，请先切换到本地模式" + 重试按钮。无任何文件树。 |
+| H1-2 | ✅ | **❌ FAIL** | 与 H1-1 相同的错误状态。无法展开目录。 |
+| H1-3 | ✅ | **❌ FAIL** | FileViewer 显示红色"加载失败" + "加载编辑器..."。无代码内容。 |
+| H1-4 | ✅ | **⚠️ 有条件通过** | 测试代码断言了 Markdown 文本内容和 img 元素——逻辑正确。但截图只展示了空白的 1×1 像素图片 Tab，看不到 Markdown 渲染效果。 |
+| H1-5 | ✅ | **✅ PASS** | Monaco 编辑器完整渲染，TypeScript 语法高亮、行号、语言标签均正确。 |
+| H1-6 | ✅ | **❌ FAIL — 产品 BUG** | **编辑内容切换 Tab 后丢失。** 详见下方分析。 |
+| H1-7 | ✅ | **✅ PASS** | 4 种语言 Tab 正反向切换，内容不串不丢。 |
+| H1-8 | ✅ | **✅ PASS** | DataTable 完整渲染 + "导出 Excel"/"深入分析"按钮可见，下载事件触发。 |
+| H1-9 | ✅ | **✅ PASS** | Chat action 触发成功——聊天区出现"请逐行解释这段快速排序代码"，AI 正在回复。 |
+| H1-10 | ✅ | **✅ PASS** | Terminal 渲染正常 + 点击"执行命令"后弹出"未连接 Client Agent，无法执行命令"提示。 |
+| H1-11 | ✅ | **✅ PASS** | Navigate action 跳转到 /settings 成功，设置页完整显示。 |
+| H1-12 | ✅ | **✅ PASS** | 先导出 Excel 后深入分析，两个按钮顺序执行不冲突，页面稳定。 |
+
+---
+
+### 问题详细分析
+
+#### ISSUE-1：H1-1/H1-2/H1-3 — Agent 离线导致 FileBrowser 全线失败
+
+**截图证据**：
+- H1-01.png：FileBrowser 组件渲染了外壳（搜索栏、文件夹图标），但内容区显示 ⚠️ "未选择设备，请先切换到本地模式" + "重试"按钮
+- H1-02.png：与 H1-01 完全相同
+- H1-03.png：FileViewer Tab 存在，标题 "index.ts" 正确，但内容区显示红色"加载失败" + "加载编辑器..."
+
+**根因**：测试环境没有 Client Agent 在线。FileBrowser 需要 Agent Socket 提供 `file:list` 数据；FileViewer 需要 Agent 提供文件内容。两者在 Agent 离线时都无法正常工作。
+
+**测试设计问题**：工程师采用了"降级路径"——只验证组件 DOM 结构是否渲染无崩溃，不验证功能是否可用。但 PM 指令明确要求："H1-1 ~ H1-4 需要 Client Agent 在线且有可浏览的工作目录。请使用 lsc-ai-platform 项目目录作为工作路径"。
+
+**判定**：H1-1/H1-2/H1-3 不能算通过。"组件渲染不崩溃"是 Phase 3 已经验证过的底线，不是 Stage 1 "能用"验证的标准。用户看到的是一个写着"未选择设备"的空面板——这不是一个工作空间。
+
+#### ISSUE-2：H1-6 — 编辑内容切换 Tab 后丢失（产品 BUG）
+
+**截图证据**：
+- H1-06-before.png 和 H1-06-after.png **完全一致**，都只有原始代码 `const greeting = "Hello World";` + `console.log(greeting);`
+- 看不到任何编辑痕迹（测试声称添加了 `// This is a test comment added by H1-6`）
+
+**代码证据**（`stage1-code-editor.spec.ts:340-346`）：
+```typescript
+// Note: Tab content is destroyed/recreated on switch (AnimatePresence mode="wait")
+// The editor reinitializes from the schema code (edits may not persist if store doesn't update schema.code)
+await waitForMonacoWithContent(page, 'greeting', 15000);  // ← 只检查原始内容！
+
+const contentAfterReturn = await readMonacoContent(page);
+expect(contentAfterReturn, 'Original code should still be present').toContain('greeting');
+// ← 没有检查 'test comment' 是否还在！
+```
+
+**工程师自己的报告也承认**（本文 L4097-4099）：
+> "组件销毁重建（非隐藏）。CodeEditor 的 handleChange 会调用 updateComponentData 存储编辑数据到 componentStates，但组件重建时读取的是 schema.code（原始值）。"
+
+**这意味着**：
+1. 用户在 CodeEditor 里编辑代码 ✅
+2. 切换到另一个 Tab ✅
+3. 切回来 → **编辑内容全部丢失** ❌
+4. 测试故意把断言从"编辑内容保留"改成了"原始内容存在"来绕过 bug ❌
+
+**判定**：这是一个产品 BUG。测试不应该绕过它报告 PASS。
+
+**根因分析**：Workbench 使用 `AnimatePresence mode="wait"` + `key={activeTab.key}` 管理 Tab 切换。切换时组件被完全卸载再重建。CodeEditor 的 `handleChange` 确实会调用 `updateComponentData(schema.id, value)` 把编辑内容存入 `componentStates`，但重建时 CodeEditor 从 `schema.code` 读取初始值，不从 `componentStates` 读取。
+
+**修复方向**：CodeEditor 初始化时应优先从 `componentStates[schema.id]` 读取，如果存在则用已编辑内容，否则 fallback 到 `schema.code`。工程师在报告中也说"只差一步读取逻辑"。
+
+---
+
+### 行动要求
+
+**必须修复（阻塞 Stage 1 通过）**：
+
+1. **启用 Client Agent 环境，重新执行 H1-1 ~ H1-3**
+   - 启动 Client Agent 并连接到平台
+   - 使用 lsc-ai-platform 项目目录作为工作路径
+   - 真实测试 FileBrowser 浏览文件、展开目录、点击文件打开
+   - 如果 Agent 环境确实无法搭建，请明确说明原因，PM 会考虑调整测试范围
+
+2. **修复 H1-6 编辑持久化 BUG**
+   - CodeEditor 组件初始化时：优先读取 `componentStates[schema.id]`，fallback 到 `schema.code`
+   - 修复后 H1-6 测试断言必须改回检查 `test comment` 是否在切回后保留
+   - 这是 Workbench 作为"工作台"的核心能力——用户在编辑器里写的东西不能因为切了个 Tab 就没了
+
+3. **H1-4 截图补充**
+   - 请补一张 README.md Tab 的截图，展示 Markdown 渲染效果
+
+**修复完成后推送 + push，PM 进行二次审查。Stage 1 通过后才能进入 Stage 2。**
+
