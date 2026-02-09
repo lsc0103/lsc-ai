@@ -102,8 +102,8 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 10. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
 11. Workflow/RPA 前端无入口
 
-### P1 — 重要优化（Stage 3 深度验证新增）
-17. Agent 单任务执行锁——连续操作时 `isExecuting` 锁未释放导致后续命令被拒绝"Agent is busy"（Stage 3 H3-5 发现）
+### P0 — 深度验证发现
+17. **BUG-F**: Agent `isExecuting` 锁未正确释放——任务完成后锁仍被持有，后续操作报错"Agent is busy with another task"。用户点击按钮会看到红色报错。（Stage 3 H3-5 发现）
 
 ### P2 — 改进项
 12. Structured Output 未使用

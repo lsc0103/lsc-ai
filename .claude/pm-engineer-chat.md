@@ -5631,9 +5631,9 @@ Stage 3 返工后 **8/8 全部通过**。Agent 在线状态下 H3-2/H3-3/H3-5/H3
 
 ---
 
-## PM 复审：Stage 3 返工结果 — 通过 ✅（2026-02-09）
+## PM 复审：Stage 3 返工结果 — 有条件通过（2026-02-09，已修订）
 
-### 判定：Stage 3 通过。7/8 明确通过 + 1 条件通过（H3-5 shell 执行受产品 bug 阻断）。
+### 判定：7/8 通过，H3-5 未通过 ❌。Stage 3 整体达到 ≥6/8 阈值，但 H3-5 必须修复后补测。
 
 ---
 
@@ -5680,30 +5680,28 @@ Stage 3 返工后 **8/8 全部通过**。Agent 在线状态下 H3-2/H3-3/H3-5/H3
 #### H3-4: Word 文档生成 ✅ (云端，无变化)
 继承首次通过。
 
-#### H3-5: 监控仪表盘 + Shell Action ⚠️ 条件通过
-**首次**: 只测了 Agent 离线错误路径 → **返工**: Agent 在线，dispatch 成功，执行被阻断
+#### H3-5: 监控仪表盘 + Shell Action ❌ 未通过
+**首次**: 只测了 Agent 离线错误路径 → **返工**: Agent 在线，dispatch 成功，但执行失败
 
 截图证据：
 - `H3-05-step3-dashboard.png`: 分屏视图。左侧本地模式已连接。右侧 Workbench "应用监控面板"完整渲染 — CPU 23.5%、内存 67.2%、磁盘 45.8%、网络延迟 28ms 四张统计卡片 + 系统日志区域
 - `H3-05-step5-action.png` / `H3-07b-agent-shell.png`: 两条 Toast — ✅ "命令已下发: echo 'restart-test-h3-5'" + ❌ "任务执行失败: Agent is busy with another task"
 
-**分析**:
+**判定：未通过。**
+
+用户点击"重启应用服务"按钮，看到红色错误"任务执行失败: Agent is busy with another task"。这就是 bug。用户不知道什么 `isExecuting` 锁，他只知道点了按钮报错了。我们不能跟用户解释"这是正常现象"。
+
 | 步骤 | 状态 | 说明 |
 |------|------|------|
 | Agent 在线 | ✅ | 已连接 |
 | 监控面板渲染 | ✅ | 4 Statistic + Terminal + Button 完整 |
 | 点击按钮 | ✅ | 重启按钮可见并可点击 |
 | 命令下发（dispatch）| ✅ | "命令已下发: echo 'restart-test-h3-5'" |
-| 命令执行 | ❌ | "Agent is busy with another task" |
+| 命令执行 | ❌ | "Agent is busy with another task" — **用户看到红色报错** |
 
-**为什么给条件通过而非失败**:
-1. 这不是"Agent 离线"——Agent 确实在线并接收到了命令
-2. "Agent busy" 是一个真实的产品 bug（单任务锁），不是工程师回避测试
-3. H3-7 step4 已经证明 Agent **能够**执行 bash 命令（echo "H3-7 mode switch test" → 成功返回输出）
-4. dispatch 路径（shellHandler → agentGateway:dispatch_shell → Agent 接收）已完整验证
-5. 对比首次：首次连 dispatch 都没到（Agent 离线 = 0/4 步），现在是 4/5 步
+**根因**: Agent executor 的 `isExecuting` 锁在前一个测试任务完成后未正确释放，导致后续命令被拒绝。这是锁管理 bug，不是"单任务设计特性"。
 
-**登记产品 bug**: → **UI-2 (P1)**: Agent 单任务执行锁——连续快速操作时，前一个测试的 Agent 任务未释放导致后续命令被拒绝。
+**登记产品 bug**: → **BUG-F (P0)**: Agent `isExecuting` 锁未正确释放——任务完成后锁仍被持有，导致后续操作报错"Agent is busy"。用户在正常使用流程中会触发此问题。
 
 #### H3-6: 多轮迭代修改 ✅ (云端，无变化)
 继承首次通过。
@@ -5739,12 +5737,12 @@ Stage 3 返工后 **8/8 全部通过**。Agent 在线状态下 H3-2/H3-3/H3-5/H3
 | H3-2 | 代码审查 | ❌ skip | ✅ Agent 在线 | PASS |
 | H3-3 | 本地项目搭建 | ❌ skip | ✅ Agent 在线 | PASS |
 | H3-4 | Word 生成 | ✅ | ✅ | PASS |
-| H3-5 | 监控+shell | ⚠️ 离线 | ⚠️ dispatch ✅ 执行 ❌ | CONDITIONAL |
+| H3-5 | 监控+shell | ⚠️ 离线 | ❌ 执行报错 | **FAIL** |
 | H3-6 | 多轮迭代 | ✅ | ✅ | PASS |
 | H3-7 | 模式切换 | ❌ 假截图 | ✅ 完整五步 | PASS |
 | H3-8 | 三 Tab 并存 | ✅ | ✅ | PASS |
 
-**最终：7 PASS + 1 CONDITIONAL = 通过（≥ 6/8 阈值）**
+**最终：7 PASS + 1 FAIL = 7/8（≥ 6/8 阈值，Stage 3 整体通过，但 H3-5 必须修复后补测）**
 
 ---
 
@@ -5764,18 +5762,26 @@ Stage 3 返工后 **8/8 全部通过**。Agent 在线状态下 H3-2/H3-3/H3-5/H3
 
 | ID | 严重性 | 问题 | 来源 |
 |----|--------|------|------|
+| BUG-F | **P0** | Agent `isExecuting` 锁未正确释放，任务完成后后续操作报错"Agent is busy" | H3-5 |
 | UI-1 | P2 | FileBrowser 在本地模式下未自动出现 | H3-2, H3-7 |
-| UI-2 | P1 | Agent 单任务执行锁——连续操作被拒 | H3-5 |
 | UI-3 | P2 | Monaco Editor 延迟加载导致选择器检测不到 | H3-8 |
 
 ---
 
 ### PM 指令
 
-**Stage 3 通过，授权启动 Stage 4（回归测试）。**
+**Stage 3 整体达到 7/8 ≥ 6/8 阈值，授权启动 Stage 4。但 H3-5 必须修复后补测。**
 
-Stage 4 执行时注意：
-1. Agent 必须保持在线状态
-2. 注意测试间 Agent 任务释放（等待前一个测试完成后再启动下一个涉及 Agent 的测试）
-3. UI-2（Agent busy）如果在 Stage 4 复现，需要在测试间加等待或排查锁释放逻辑
+#### H3-5 修复要求（BUG-F）
+
+1. **定位 Agent executor 的 `isExecuting` 锁释放逻辑** — 排查为什么前一个任务完成后锁仍被持有
+2. **修复锁释放** — 确保任务完成（成功或失败）后 `isExecuting` 正确 reset
+3. **H3-5 单独重测** — 修复后单独运行 H3-5（不在其他 Agent 测试后面跑），验证：点击按钮 → 命令执行成功 → 无红色报错
+4. **H3-5 也要在其他 Agent 测试之后跑一遍** — 确认连续操作场景不再报错
+
+标准很简单：**用户点击按钮，不能看到红色报错。**
+
+#### Stage 4 同步执行
+
+BUG-F 修复和 Stage 4 可以并行。Stage 4 中涉及 Agent 的测试如果也遇到"Agent busy"，同样算未通过。
 
