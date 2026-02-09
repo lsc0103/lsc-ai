@@ -454,25 +454,25 @@ export const showCodeTool = createTool({
 // workbench — 通用工具（支持旧 blocks + 新 tabs 两种输入格式）
 // ============================================================================
 
-/** 旧 blocks 格式输入 */
-const OldFormatInput = z.object({
-  version: z.literal('1.0').default('1.0'),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  blocks: z.array(ContentBlockSchema),
-  metadata: z.record(z.any()).optional(),
-});
-
-/** 新 tabs 格式输入 */
-const NewFormatInput = z.object({
-  title: z.string().optional(),
+/**
+ * 统一输入格式：同时支持旧 blocks 和新 tabs，但用单一 z.object 避免 z.union 生成 anyOf
+ * （DeepSeek 要求工具 schema 必须为 type: "object"，z.union 生成的 anyOf 会被拒绝）
+ */
+const WorkbenchInput = z.object({
+  title: z.string().optional().describe('Workbench 标题'),
+  // ---- 新 tabs 格式（推荐）----
   tabs: z.array(z.object({
     title: z.string(),
     icon: z.string().optional(),
     components: z.array(z.object({
       type: z.string().describe('组件类型，如 DataTable, BarChart, CodeEditor, Button, Statistic, Terminal 等'),
     }).passthrough()),
-  })),
+  })).optional().describe('新格式：Tab 列表，每个 Tab 包含多个组件'),
+  // ---- 旧 blocks 格式（兼容）----
+  version: z.string().optional().describe('旧格式版本号，如 "1.0"'),
+  description: z.string().optional(),
+  blocks: z.array(ContentBlockSchema).optional().describe('旧格式：内容块列表'),
+  metadata: z.record(z.any()).optional(),
 });
 
 export const workbenchTool = createTool({
@@ -524,7 +524,7 @@ export const workbenchTool = createTool({
   }]
 }
 \`\`\``,
-  inputSchema: z.union([OldFormatInput, NewFormatInput]),
+  inputSchema: WorkbenchInput,
   execute: async (input) => {
     try {
       // 判断输入格式：有 blocks 字段 → 旧格式，有 tabs 字段 → 新格式

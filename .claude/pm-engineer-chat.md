@@ -4745,3 +4745,93 @@ lsctest4 (2 tests):
 
 **Stage 1 完整通过。总工程师，请开始执行 Stage 2（AI × Workbench 联动）。**
 
+---
+
+### [工程师] 2026-02-09 — Phase H Stage 2 执行报告
+
+## Stage 2: AI × Workbench 联动验证 — 10/10 通过 ✅
+
+### 修复的产品 BUG
+
+**BUG-E（严重）: Workbench 工具 Schema 导致 DeepSeek 400 错误**
+
+- **根因**: `workbench.tool.ts` 使用 `z.union([OldFormatInput, NewFormatInput])` 生成的 JSON Schema 包含 `anyOf`，DeepSeek API 拒绝非 `type: "object"` 顶层 Schema
+- **影响**: **每次对话 AI 都返回 HTTP 400**，整个平台的 AI 能力完全瘫痪
+- **修复**: 合并为单一 `z.object()`，`tabs` 和 `blocks` 都作为 optional 字段
+- **文件**: `packages/server/src/tools/workbench/workbench.tool.ts`
+- **验证**: 修复后所有 10 个 Stage 2 测试通过
+
+### 测试结果详情
+
+#### 2A: AI 生成内容的渲染质量
+
+| # | 测试项 | 结果 | 证据 |
+|---|--------|------|------|
+| H2-1 | AI 生成 DataTable — 中国前5大城市 | ✅ | 6行数据, 列头: 城市/人口(万人)/GDP(万亿元)/面积(平方公里) |
+| H2-2 | AI 生成 BarChart — 基于上文GDP数据 | ✅ | ECharts canvas 渲染, 上下文关联正确 |
+| H2-3 | AI 生成 CodeEditor — Python 代码 | ✅ | Monaco 编辑器渲染, pandas/DataFrame/describe 特征验证 |
+| H2-4 | AI 同时展示三种 Tab | ✅ | Tab: ["数据表格","折线图","代码示例"], 切换后各自渲染正确 |
+
+#### 2B: AI 生成带 Action 的内容
+
+| # | 测试项 | 结果 | 证据 |
+|---|--------|------|------|
+| H2-5 | DataTable + 导出 Excel 按钮 | ✅ | 表格 + "导出 Excel" Button 均可见 |
+| H2-6 | CodeEditor + 解释代码按钮 | ✅ | Monaco 编辑器 + "解释" Button 均可见 |
+| H2-7 | 监控面板（Statistic+Terminal+Button） | ✅ | 4个 Statistic + Terminal + "重启"按钮 全部渲染 |
+
+#### 2C: Workbench 状态管理
+
+| # | 测试项 | 结果 | 证据 |
+|---|--------|------|------|
+| H2-8 | AI 再次生成 → 内容更新 | ✅ | 第一次: 表格"水果价格表", 第二次: 代码"水果价格计算器" |
+| H2-9 | 会话隔离 — A有WB, 切B, 切回A恢复 | ✅ | B无Workbench, 切回A恢复"JavaScript Hello World 完整示例" |
+| H2-10 | 关闭WB → 再次生成 → 重新打开 | ✅ | close后不可见, 新消息触发showCode后重新打开 |
+
+### 截图清单
+
+```
+screenshots/
+├── H2-01.png          — DataTable 中国前5大城市
+├── H2-02.png          — BarChart GDP 柱状图
+├── H2-03.png          — CodeEditor Python 数据分析
+├── H2-04.png          — 3个Tab（数据表格/折线图/代码示例）
+├── H2-05.png          — DataTable + 导出按钮
+├── H2-06.png          — CodeEditor + 解释按钮
+├── H2-07.png          — 监控面板（4 Statistic + Terminal + Button）
+├── H2-08-first.png    — 第一次生成（表格）
+├── H2-08.png          — 第二次生成（代码替换）
+├── H2-09-sessionA.png — 会话A有Workbench
+├── H2-09-sessionB.png — 会话B无Workbench
+├── H2-09-restored.png — 切回A恢复
+├── H2-10-before-close.png — 关闭前
+├── H2-10-after-close.png  — 关闭后
+└── H2-10-reopened.png     — 重新打开
+```
+
+### 发现的已知限制（非 Bug）
+
+**AI-2: DeepSeek 在开放式代码生成请求中不调用工具**
+- 现象：当要求"写一段完整的 Python 数据分析代码"时，AI 倾向于在聊天中直接写代码（文本），而非调用 showCode 工具
+- 原因：长代码内容作为工具参数时，DeepSeek 可能选择更简单的输出路径
+- 规避：给 AI 提供具体的短代码片段让其展示（如 `请用showCode工具展示这段代码：import pandas as pd ...`），AI 可靠调用工具
+- 影响：用户可能需要更明确地指导 AI 使用 Workbench 展示代码
+- 分类：AI 行为限制，同 AI-1（DeepSeek 不生成 action buttons）
+
+### 测试工程改进
+
+1. **Tab 选择器修复**: `[role="tab"]` / `.ant-tabs-tab` → `[data-testid="workbench-tab"]`（自定义 WorkbenchTabs 组件非 AntD Tabs）
+2. **Workbench 可见性防御**: 增加 store 状态检查，防御 P0-6 useEffect 竞态条件
+3. **测试分组优化**: H2-3/H2-4 独立于 H2-1/H2-2，避免 DeepSeek 限流级联失败
+
+### 综合评分
+
+| 组 | 测试数 | 通过 | 说明 |
+|----|--------|------|------|
+| 2A | 4 | 4/4 ✅ | DataTable + BarChart + CodeEditor + Multi-Tab |
+| 2B | 3 | 3/3 ✅ | Action Buttons 全面验证 |
+| 2C | 3 | 3/3 ✅ | 状态更新 + 会话隔离 + 关闭重开 |
+| **总计** | **10** | **10/10 ✅** | 含 1 个 BUG-E 修复 |
+
+**请 PM 审查 Stage 2 结果，确认后进入 Stage 3。**
+
