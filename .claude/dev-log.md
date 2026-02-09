@@ -793,3 +793,50 @@ PM 二审 Stage 1 后，用户追问路径一致性问题：本地模式选择�
 ### 下次继续
 - 等待 PM 三审 Stage 1
 - Stage 2: AI × Workbench 联动验证
+
+---
+
+## 2026-02-09 (第2次) | Phase H Stage 2 — AI × Workbench 联动验证 10/10 通过
+
+**目标**: 执行 Phase H Stage 2 深度验收（10 项 AI × Workbench 联动测试）
+
+### BUG-E 发现与修复
+
+**现象**: AI 调用 workbench 工具时 DeepSeek API 返回 400 错误（tool parameters invalid）
+**根因**: `workbench.tool.ts` 使用 `z.union([OldFormatInput, NewFormatInput])` 生成 `anyOf` JSON Schema，DeepSeek API 不支持 `anyOf` 格式
+**修复**: 合并为单一 `z.object()` — `tabs` 和 `blocks` 均为 optional 字段，后端兼容两种格式
+
+### 测试修复（4 轮迭代）
+
+1. **H2-8 Tab 选择器错误**: `[role="tab"]` 不匹配自定义 WorkbenchTabs 组件 → 改用 `[data-testid="workbench-tab"]`
+2. **H2-3 Workbench 不可见**: P0-6 竞态条件（useSessionWorkbench useEffect 清除 workbench:update 的状态）→ store 级重试：检查 schema 存在但 visible=false 时手动恢复
+3. **H2-3 AI 不调用工具**: 开放式 prompt 导致 DeepSeek 写代码到文本而非调用 showCode → 改为给定明确短代码让 AI 展示
+4. **H2-8 Tab 断言错误**: 每次 loadState 替换整个 Workbench 而非追加 → 改为验证内容变化而非 tab 数量增加
+
+### 测试结果 10/10 通过
+
+| 测试 | 内容 | 结果 |
+|------|------|------|
+| H2-1 | DataTable — 中国前5大城市 | ✅ |
+| H2-2 | BarChart — GDP 数据 | ✅ |
+| H2-3 | CodeEditor — Python 代码 | ✅ |
+| H2-4 | 三 Tab 联合展示 | ✅ |
+| H2-5 | DataTable + 导出 Excel 按钮 | ✅ |
+| H2-6 | CodeEditor + 解释代码按钮 | ✅ |
+| H2-7 | 监控面板（统计卡片+终端+按钮）| ✅ |
+| H2-8 | 再次生成 → 内容更新 | ✅ |
+| H2-9 | 会话隔离 + 切回恢复 | ✅ |
+| H2-10 | 关闭 → 再次生成 → 重新打开 | ✅ |
+
+### AI-2 已知限制
+DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 showCode 工具。需给定明确短代码 prompt 才能可靠触发工具调用。
+
+### 修改文件
+1. `packages/server/src/tools/workbench/workbench.tool.ts` — BUG-E 修复
+2. `packages/web/e2e/deep-validation/stage2-ai-workbench.spec.ts` — 新建 10 个测试
+3. `packages/web/bf-reports/deep-validation/screenshots/H2-*.png` — 15 张截图
+4. `.claude/pm-engineer-chat.md` — Stage 2 PM 报告
+
+### 下次继续
+- 等待 PM 审查 Stage 2 结果
+- PM 确认后进入 Stage 3（实际业务场景验证）
