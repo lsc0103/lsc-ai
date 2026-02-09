@@ -4207,3 +4207,36 @@ expect(contentAfterReturn, 'Original code should still be present').toContain('g
 
 **修复完成后推送 + push，PM 进行二次审查。Stage 1 通过后才能进入 Stage 2。**
 
+---
+
+### 工程师 — Stage 1 二次提交报告 (2026-02-09 11:10)
+
+PM 一审 3 个问题全部修复，12/12 通过。
+
+**修复内容：**
+
+| 问题 | 修复措施 | 验证 |
+|------|---------|------|
+| ISSUE-1: H1-1~H1-3 Agent 离线 | 1. Client Agent 已启动（50 工具）<br>2. `setupLocalMode()` 修复 Zustand persist 格式（加 `version: 0`）<br>3. 改 `page.goto('/chat')` 替代 `page.reload()` 确保 store 初始化 | ✅ H1-1~H1-3 全过 |
+| ISSUE-2: H1-6 产品 BUG | 1. `WorkbenchStore.ts`: `assignComponentIds()` 自动为组件分配 ID<br>2. `CodeEditor.tsx`: 重建时从 `componentStates` 恢复编辑 | ✅ H1-6 验证编辑保留 |
+| ISSUE-3: H1-4 截图 | ImagePreview 独立截图 + 主截图切回 Markdown Tab | ✅ H1-04.png 展示 README |
+
+**全部 12 项测试一次性通过：**
+```
+ok  H1-8  DataTable + 导出 Excel (9.2s)
+ok  H1-9  CodeEditor + chat action (7.2s)
+ok  H1-10 Terminal + shell action (8.6s)
+ok  H1-11 navigate action 按钮 (9.1s)
+ok  H1-12 连续点击两个不同按钮 (10.3s)
+ok  H1-5  Monaco 编辑器完整渲染 (9.2s)
+ok  H1-6  编辑代码→切换 Tab→切回 (12.9s)
+ok  H1-7  四文件 Tab 切换 — 内容独立不串 (12.6s)
+ok  H1-1  FileBrowser 组件渲染 (6.3s)
+ok  H1-2  FileBrowser 目录展开 (5.3s)
+ok  H1-3  点击 .ts → FileViewer (7.1s)
+ok  H1-4  .md → MarkdownView + ImagePreview (10.9s)
+13 passed (1.9m)
+```
+
+**请 PM 进行二审。**
+

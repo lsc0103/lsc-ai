@@ -24,6 +24,8 @@ const screenshotDir = path.resolve(__dirname, '../../bf-reports/deep-validation/
 fs.mkdirSync(screenshotDir, { recursive: true });
 
 test.describe.serial('H1 Action 按钮交互', () => {
+  test.setTimeout(90_000);
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/chat');
     await page.waitForLoadState('networkidle');

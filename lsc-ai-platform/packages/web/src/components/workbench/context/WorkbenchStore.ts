@@ -18,6 +18,22 @@ import { ensureNewSchema } from '../schema/schema-transformer';
 import { ActionHandler, type ActionContext } from '../actions';
 
 // ============================================================================
+// 辅助函数
+// ============================================================================
+
+/** 为 schema 中缺少 id 的组件自动分配唯一 ID */
+function assignComponentIds(schema: WorkbenchSchema): WorkbenchSchema {
+  const tabs = schema.tabs.map((tab) => ({
+    ...tab,
+    components: (tab.components || []).map((comp, idx) => ({
+      ...comp,
+      id: comp.id || `${tab.key}-comp-${idx}`,
+    })),
+  }));
+  return { ...schema, tabs };
+}
+
+// ============================================================================
 // 状态类型定义
 // ============================================================================
 
@@ -169,7 +185,8 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
           console.warn('Workbench Schema has issues (partial render):', result.errors);
         }
 
-        const sanitizedSchema = result.sanitizedSchema;
+        // 自动分配组件 ID（确保 componentStates 可正确存储/读取编辑内容）
+        const sanitizedSchema = assignComponentIds(result.sanitizedSchema);
         const { history, historyIndex } = get();
 
         // 添加到历史记录
@@ -194,7 +211,8 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
           return;
         }
 
-        const sanitizedNewSchema = result.sanitizedSchema;
+        // 自动分配组件 ID
+        const sanitizedNewSchema = assignComponentIds(result.sanitizedSchema);
         const { schema: currentSchema, history, historyIndex } = get();
 
         // 如果当前没有 schema，直接使用新的
@@ -295,7 +313,8 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
           console.warn('Workbench Schema has issues (partial render):', result.errors);
         }
 
-        const sanitizedSchema = result.sanitizedSchema;
+        // 自动分配组件 ID
+        const sanitizedSchema = assignComponentIds(result.sanitizedSchema);
         const { history, historyIndex } = get();
 
         // 添加到历史记录

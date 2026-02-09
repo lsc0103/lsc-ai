@@ -335,14 +335,14 @@ test.describe('H1 CodeEditor: Monaco 编辑器深度验证', () => {
     // Switch back to the first tab
     await tabs.nth(0).click();
 
-    // Wait for Monaco to re-render with content containing 'greeting'
-    // Note: Tab content is destroyed/recreated on switch (AnimatePresence mode="wait")
-    // The editor reinitializes from the schema code (edits may not persist if store doesn't update schema.code)
-    await waitForMonacoWithContent(page, 'greeting', 15000);
+    // Wait for Monaco to re-render — edited content should be preserved
+    // (CodeEditor now reads from componentStates[schema.id] on remount)
+    await waitForMonacoWithContent(page, 'test comment', 15000);
 
-    // Verify original code content is present after tab switch
+    // Verify BOTH original code AND edited content are preserved after tab switch
     const contentAfterReturn = await readMonacoContent(page);
-    expect(contentAfterReturn, 'Original code should still be present after tab switch').toContain('greeting');
+    expect(contentAfterReturn, 'Edited content should be preserved after tab switch').toContain('test comment');
+    expect(contentAfterReturn, 'Original code should still be present').toContain('greeting');
     expect(contentAfterReturn, 'Original code should contain console.log').toContain('console');
 
     // Screenshot: after switching back

@@ -72,11 +72,15 @@ export const CodeEditor: React.FC<WorkbenchComponentProps<CodeEditorSchema>> = (
     className,
   } = schema;
 
-  const { handleAction, updateComponentData } = useWorkbenchStore();
+  const { handleAction, updateComponentData, getComponentState } = useWorkbenchStore();
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = React.useState(false);
   const [dynamicHeight, setDynamicHeight] = useState<number>(400);
+
+  // 优先从 componentStates 读取已编辑内容（Tab 切换时组件被销毁重建，需要恢复编辑状态）
+  const savedData = schema.id ? getComponentState(schema.id)?.data : undefined;
+  const initialCode = (typeof savedData === 'string' ? savedData : code) || '';
 
   // 当 height 为 'auto' 时，使用 ResizeObserver 动态计算高度
   const isAutoHeight = height === 'auto' || height === '100%';
@@ -166,17 +170,18 @@ export const CodeEditor: React.FC<WorkbenchComponentProps<CodeEditorSchema>> = (
     }
   }, [schema.id, onChangeAction, handleAction, updateComponentData]);
 
-  // 复制代码
+  // 复制代码（优先复制编辑器中的当前内容）
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      const currentContent = editorRef.current?.getValue() || initialCode;
+      await navigator.clipboard.writeText(currentContent);
       setCopied(true);
       message.success('已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       message.error('复制失败');
     }
-  }, [code]);
+  }, [initialCode]);
 
   // 计算高度：如果是 auto 则使用动态计算的高度
   const editorHeight = isAutoHeight
@@ -248,7 +253,7 @@ export const CodeEditor: React.FC<WorkbenchComponentProps<CodeEditorSchema>> = (
       <div className={isAutoHeight ? 'flex-1 min-h-0' : ''} style={{ height: isAutoHeight ? undefined : editorHeight }}>
         <Editor
           height={isAutoHeight ? '100%' : editorHeight}
-          defaultValue={code}
+          defaultValue={initialCode}
           language={normalizeLanguage(language)}
           theme="lsc-dark"
           onMount={handleEditorMount}
