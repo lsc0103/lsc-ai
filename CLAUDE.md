@@ -107,6 +107,7 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 13. Client Agent tool-adapter 丢失嵌套 Schema
 14. Memory 不互通 (Platform ↔ Client Agent)
 15. DeepSeek 不支持图片
+16. Workbench Tab 追加模式：AI 多次生成时支持 Tab 累积而非完全替换（Stage 2 H2-8 发现）
 
 > 修复一个问题后，立即在此标记 ✅ 并更新 dev-log
 
