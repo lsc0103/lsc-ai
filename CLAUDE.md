@@ -102,12 +102,17 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 10. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
 11. Workflow/RPA 前端无入口
 
+### P1 — 重要优化（Stage 3 深度验证新增）
+17. Agent 单任务执行锁——连续操作时 `isExecuting` 锁未释放导致后续命令被拒绝"Agent is busy"（Stage 3 H3-5 发现）
+
 ### P2 — 改进项
 12. Structured Output 未使用
 13. Client Agent tool-adapter 丢失嵌套 Schema
 14. Memory 不互通 (Platform ↔ Client Agent)
 15. DeepSeek 不支持图片
 16. Workbench Tab 追加模式：AI 多次生成时支持 Tab 累积而非完全替换（Stage 2 H2-8 发现）
+18. FileBrowser 在本地模式下未自动出现，需用户手动触发（Stage 3 H3-2/H3-7 发现）
+19. Monaco Editor 延迟加载导致 Playwright 选择器检测不到（Stage 3 H3-8 发现）
 
 > 修复一个问题后，立即在此标记 ✅ 并更新 dev-log
 

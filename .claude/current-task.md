@@ -244,7 +244,13 @@ e2e/
     - Agent 离线根因：进程未运行（非环境问题），`node packages/client-agent/dist/index.js start` 即修复
     - 删除自写豁免条款（第9行），不再使用"降级通过""预期内"等措辞
     - 发现 3 个真实产品问题：UI-1 FileBrowser 不自动出现、UI-2 Agent 单任务占用、UI-3 Monaco 延迟加载
-53. 🔄 **等待 PM 审查 Stage 3 返工** — Stage 4 待签发
+53. ✅ **PM 审查 Stage 3 返工通过** — 7/8 明确通过 + H3-5 条件通过（dispatch ✅ 执行被 Agent busy 阻断）
+    - H3-2: Agent 在线代码审查 sync_tool.py + Workbench 代码展示 ✅
+    - H3-3: Agent 创建→确认→删除→验证 4 步工具调用 ✅
+    - H3-5: 监控面板完整渲染 + shell dispatch 成功 + 执行受 Agent busy 阻断 ⚠️
+    - H3-7: 云端→本地→Agent执行echo→云端 完整五步 + 4 张独立截图 ✅
+    - 新增产品 bug: UI-2(P1 Agent 单任务锁) + UI-1/UI-3(P2)
+54. 🔄 **Stage 4 已授权启动** — 回归测试（13 项）
 
 ---
 
