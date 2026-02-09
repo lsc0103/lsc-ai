@@ -766,6 +766,14 @@ export class AgentGateway
   }
 
   /**
+   * 获取指定 Agent 的在线信息（含 workDir）
+   */
+  getOnlineAgentInfo(deviceId: string): AgentInfo | undefined {
+    const agent = this.onlineAgents.get(deviceId);
+    return agent && agent.status !== 'offline' ? agent : undefined;
+  }
+
+  /**
    * 检查 Agent 是否在线
    */
   isAgentOnline(deviceId: string): boolean {

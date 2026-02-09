@@ -18,6 +18,7 @@ export interface LLMConfig {
 interface IAgentGateway {
   sendTaskToAgent(deviceId: string, task: any): boolean;
   isAgentOnline(deviceId: string): boolean;
+  getOnlineAgentInfo(deviceId: string): { deviceId: string; workDir?: string; status: string } | undefined;
   notifyAgentPaired(deviceId: string, userId: string, llmConfig: LLMConfig): boolean;
 }
 
@@ -227,11 +228,25 @@ export class AgentService {
     return this.onlineAgents.get(agentId);
   }
 
-  // 获取用户的 Agent 列表
+  // 获取用户的 Agent 列表（合并在线 Agent 的实时信息如 workDir）
   async getUserAgents(userId: string) {
-    return this.prisma.clientAgent.findMany({
+    const dbAgents = await this.prisma.clientAgent.findMany({
       where: { userId },
       orderBy: { lastSeen: 'desc' },
+    });
+
+    // Enrich with online info (workDir, real-time status) from AgentGateway
+    return dbAgents.map((agent) => {
+      if (!this.agentGateway) return agent;
+      const onlineInfo = this.agentGateway.getOnlineAgentInfo(agent.deviceId);
+      if (onlineInfo) {
+        return {
+          ...agent,
+          status: 'online',
+          workDir: onlineInfo.workDir || '',
+        };
+      }
+      return { ...agent, status: 'offline' as const };
     });
   }
 

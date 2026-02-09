@@ -749,3 +749,47 @@ S04 通过率 1/8，唯一通过的 S04-05 是纯前端状态恢复测试（不�
 
 ### 下次继续
 - 等待 PM 最终判定
+
+---
+
+## 2026-02-09 — 跨路径一致性闭环测试 + 产品修复
+
+### 背景
+PM 二审 Stage 1 后，用户追问路径一致性问题：本地模式选择的工作路径、LSC-AI 识别的路径、Workbench FileBrowser 浏览的路径是否一致。要求在两个外部路径进行完整闭环测试。
+
+### 发现产品缺陷
+- **REST API `/api/agents` 不返回 workDir** — Agent 启动时发送 `-w` 路径给 Server，Server 存在内存 `onlineAgents` Map 中但 REST API 从 DB 读取（DB 无 workDir 列），导致前端无法获知 Agent 的真实工作路径
+
+### 产品修复
+1. `agent.gateway.ts`: 新增 `getOnlineAgentInfo(deviceId)` 方法，返回在线 Agent 信息含 workDir
+2. `agent.service.ts`: 扩展 `IAgentGateway` 接口 + `getUserAgents()` 合并在线 Agent 的实时 workDir
+3. 修复后 `/api/agents` 返回每个设备的 `workDir` 字段（在线设备从内存读取，离线设备为空）
+
+### 测试执行
+创建 `e2e/deep-validation/cross-path-validation.spec.ts`，8 个测试用例分两组：
+
+**lscmade14 (代码项目: file_sync Python 工具) — 6/6 通过:**
+| 测试 | 结果 | 说明 |
+|------|------|------|
+| CP-1 | ✅ | 三路径一致: server=store=FileBrowser=`D:/u3d-projects/lscmade14` |
+| CP-2 | ✅ | 真实文件树: file_sync(dir) + nul(file) |
+| CP-3 | ✅ | 展开 file_sync: 12 项含 sync_tool.py、README.md、build.bat 等 |
+| CP-4 | ✅ | 点击 sync_tool.py → Monaco 显示 Python 源码（import os/shutil/threading） |
+| CP-5 | ✅ | 点击 README.md → 内容显示 |
+| CP-6 | ✅ | 标题栏显示 "lscmade14" |
+
+**lsctest4 (空项目) — 2/2 通过:**
+| 测试 | 结果 | 说明 |
+|------|------|------|
+| CP-7 | ✅ | 三路径一致: server=store=`D:/u3d-projects/lsctest4` |
+| CP-8 | ✅ | 空目录正确显示空状态 |
+
+### 修改文件
+1. `packages/server/src/gateway/agent.gateway.ts` — 新增 getOnlineAgentInfo()
+2. `packages/server/src/modules/agent/agent.service.ts` — 扩展接口 + 合并在线 workDir
+3. `packages/web/e2e/deep-validation/cross-path-validation.spec.ts` — 新建 8 个测试
+4. `bf-reports/deep-validation/screenshots/cross-path/*.png` — 8 张截图
+
+### 下次继续
+- 等待 PM 三审 Stage 1
+- Stage 2: AI × Workbench 联动验证

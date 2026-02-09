@@ -207,8 +207,10 @@ async function isAgentConnected(page: import('@playwright/test').Page): Promise<
  */
 async function setupLocalMode(
   page: import('@playwright/test').Page,
-  workDir = 'D:/u3d-projects/lscmade7/lsc-ai-platform',
-): Promise<boolean> {
+  workDirOverride?: string,
+): Promise<{ ok: boolean; workDir: string; deviceId: string }> {
+  const FAIL = { ok: false, workDir: '', deviceId: '' };
+
   // Step 1: Fetch online devices from API (read token from Zustand auth store)
   const deviceInfo = await page.evaluate(async () => {
     try {
@@ -226,13 +228,22 @@ async function setupLocalMode(
       const devices = Array.isArray(data) ? data : (data?.data || []);
       const onlineDevice = devices.find((d: any) => d.status === 'online');
       if (!onlineDevice) return null;
-      return { devices, onlineDeviceId: onlineDevice.deviceId };
+      return {
+        devices,
+        onlineDeviceId: onlineDevice.deviceId,
+        // Server-recorded workDir (from Agent's -w flag)
+        serverWorkDir: onlineDevice.workDir || '',
+      };
     } catch {
       return null;
     }
   });
 
-  if (!deviceInfo) return false;
+  if (!deviceInfo) return FAIL;
+
+  // Use server-reported workDir by default, allow override for tests
+  const effectiveWorkDir = workDirOverride || deviceInfo.serverWorkDir;
+  console.log(`[setupLocalMode] Server workDir: "${deviceInfo.serverWorkDir}", effective: "${effectiveWorkDir}"`);
 
   // Step 2: Write correct Zustand persist format to localStorage (with version: 0)
   await page.evaluate(
@@ -249,7 +260,7 @@ async function setupLocalMode(
         }),
       );
     },
-    { devices: deviceInfo.devices, deviceId: deviceInfo.onlineDeviceId, wd: workDir },
+    { devices: deviceInfo.devices, deviceId: deviceInfo.onlineDeviceId, wd: effectiveWorkDir },
   );
 
   // Step 3: Navigate fresh to /chat so Zustand initializes from localStorage
@@ -260,20 +271,28 @@ async function setupLocalMode(
   await ensureSession(page);
   await page.waitForTimeout(1000);
 
-  // Step 5: Verify the store rehydrated correctly
-  const verified = await page.evaluate(() => {
+  // Step 5: Verify the store rehydrated correctly — check ALL three values
+  const storeState = await page.evaluate(() => {
     const raw = localStorage.getItem('lsc-ai-agent');
-    if (!raw) return false;
+    if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
-      return parsed?.state?.currentDeviceId != null;
+      return {
+        currentDeviceId: parsed?.state?.currentDeviceId,
+        workDir: parsed?.state?.workDir,
+      };
     } catch {
-      return false;
+      return null;
     }
   });
 
-  console.log(`[setupLocalMode] verified=${verified}, deviceId=${deviceInfo.onlineDeviceId}`);
-  return verified;
+  const verified = storeState?.currentDeviceId != null;
+  console.log(`[setupLocalMode] verified=${verified}, deviceId=${deviceInfo.onlineDeviceId}, storeWorkDir="${storeState?.workDir}"`);
+  return {
+    ok: verified,
+    workDir: effectiveWorkDir,
+    deviceId: deviceInfo.onlineDeviceId,
+  };
 }
 
 // ============================================================================
@@ -359,33 +378,13 @@ test.describe('H1: FileBrowser 深度验收', () => {
 
     if (agentOnline) {
       // --- Real Agent path: set up local mode and inject FileBrowser ---
-      const localModeReady = await setupLocalMode(page);
-      expect(localModeReady, 'Should be able to set up local mode with online Agent').toBe(true);
+      const localMode = await setupLocalMode(page);
+      expect(localMode.ok, 'Should be able to set up local mode with online Agent').toBe(true);
       await clearWorkbench(page);
 
-      // Verify agent store state before injecting
-      const storeState = await page.evaluate(() => {
-        const raw = localStorage.getItem('lsc-ai-agent');
-        if (!raw) return { error: 'no agent store' };
-        const parsed = JSON.parse(raw);
-        return {
-          currentDeviceId: parsed?.state?.currentDeviceId,
-          workDir: parsed?.state?.workDir,
-          deviceCount: parsed?.state?.devices?.length,
-        };
-      });
-      console.log(`[H1-1] Agent store: ${JSON.stringify(storeState)}`);
-      expect(storeState.currentDeviceId, 'Agent store must have currentDeviceId').toBeTruthy();
+      console.log(`[H1-1] workDir="${localMode.workDir}", deviceId="${localMode.deviceId}"`);
 
-      // Wait for socket to be fully authenticated
-      const socketReady = await page.evaluate(async () => {
-        // @ts-ignore — access module-level var via window hack
-        const { isSocketConnected } = await import('/src/services/socket.ts');
-        return isSocketConnected();
-      }).catch(() => false);
-      console.log(`[H1-1] Socket connected: ${socketReady}`);
-
-      // Inject FileBrowser schema pointing to a real directory with dirs + files
+      // Inject FileBrowser using the SAME path as workDir (consistency!)
       const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
 
@@ -439,7 +438,8 @@ test.describe('H1: FileBrowser 深度验收', () => {
 
     if (agentOnline) {
       // Set up local mode and inject FileBrowser with a directory that HAS subdirectories
-      await setupLocalMode(page);
+      const localMode = await setupLocalMode(page);
+      expect(localMode.ok).toBe(true);
       await clearWorkbench(page);
       const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
@@ -497,7 +497,8 @@ test.describe('H1: FileBrowser 深度验收', () => {
 
     if (agentOnline) {
       // Set up local mode and inject FileBrowser with a directory containing .ts files
-      await setupLocalMode(page);
+      const localMode = await setupLocalMode(page);
+      expect(localMode.ok).toBe(true);
       await clearWorkbench(page);
       const result = await injectSchema(page, fileBrowserSchema(AGENT_ROOT_PATH_WITH_DIRS));
       expect(result.success).toBe(true);
@@ -631,7 +632,8 @@ test.describe('H1: FileBrowser 深度验收', () => {
     if (agentOnline) {
       // Set up local mode and inject MarkdownView + ImagePreview via schema
       // (Agent-online path still uses schema injection for reliable preview testing)
-      await setupLocalMode(page);
+      const localMode = await setupLocalMode(page);
+      expect(localMode.ok).toBe(true);
       await clearWorkbench(page);
       const result = await injectSchema(page, mdAndImageSchema());
       expect(result.success).toBe(true);
