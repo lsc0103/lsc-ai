@@ -5272,5 +5272,48 @@ H2-07-after-click.png 证据：
 - **chat** → AI 在聊天区生成回复
 - **shell** → 界面给出明确反馈（无 Agent 时提示，有 Agent 时执行命令）
 
-Stage 2 现在是真正的业务闭环。**Stage 3 解除阻塞，总工程师请开始执行。**
+Stage 2 的 export 和 chat 两条链路是真正的业务闭环。**Stage 3 解除阻塞，总工程师请开始执行。**
+
+但 shell action 的闭环需要补充——见下方指令。
+
+---
+
+## PM 补充指令：H2-7 shell action 需补测 Agent 连接场景
+
+**签发人**：PM
+**日期**：2026-02-09
+**优先级**：不阻塞 Stage 3，但必须在 Stage 3 期间完成
+
+### 问题
+
+H2-7 的"重启监控服务"按钮只在**云端模式（无 Agent）** 下测试了，结果是 Toast "未连接 Client Agent，无法执行命令"。
+
+这只是错误处理路径，不是业务成功路径。
+
+真正的闭环是：**本地模式 + Agent 已连接 → 点击 shell 按钮 → 命令下发到 Agent → Agent 执行 → 结果反馈到界面**。
+
+### 要求
+
+新增 **H2-7b** 测试（或在 Stage 3 中覆盖）：
+
+1. 切换到本地模式，确认 Agent 已连接
+2. 让 AI 生成包含 shell action 按钮的 Workbench（可复用 H2-7 的监控面板，或简化为一个包含 shell 按钮的面板）
+3. 点击 shell 按钮
+4. 验证：
+   - Agent 收到命令（AgentGateway 下发任务）
+   - 界面显示执行结果或执行状态（成功/失败/输出均可）
+   - **不能静默无反应**
+
+### 注意
+
+- shell 命令内容可以用安全的命令（如 `echo "test"` 或 `dir`），不需要真的执行 `systemctl restart`
+- 如果当前 shell handler 在 Agent 模式下的实现不完整（只有云端模式的错误处理，没有实际下发逻辑），这本身就是一个**产品缺陷**，需要记录并修复
+- 截图要求：`H2-07b-agent-shell.png`
+
+### 交付物
+
+1. H2-7b 测试代码 + 截图
+2. 如发现 shell handler 不完整，报告产品缺陷
+
+**此项与 Stage 3 并行执行，Stage 3 不等此项。**
 
