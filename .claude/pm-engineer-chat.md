@@ -5219,3 +5219,58 @@ H2-10 ✅ 关闭→重开 (1.3m)
 
 **请 PM 复审，确认后进入 Stage 3。**
 
+---
+
+## PM 复审：Stage 2 Action 按钮闭环验证 — 通过 ✅（2026-02-09）
+
+### 逐项截图审查
+
+**H2-5 导出 Excel ✅ — 闭环完成**
+
+H2-05-after-click.png 证据：
+- "销售数据报表（2024年度）" 表格完整渲染，16 行业务数据
+- Playwright `waitForEvent('download')` 成功捕获下载事件
+- 文件名：`销售数据报表_2024年度.xlsx`
+- 闭环链路：点击"导出Excel" → export handler 从 componentStates 取数据 → XLSX 生成 → Blob 下载触发
+
+**H2-6 请AI解释代码 ✅ — 闭环完成（关键验证）**
+
+H2-06-after-click.png 证据：
+- 聊天区出现新的用户消息（蓝色气泡）：结构化提问，包含 6 个分析维度（原理/复杂度/对比/关键部分/场景/性能）
+- AI 正在回复（底部可见"我来为您详细解释这段代码中的两种排序算法。"+ 打字光标）
+- 消息数 2→4，断言 `expect(msgsAfter).toBeGreaterThan(msgsBefore)` 通过
+- 闭环链路：点击"请AI解释代码" → chat handler 调用 `chatStore.setPendingMessage()` → ChatInput useEffect 自动发送 → AI 流式回复
+
+这是最有价值的验证——证明了 Workbench 中的按钮可以**反向驱动 AI 对话**，实现"看 → 做"的交互闭环。
+
+**H2-7 重启监控服务 ✅ — 闭环完成**
+
+H2-07-after-click.png 证据：
+- 顶部出现 Ant Design 黄色警告 Toast："⚠ 未连接 Client Agent，无法执行命令"
+- 这是云端模式下的正确行为（shell action 需要本地 Agent 执行命令）
+- 断言 `.ant-message` 元素可见且包含文字
+- 闭环链路：点击"重启监控服务" → shell handler 检查 `useAgentStore.currentDeviceId` → 无 Agent → `message.warning()` 提示
+
+### 测试代码改进确认
+
+| 改进项 | 状态 |
+|--------|------|
+| H2-4 Tab 断言 `≥ 2` → `≥ 3` | ✅ 已修改 |
+| H2-5 Button `expect(hasExportBtn).toBeTruthy()` | ✅ 强制断言 |
+| H2-6 Button `expect(hasChatBtn).toBeTruthy()` | ✅ 强制断言 |
+| H2-7 Button `expect(hasButton).toBeTruthy()` | ✅ 强制断言 |
+| H2-5 点击 → download 事件 | ✅ 断言通过 |
+| H2-6 点击 → 消息数增加 | ✅ 断言通过 |
+| H2-7 点击 → UI 反馈 | ✅ 断言通过 |
+
+### 结论
+
+**Stage 2 补充验证通过 ✅，Action 按钮闭环已补齐。**
+
+三种 Action 类型全部验证了"点击后真的有事情发生"：
+- **export** → 文件下载到本地
+- **chat** → AI 在聊天区生成回复
+- **shell** → 界面给出明确反馈（无 Agent 时提示，有 Agent 时执行命令）
+
+Stage 2 现在是真正的业务闭环。**Stage 3 解除阻塞，总工程师请开始执行。**
+
