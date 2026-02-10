@@ -1023,3 +1023,35 @@ DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 show
 ### 下次继续
 - 等待 PM 审定下一步优先级
 - PM 批准后开始 P0-1 LLM 多模型 Provider 实现或 PoC-1 连通性验证
+
+---
+
+## 2026-02-10 (第2次) | Phase I 开发计划签发
+
+**目标**：基于 Phase H 验收通过 + LLM 调研完成，签发 Phase I 功能扩展开发计划
+
+**完成**：
+1. PM 审查 Phase H Stage 3 返工（8/8 通过），H3-5 补测通过（单独运行功能闭环正常）
+2. PM 审查 Phase H Stage 4（13/13 全部通过），Phase H 总计 43/43 = 100%
+3. LLM 策略讨论：央企约束（外网不可访问、禁止外国模型、不可私购云API）→ 公司内网 7 模型方案
+4. PM 审阅 LLM 调研报告 `.claude/llm-research.md`，确认技术方案可行
+5. PM 规划 Phase I 开发计划：5 Sprint、7-8 周
+6. 签发 Phase I 开发计划，写入 `pm-engineer-chat.md` 第六节
+7. 建立安全红线：严禁提交公司 LLM API Key/Endpoint 到 git
+
+**关键决策**：
+- BUG-F（Agent busy）从 P0 降为 P2：单独测试通过，证明是测试时序问题非锁泄漏
+- 开发阶段统一使用 DeepSeek 官方 API
+- 生产部署可混合使用公司内网 LLM API
+- 公司 LLM API 信息属于涉密，不提交 git
+
+**修改文件**：
+1. `.claude/pm-engineer-chat.md` — 新增第六节 Phase I 开发计划（~200 行）
+2. `.claude/current-task.md` — 更新阶段为 Phase I，新增 Sprint 计划概览
+3. `.claude/dev-log.md` — 本条日志
+4. `CLAUDE.md` — P2-17/18/19 已知问题更新（前次会话完成）
+
+### 下次继续
+- 等待工程团队确认收到 Phase I 计划并反馈工作量评估
+- 工程团队开始 Sprint 1（ModelFactory + P2 修复）
+- PM 审查 Sprint 1 交付物

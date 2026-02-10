@@ -7,8 +7,23 @@
 
 ## 当前任务
 
-**阶段**：Phase H 深度产品验收（全面重写版）
-**状态**：PM 已签发 Phase H v2 验收方案（43 项，4 阶段），等待工程团队执行 Stage 1
+**阶段**：Phase I 功能扩展（5 Sprint 计划已签发）
+**状态**：PM 已签发 Phase I 开发计划，等待工程团队开始 Sprint 1
+
+### Phase I Sprint 计划概览
+
+| Sprint | 名称 | 时长 | 状态 |
+|--------|------|------|------|
+| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ⏳ 待开始 |
+| **S2** | RAG 知识库 MVP | 2 周 | 待 S1 完成 |
+| **S3** | 项目管理 + 用户管理前端 | 2 周 | 可与 S2 并行 |
+| **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待 S1 完成 |
+| **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
+
+### 关键约束
+- **开发阶段**：只用 DeepSeek 官方 API
+- **生产部署**：可切换公司内网 LLM API（混合路由）
+- **安全红线**：严禁将公司 LLM API Key/Endpoint 提交至 git
 
 ### 已完成事项
 
@@ -260,6 +275,13 @@ e2e/
     - 关键结论：仅 DeepSeek V3 + Qwen2.5-72B 支持 Function Calling，R1 系列不可用于工具调用
     - 设计方案：Provider 工厂 + 环境变量配置 + 混合路由（~116行代码变更）
     - 下一步：PM 批准后执行 PoC-1 连通性验证
+58. ✅ **Phase I 开发计划签发** — 5 Sprint（7-8周），写入 `pm-engineer-chat.md` 第六节
+    - S1: LLM Provider 抽象 + P2 修复（3-4天）
+    - S2: RAG 知识库 MVP（2周）
+    - S3: 项目管理 + 用户管理前端（2周）
+    - S4: 任务/RPA + Sentinel Agent（2周）
+    - S5: IDP 智能文档处理（2周，可并行）
+    - 安全约束：开发阶段用 DeepSeek 官方 API，严禁提交公司 LLM API 信息
 
 ---
 

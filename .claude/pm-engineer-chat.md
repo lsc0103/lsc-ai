@@ -6149,3 +6149,306 @@ Workbench 重写**没有**影响其他功能模块：
 
 ---
 
+## 六、Phase I 开发计划 — PM 签发（2026-02-10）
+
+> **签发人**：产品经理
+> **背景**：Phase H 深度产品验收 43/43 全部通过，Mastra 迁移基本完成（87.5%），LLM 多模型调研已产出综合报告。现正式进入 Phase I 功能扩展阶段。
+> **当前进度**：74%（112/152 功能），核心已完成（对话/Workbench/Agent/Client Agent），缺口集中在前端 UI 和新功能模块。
+
+---
+
+### ⚠️ 安全红线（最高优先级）
+
+**严禁将公司内网 LLM API Key、Endpoint、IP 地址等信息提交至 git 仓库。这是涉密信息，违反信息安全规定。**
+
+具体要求：
+1. 所有 LLM 连接配置必须通过环境变量注入（`.env` 文件，且 `.env` 已在 `.gitignore` 中）
+2. 代码中只允许出现 `process.env.LLM_XXX` 形式的引用，不允许硬编码任何 API Key 或内网地址
+3. `.claude/llm-research.md` 中包含的内网信息仅供本地参考，**禁止推送到远程仓库**
+4. 每次 git commit 前请自查是否包含敏感信息
+
+---
+
+### 🔑 LLM 使用约束
+
+| 阶段 | 允许使用的 LLM | 说明 |
+|------|---------------|------|
+| **开发测试阶段（当前）** | DeepSeek 官方 API（`api.deepseek.com`） | 只用官方 API，不连公司内网 |
+| **生产部署阶段（未来）** | 公司内网 LLM API（混合路由） | DeepSeek V3 + Qwen2.5-72B + VL-32B 等混合使用 |
+
+**当前阶段所有开发和测试统一使用 DeepSeek 官方 API。** Provider 抽象层的代码可以先写好，但实际切换到公司内网 API 需要等到生产部署阶段。
+
+---
+
+### Sprint 总览
+
+| Sprint | 名称 | 时长 | 核心交付 | 前置依赖 |
+|--------|------|------|---------|---------|
+| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ModelFactory + 环境变量配置 + 5 个 P2 bug 修复 | 无 |
+| **S2** | RAG 知识库 MVP | 2 周 | 知识库 CRUD + 文档解析 + 检索增强对话 | S1（Provider 层） |
+| **S3** | 项目管理 + 用户管理前端 | 2 周 | 项目 CRUD 前端 + 用户/角色管理界面 | 无（可与 S2 并行） |
+| **S4** | 任务/RPA 前端 + Sentinel Agent | 2 周 | 定时任务界面 + Sentinel Agent 基础 | S1 |
+| **S5** | IDP 智能文档处理 | 2 周 | Python OCR 微服务 + 前端上传/识别界面 | 独立（可与 S3-S4 并行） |
+
+**总预估**：7-8 周（S3/S5 可与其他 Sprint 并行）
+
+---
+
+### Sprint 1：LLM Provider 抽象 + P2 修复（3-4 天）
+
+**目标**：将 DeepSeek 硬编码替换为可配置的 Provider 工厂，修复 Phase H 遗留的 P2 问题。
+
+#### S1-T1：ModelFactory 实现（2 天）
+
+**改造点**（参考 `.claude/llm-research.md` 第六章）：
+
+| 文件 | 改动 | 说明 |
+|------|------|------|
+| `packages/server/src/mastra/model-factory.ts` | **新建** | Provider 工厂，支持 deepseek / openai-compatible 两种 provider |
+| `packages/server/src/mastra/mastra-agent.service.ts` | 修改 4 处 | 第 122/204/266/312 行 `deepseek('deepseek-chat')` → `ModelFactory.create()` |
+| `packages/server/.env` | 新增变量 | `LLM_DEFAULT_PROVIDER`, `LLM_DEFAULT_BASE_URL`, `LLM_DEFAULT_API_KEY`, `LLM_DEFAULT_MODEL` |
+| `packages/server/.env.example` | 同步更新 | 只放变量名和注释，不放实际值 |
+
+**验收标准**：
+1. 默认配置（`LLM_DEFAULT_PROVIDER=deepseek`）下所有现有功能不受影响
+2. 修改 `.env` 可切换到 openai-compatible provider（无需改代码）
+3. 4 个 Agent（mainAgent/workbenchAgent/analysisAgent/codeAgent）全部使用 ModelFactory
+4. 启动时 log 输出当前使用的 Provider + Model 信息
+
+**重要**：当前阶段 `.env` 中只配置 DeepSeek 官方 API。代码层面支持 openai-compatible，但不要连公司内网。
+
+#### S1-T2：Client Agent Provider 同步（0.5 天）
+
+| 文件 | 改动 |
+|------|------|
+| `packages/client-agent/src/mastra/agent.ts` | 硬编码 → 环境变量读取 |
+| `packages/client-agent/.env.example` | 新增 LLM 配置变量 |
+
+#### S1-T3：P2 问题修复（1-1.5 天）
+
+| 编号 | 问题 | 修复方案 | 预估 |
+|------|------|---------|------|
+| P2-17 | Agent 连续操作时 `isExecuting` 锁导致 busy | 实现简单任务队列，排队而非直接拒绝 | 4h |
+| P2-18 | FileBrowser 本地模式不自动出现 | Agent 连接成功后自动触发 FileBrowser 加载 | 2h |
+| P2-19 | Monaco Editor 延迟加载导致测试选择器失败 | 加载完成事件 + skeleton 占位符 | 2h |
+| P1-8 | AgentNetwork 未自动触发 | 后端自动检测场景，无需前端传 `useNetwork:true` | 2h |
+| P2-16 | Workbench Tab 追加模式 | AI 多次生成时 Tab 累积而非替换 | 3h |
+
+#### S1 验收清单
+
+- [ ] `ModelFactory.create()` 正常返回 LanguageModelV1 实例
+- [ ] 4 个 Agent 全部走 ModelFactory
+- [ ] `.env` 切换 provider 后重启即可生效
+- [ ] `.env.example` 不含任何敏感信息
+- [ ] P2-17/18/19 和 P1-8 修复后有对应测试验证
+- [ ] 现有 Phase H 43 项测试不回归
+
+---
+
+### Sprint 2：RAG 知识库 MVP（2 周）
+
+**目标**：实现基于 PostgreSQL 全文检索的知识库功能，支持文档上传、解析、检索增强对话。
+
+#### S2-T1：后端 — 知识库数据模型 + API（3 天）
+
+**数据库**：
+- 新增 Prisma Model：`KnowledgeBase`（知识库）、`Document`（文档）、`DocumentChunk`（分块）
+- PostgreSQL GIN 索引 + `tsvector` 全文检索（中文需 `zhparser` 或 jieba 分词扩展）
+
+**API 端点**：
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| POST | `/api/knowledge-bases` | 创建知识库 |
+| GET | `/api/knowledge-bases` | 列表（分页） |
+| PUT | `/api/knowledge-bases/:id` | 更新知识库信息 |
+| DELETE | `/api/knowledge-bases/:id` | 删除知识库（含文档） |
+| POST | `/api/knowledge-bases/:id/documents` | 上传文档 |
+| GET | `/api/knowledge-bases/:id/documents` | 文档列表 |
+| DELETE | `/api/documents/:id` | 删除文档 |
+| POST | `/api/knowledge-bases/:id/search` | 检索（全文搜索） |
+
+#### S2-T2：文档解析 Pipeline（3 天）
+
+**支持格式**：`.txt`, `.md`, `.pdf`, `.docx`, `.xlsx`
+**解析流程**：上传 → MinIO 存储 → BullMQ 异步任务 → 解析提取文本 → 分块 → 存入 PostgreSQL（含 tsvector）
+
+**分块策略**：
+- 按段落/标题分块，每块 500-1000 字
+- 保留元信息（文件名、页码、标题层级）
+
+#### S2-T3：检索增强对话（2 天）
+
+**流程**：用户发消息 → LLM 提取关键词 → PostgreSQL 全文检索 → Top-K 结果注入 system prompt → AI 回答
+
+**Mastra Tool**：新建 `searchKnowledge` 工具，AI 在需要时自动调用检索
+
+#### S2-T4：前端 — 知识库管理界面（3 天）
+
+**页面**：
+- `/knowledge` — 知识库列表页（卡片/表格视图）
+- `/knowledge/:id` — 知识库详情（文档列表 + 上传 + 搜索测试）
+- 对话界面增加"引用知识库"开关
+
+**组件**：基于 Ant Design Pro，文件上传用 Dragger，搜索结果高亮显示
+
+#### S2 验收清单
+
+- [ ] 知识库 CRUD 正常（创建/列表/更新/删除）
+- [ ] 文档上传后异步解析成功，状态可追踪
+- [ ] 支持 txt/md/pdf/docx/xlsx 5 种格式
+- [ ] 全文检索返回相关结果，有高亮
+- [ ] 对话中引用知识库时 AI 回答基于检索内容
+- [ ] 前端界面完整，交互流畅
+
+---
+
+### Sprint 3：项目管理 + 用户管理前端（2 周）
+
+**目标**：补全项目管理和用户管理的前端 UI，对接已有后端 API。
+
+#### S3-T1：项目管理前端（5 天）
+
+**页面**：
+- `/projects` — 项目列表（表格 + 搜索 + 筛选）
+- `/projects/:id` — 项目详情（基本信息 + 关联会话 + 知识库绑定）
+- `/projects/new` — 创建项目表单
+
+**功能**：
+- 项目 CRUD（名称、描述、标签、状态）
+- 项目与会话关联（一个项目下多个对话）
+- 项目与知识库绑定（项目级专属知识）
+- 项目成员管理（如后端支持）
+
+#### S3-T2：用户管理前端（4 天）
+
+**页面**：
+- `/admin/users` — 用户列表（表格 + 搜索）
+- `/admin/users/:id` — 用户详情/编辑
+- `/admin/roles` — 角色管理
+
+**功能**：
+- 用户 CRUD + 角色分配
+- 角色权限矩阵（管理员/普通用户/访客）
+- 用户使用统计（对话数、Token 消耗等，如后端支持）
+
+#### S3-T3：导航与布局集成（1 天）
+
+- 侧边栏增加"项目"、"知识库"、"管理"入口
+- 路由守卫（管理页面仅管理员可访问）
+- 面包屑导航
+
+#### S3 验收清单
+
+- [ ] 项目 CRUD 界面完整，与后端 API 对接正常
+- [ ] 用户管理界面完整，角色分配可用
+- [ ] 导航菜单更新，路由守卫生效
+- [ ] 管理员/普通用户权限区分正确
+
+---
+
+### Sprint 4：任务/RPA 前端 + Sentinel Agent 基础（2 周）
+
+**目标**：实现定时任务管理界面，搭建 Sentinel Agent 基础框架。
+
+#### S4-T1：任务管理前端（5 天）
+
+**页面**：
+- `/tasks` — 任务列表（状态筛选：等待/运行/完成/失败）
+- `/tasks/new` — 创建任务（定时/一次性/事件触发）
+- `/tasks/:id` — 任务详情（执行历史 + 日志 + 重试）
+
+**对接**：BullMQ 任务队列（后端已有），前端展示任务状态和执行结果
+
+#### S4-T2：Sentinel Agent 基础（5 天）
+
+**功能**：
+- 基于 Mastra Agent 框架创建 Sentinel Agent
+- 支持定时执行（cron 表达式）
+- 支持监控类工具（系统状态检查、服务健康检测）
+- Agent 日志输出和前端展示
+
+**代码位置**：`packages/server/src/mastra/agents/sentinel-agent.ts`（新建）
+
+#### S4 验收清单
+
+- [ ] 任务 CRUD 界面完整
+- [ ] 定时任务可创建、查看执行历史
+- [ ] Sentinel Agent 能执行简单的定时检查任务
+- [ ] 任务失败有告警/重试机制
+
+---
+
+### Sprint 5：IDP 智能文档处理（2 周，可与 S3-S4 并行）
+
+**目标**：独立的 Python 微服务，提供 OCR 和文档智能处理能力。
+
+#### S5-T1：Python FastAPI 微服务（5 天）
+
+**技术栈**：Python 3.10+ / FastAPI / PaddleOCR / pdfplumber
+
+**API 端点**：
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| POST | `/api/ocr` | 图片 OCR 识别 |
+| POST | `/api/parse-pdf` | PDF 结构化解析 |
+| POST | `/api/parse-invoice` | 发票识别（如需要） |
+| GET | `/api/health` | 健康检查 |
+
+**部署**：独立 Docker 容器，端口 8000，NestJS 通过 HTTP 调用
+
+#### S5-T2：NestJS 对接层（2 天）
+
+- 新建 `IdpModule`，封装对 Python 微服务的 HTTP 调用
+- 新建 `ocrDocument` Mastra Tool，AI 可自动调用 OCR
+
+#### S5-T3：前端 — 文档处理界面（3 天）
+
+- 上传图片/PDF → 显示 OCR 结果
+- 支持区域选择识别
+- 结果可编辑、导出
+
+#### S5 验收清单
+
+- [ ] Python 微服务可独立运行，OCR 准确率可接受
+- [ ] NestJS 成功调用 Python 微服务
+- [ ] AI 对话中可通过工具调用 OCR
+- [ ] 前端上传和结果展示正常
+
+---
+
+### 里程碑时间线
+
+```
+Week 1     : S1 (LLM Provider + P2 修复) ───────────── ✅ 基础设施就绪
+Week 2-3   : S2 (RAG 知识库) ─────────────────────────── 核心新功能
+Week 2-3   : S5 (IDP 智能文档) ──────────── 并行 ──────── 独立微服务
+Week 4-5   : S3 (项目管理 + 用户管理) ────────────────── 补全管理后台
+Week 6-7   : S4 (任务/RPA + Sentinel Agent) ──────────── 自动化能力
+Week 8     : 集成测试 + 回归验证 ─────────────────────── 质量保证
+```
+
+**关键里程碑**：
+- **Week 1 结束**：LLM Provider 可配置切换，P2 bug 清零
+- **Week 3 结束**：RAG 知识库可用，IDP 微服务可独立运行
+- **Week 5 结束**：项目管理和用户管理前端上线
+- **Week 7 结束**：任务/RPA 基础可用，Sentinel Agent 初版
+- **Week 8 结束**：全量回归，准备生产部署评审
+
+---
+
+### 工程团队行动项
+
+1. **立即开始 Sprint 1** — ModelFactory 实现 + P2 修复
+2. **阅读 `.claude/llm-research.md`** — 了解 LLM 多模型架构方案，但**不要将此文件推送到远程仓库**
+3. **环境变量规范** — 所有新增配置走 `.env`，`.env.example` 只放变量名+注释
+4. **每个 Sprint 结束提交验收报告** — 按照 Phase H 的格式：截图 + 通过/失败 + 问题描述
+5. **Sprint 2 开始前评估** — PostgreSQL 中文分词方案（`zhparser` vs `jieba` vs `pg_bigm`）需提前调研
+6. **Sprint 5 可提前启动** — Python 微服务与主项目独立，有余力可提前开始
+
+**请工程团队确认收到此计划，并反馈以下信息：**
+- 各 Sprint 工作量评估是否合理？
+- 是否有技术风险或阻塞点需要提前处理？
+- Sprint 1 预计何时可以开始？
+
+---
+
