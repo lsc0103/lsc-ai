@@ -953,3 +953,46 @@ DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 show
 ### 下次继续
 - 等待 PM 最终审查 Phase H
 - Phase H 通过后进入部署阶段或下一迭代
+
+---
+
+## 2026-02-10 (第2次) | LLM 多模型架构技术调研
+
+**目标**：PM 签发 LLM 调研指令，要求分析公司内网可用模型、设计 Provider 抽象层和多模型混合路由方案。
+
+**完成**：
+1. 读取 `apikey/` 目录下 8 个 API Key 文件，盘点公司完整模型资源
+2. 拉取 PM 最新反馈（commit 076dff2）：Phase H 43/43 通过，签发 LLM 调研指令
+3. 组建 Agent Team（llm-research），3 个任务并行：
+   - arch-analyst: Server + Client Agent 代码架构分析
+   - model-researcher: 模型能力矩阵调研（Web Search）
+   - team-lead: Provider 抽象层 + 混合路由设计
+4. 输出综合调研报告 `.claude/llm-research.md`（10 个章节）
+
+### 关键发现
+
+| 发现 | 影响 |
+|------|------|
+| 只有 DeepSeek V3 和 Qwen2.5-72B 支持 Function Calling | R1 系列不能用于工具调用场景 |
+| Qwen2.5-VL-32B 支持图片 | 解决 P2-15 "DeepSeek 不支持图片"问题 |
+| Server 端 4 处硬编码 `deepseek('deepseek-chat')` | 需改为 Provider 工厂模式 |
+| Client Agent 已有 provider 切换逻辑 | 改动量小，可复用 |
+| 全部内网模型 OpenAI 兼容格式 | `@ai-sdk/openai` 一个 provider 即可对接所有 |
+| Embedding + Rerank 模型可用 | 直接支撑 RAG/知识库功能 |
+
+### 设计方案摘要
+
+- **Provider 抽象层**: `ModelFactory` 工厂函数 + 环境变量配置 7 个 provider
+- **混合路由**: 默认(V3) → 推理(R1, 无工具) → 视觉(VL-32B) → 备选(Qwen2.5-72B)
+- **预估工作量**: ~116 行代码变更，~11h 工作量，4 周渐进式实施
+- **PoC 计划**: 5 阶段验证（环境连通 → 单模型替换 → 多模型路由 → 压力测试 → 全量切换）
+
+### 修改文件
+1. `.claude/llm-research.md` — 新建：完整调研报告（10 章节）
+2. `.claude/current-task.md` — 状态更新
+3. `.claude/dev-log.md` — 本条日志
+
+### 下次继续
+- 等待 PM 审阅调研报告
+- PM 批准后执行 PoC-1：连通性验证（切换 .env 到内网 DeepSeek V3）
+- 需要 IT 部门确认：网络可达性 + 真实 API Key
