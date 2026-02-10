@@ -109,18 +109,18 @@
 <div class="section-page">
     <div class="section-header">
         <h2>14 - 开发总进度</h2>
-        <div class="meta">更新日期：2026-01-29 | 开发周期：进行中</div>
+        <div class="meta">更新日期：2026-02-10 | 开发周期：进行中</div>
     </div>
 
     <h3>一、进度总览</h3>
 
     <div class="summary-grid">
         <div class="summary-card done">
-            <div class="summary-number">103</div>
+            <div class="summary-number">112</div>
             <div class="summary-label">已完成</div>
         </div>
         <div class="summary-card testing">
-            <div class="summary-number">7</div>
+            <div class="summary-number">1</div>
             <div class="summary-label">可测试</div>
         </div>
         <div class="summary-card dev">
@@ -128,13 +128,13 @@
             <div class="summary-label">开发中</div>
         </div>
         <div class="summary-card pending">
-            <div class="summary-number">41</div>
+            <div class="summary-number">38</div>
             <div class="summary-label">未开始</div>
         </div>
     </div>
 
     <div class="progress-bar">
-        <div class="progress-fill" style="width: 73%;">73%</div>
+        <div class="progress-fill" style="width: 74%;">74%</div>
     </div>
 
     <div class="legend">
@@ -213,15 +213,15 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">用户系统 (Users)</span>
-            <span class="status-badge status-testing">可测试</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>用户登录</td><td>账号密码登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>JWT Token 认证</td></tr>
+                <tr><td>用户登录</td><td>账号密码登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>JWT Token 认证，Phase H 验收通过</td></tr>
                 <tr><td>Token 刷新</td><td>自动刷新访问令牌</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>Axios 拦截器</td></tr>
                 <tr><td>密码加密</td><td>bcrypt 加密存储</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
-                <tr><td>登录页面</td><td>美观的登录界面</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>奶油色主题</td></tr>
+                <tr><td>登录页面</td><td>美观的登录界面</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>玻璃拟态主题，Phase H 验收通过</td></tr>
                 <tr><td>退出登录</td><td>清除 Token，跳转登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
                 <tr><td>SSO 登录</td><td>对接公司统一认证</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
                 <tr><td>用户注册</td><td>管理员创建用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
@@ -236,16 +236,16 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">基础对话</span>
-            <span class="status-badge status-testing">可测试</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>新建对话</td><td>创建新的 AI 对话会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>发送首条消息时创建 (Claude 风格)</td></tr>
-                <tr><td>历史对话列表</td><td>显示用户历史对话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>侧边栏展示</td></tr>
+                <tr><td>新建对话</td><td>创建新的 AI 对话会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>发送首条消息时创建 (Claude 风格)，Phase H 验收通过</td></tr>
+                <tr><td>历史对话列表</td><td>显示用户历史对话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>侧边栏展示，Phase H 验收通过</td></tr>
                 <tr><td>会话切换</td><td>点击历史对话切换</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
                 <tr><td>搜索对话</td><td>在历史对话中搜索关键词</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>删除对话</td><td>删除单个或批量删除对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
+                <tr><td>删除对话</td><td>删除单个或批量删除对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>侧边栏右键菜单删除，Phase H H4-13 验收通过</td></tr>
                 <tr><td>重命名对话</td><td>修改对话标题</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
                 <tr><td>对话归档</td><td>归档不常用的对话</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
             </tbody>
@@ -277,7 +277,7 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">附件与上下文</span>
-            <span class="status-badge status-dev">开发中</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
@@ -285,8 +285,8 @@
                 <tr><td>上传图片</td><td>支持上传图片供 AI 分析</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>MinIO 存储，支持预览</td></tr>
                 <tr><td>上传文件</td><td>支持上传文档、代码文件</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>多文件上传，大小显示</td></tr>
                 <tr><td>文件发送到AI</td><td>附件随消息发送给 AI 处理</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>fileIds 传递到 Agent</td></tr>
-                <tr><td>选择工作路径</td><td>选择用户本地或云端工作目录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需 Client Agent 支持</td></tr>
-                <tr><td>工作路径切换提醒</td><td>切换路径时提醒会重新发起会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>选择工作路径</td><td>选择用户本地或云端工作目录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>WorkspaceSelectModal 工作路径选择弹窗，Phase H 验收通过</td></tr>
+                <tr><td>工作路径切换提醒</td><td>切换路径时提醒会重新发起会话</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>AgentStatusIndicator 状态指示器</td></tr>
                 <tr><td>语音输入</td><td>语音转文字输入</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>UI 已预留入口</td></tr>
             </tbody>
         </table>
@@ -297,7 +297,7 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">Workbench 核心</span>
-            <span class="status-badge status-dev">开发中</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
@@ -328,9 +328,9 @@
                 <tr><td>会话切换恢复</td><td>切换会话时恢复对应的 Workbench</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>useSessionWorkbench Hook 统一管理</td></tr>
                 <tr><td>实时同步保存</td><td>Workbench 变化时自动保存</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>2秒防抖保存（useSessionWorkbench）</td></tr>
                 <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">AI 协作</td></tr>
-                <tr><td>AI 上下文感知</td><td>AI 能感知 Workbench 当前内容</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>发送 workbenchContext</td></tr>
+                <tr><td>AI 上下文感知</td><td>AI 能感知 Workbench 当前内容</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>发送 workbenchContext，Phase H 验收通过</td></tr>
                 <tr><td>AI 动态构建</td><td>AI 调用组件库构建界面</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>workbench-schema 代码块</td></tr>
-                <tr><td>内容合并</td><td>AI 生成内容添加为新标签页</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-testing">可测试</span></td><td>mergeSchema 方法</td></tr>
+                <tr><td>内容合并</td><td>AI 生成内容添加为新标签页</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>mergeSchema 方法，Phase H H2-8 验证通过</td></tr>
             </tbody>
         </table>
     </div>
@@ -660,14 +660,14 @@
 
     <div class="tip-box warning">
         <h5 style="margin-bottom: 12px;">下一阶段优先级开发项</h5>
-        <p style="margin-bottom: 8px; color: #52c41a; font-weight: 600;">✅ 2026-01-29 已完成：清理 Prisma Message、Mastra 语义记忆、Workflow 后端 API、定时任务调度器、Client Agent Mastra 迁移、Observability、AgentNetwork 路由优化、Workbench 交互系统</p>
+        <p style="margin-bottom: 8px; color: #52c41a; font-weight: 600;">✅ 2026-02-10 新增完成：Phase H 深度产品验收 43/43 通过、10 个 P0 Bug 全部修复、Workbench 全面重写、LLM 多模型架构调研</p>
         <ol>
-            <li><strong style="color: #ff4d4f;">[P0] 企业知识库 RAG</strong> - 文档上传/分块/LLM 关键词提取/PostgreSQL 全文检索/问答（见 11-RAG 设计，与 Mastra 语义记忆不同）</li>
+            <li><strong style="color: #ff4d4f;">[P0] LLM 多模型 Provider 抽象层</strong> - 公司内网 7 个模型接入（DeepSeek V3/R1 + Qwen2.5-72B/VL-32B + Embedding + Rerank），调研报告已完成，PoC 待执行</li>
+            <li><strong style="color: #ff4d4f;">[P0] 企业知识库 RAG</strong> - 公司已有 Embedding + Rerank API 可直接使用，文档上传/分块/向量检索/问答</li>
             <li><strong style="color: #ff4d4f;">[P0] 定时任务前端管理</strong> - 调度器后端已完成，需前端任务列表、Cron 编辑器、日志查看</li>
             <li><strong style="color: #fa8c16;">[P1] Playwright RPA 引擎</strong> - 浏览器自动化核心能力（BrowserPool + RPAExecutor），Workflow 编排骨架已有</li>
-            <li><strong style="color: #fa8c16;">[P1] Evals / 评分系统</strong> - Agent 回复质量评估</li>
             <li><strong style="color: #fa8c16;">[P1] Sentinel Agent 开发</strong> - 服务器感知器，远程运维监控</li>
-            <li><strong style="color: #fa8c16;">[P1] Office 编辑能力</strong> - Word/Excel/PPT 自动化编辑（当前仅支持预览）</li>
+            <li><strong style="color: #fa8c16;">[P1] 图片理解能力</strong> - 接入 Qwen2.5-VL-32B 视觉模型，解决 DeepSeek 不支持图片的限制</li>
             <li><strong>[P1] Client Agent 分发打包</strong> - exe/dmg/AppImage 可执行文件打包</li>
             <li><strong>[P2] 运维监控模块</strong> - 服务器状态、服务状态、远程重启</li>
         </ol>
@@ -703,6 +703,19 @@
     <table>
         <thead><tr><th>日期</th><th>更新内容</th></tr></thead>
         <tbody>
+            <tr><td>2026-02-10</td><td>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong style="color: #52c41a;">[重大] Phase H 深度产品验收 43/43 通过 (100%)</strong> — Stage 1 Workbench 工作空间 12/12 + Stage 2 AI×Workbench 联动 10/10 + Stage 3 用户完整工作流 8/8 + Stage 4 基础功能回归 13/13</li>
+                    <li><strong style="color: #52c41a;">[重大] 10 个 P0 Bug 全部修复</strong> — P0-1 AI Instructions 强化、P0-2 双重历史注入、P0-4~P0-6 Workbench 系列、P0-7 面板不打开、P0-8 Office 参数映射、P0-9 Client Agent 工具参数、P0-10 stale closure</li>
+                    <li><strong style="color: #52c41a;">[重大] Workbench 4 工具全面重写</strong> — workbench/showTable/showChart/showCode 重写为统一 Zod Schema，前端兼容新旧格式，解决 BUG-E (anyOf→object)</li>
+                    <li><strong style="color: #1890ff;">[重大] LLM 多模型架构调研完成</strong> — 公司内网 7 个模型盘点、能力矩阵分析、Provider 抽象层设计、混合路由方案、PoC 计划</li>
+                    <li><strong>关键发现</strong>：仅 DeepSeek V3 + Qwen2.5-72B 支持 Function Calling（R1 系列不支持工具调用）</li>
+                    <li><strong>安全加固</strong>：WebSocket CORS 白名单、Agent Token crypto.randomBytes、Session 所有者授权验证</li>
+                    <li><strong>E2E 测试体系</strong>：Playwright 自动化测试 240+ 用例，覆盖 4 个阶段深度验收</li>
+                    <li><strong>跨路径闭环验证</strong>：REST API 返回 workDir + lscmade14/lsctest4 两个外部路径完整验证 9/9</li>
+                    <li>更新开发进度：74%（+1%），已完成 112 项（Phase H 验证确认多个"可测试"项为"已完成"）</li>
+                </ul>
+            </td></tr>
             <tr><td>2026-01-29 (二)</td><td>
                 <ul style="margin: 0; padding-left: 20px;">
                     <li><strong style="color: #52c41a;">[重大] 核心任务推进 + 进度校准</strong> - 已完成 95→103（+8 项），新增细化条目后总计 152 项，进度 73%</li>

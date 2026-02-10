@@ -11,7 +11,7 @@
 <div class="section-page">
     <div class="section-header">
         <h2>01 - 架构设计总览</h2>
-        <div class="meta">文档版本：2.0 (Mastra 升级) | 更新日期：2026-01-28 | 作者：lsc0103</div>
+        <div class="meta">文档版本：3.0 (多模型架构) | 更新日期：2026-02-10 | 作者：lsc0103</div>
     </div>
 
     <h3>一、架构概览</h3>
@@ -198,9 +198,9 @@
         <thead><tr><th>类别</th><th>技术选型</th><th>用途</th></tr></thead>
         <tbody>
             <tr><td>Agent 框架</td><td><strong>Mastra Framework</strong></td><td>企业级 AI Agent 框架（@mastra/core, @mastra/memory）</td></tr>
-            <tr><td>LLM</td><td><strong>DeepSeek API</strong></td><td>核心 AI 能力（集团统一），含关键词提取</td></tr>
+            <tr><td>LLM</td><td><strong>多模型混合路由</strong></td><td>DeepSeek V3（主力对话+工具调用）+ Qwen2.5-72B（备选）+ DeepSeek R1（推理）+ Qwen2.5-VL-32B（视觉）</td></tr>
             <tr><td>工具扩展</td><td><strong>LSC Office Tools</strong></td><td>Word/Excel/PPT/PDF 办公自动化工具集</td></tr>
-            <tr><td>RAG 检索</td><td><strong>PostgreSQL 全文检索</strong></td><td>LLM 关键词提取 + GIN 索引全文检索</td></tr>
+            <tr><td>RAG 检索</td><td><strong>Embedding + Rerank + 全文检索</strong></td><td>公司内网 text-embedding + text-rerank API + PostgreSQL GIN 索引混合检索</td></tr>
             <tr><td>IDP 服务</td><td><strong>PaddleOCR (Python)</strong></td><td>智能文档处理微服务</td></tr>
             <tr><td>浏览器自动化</td><td><strong>Playwright</strong></td><td>RPA Web 操作</td></tr>
             <tr><td>定时调度</td><td><strong>BullMQ</strong></td><td>定时任务</td></tr>
@@ -510,7 +510,7 @@ sequenceDiagram
                 <strong>AI 内核:</strong> Mastra Framework (@mastra/core, @mastra/memory) | LSC Office Tools (23+) | MCP Protocol
             </div>
             <div style="background: linear-gradient(135deg, #fffbe6 0%, #ffe58f 100%); padding: 12px 20px; border-radius: 6px;">
-                <strong>AI & RPA:</strong> DeepSeek API (@ai-sdk/deepseek) | LibSQL Storage | Playwright | BullMQ Scheduler
+                <strong>AI & RPA:</strong> 多模型混合路由 (DeepSeek V3/R1 + Qwen2.5-72B/VL-32B) | @ai-sdk/openai Provider 抽象层 | Embedding + Rerank | LibSQL Storage | Playwright | BullMQ Scheduler
             </div>
             <div style="background: linear-gradient(135deg, #f9f0ff 0%, #d3adf7 100%); padding: 12px 20px; border-radius: 6px;">
                 <strong>数据存储:</strong> PostgreSQL 15 | Redis 7 | MinIO | Elasticsearch (可选)
