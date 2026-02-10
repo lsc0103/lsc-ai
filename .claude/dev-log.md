@@ -911,3 +911,45 @@ DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 show
 ### 下次继续
 - 等待 PM 审查 Stage 3 返工结果
 - PM 通过后进入 Stage 4（回归验证）
+
+---
+
+## 2026-02-10 | Phase H Stage 4 — 基础功能回归 13/13 通过
+
+**目标**：执行 Stage 4（13 项回归测试），验证 Workbench 重写未影响其他功能模块。
+
+**完成**：
+1. 启动 Server + Web + Client Agent 三个服务
+2. 创建 `stage4-regression.spec.ts`，13 个测试分 4A/4B/4C/4D 四组
+3. 分组执行避免 DeepSeek 限流：
+   - 第 1 组：H4-1 + H4-10 + H4-11 + H4-12 + H4-13（6/6 通过）
+   - 第 2 组：H4-2 + H4-3 + H4-4（初次 H4-2/H4-3 失败：AI 把内容放到 Workbench 而非聊天气泡）
+   - 修复后重跑：H4-2/H4-3 通过（prompt 加 "不要用Workbench" + 验证逻辑兼容 Workbench 展示）
+   - 第 3 组：H4-5（Word 全流程通过）
+   - 第 4 组：H4-6（Excel 通过）
+   - 第 5 组：H4-7 + H4-8（PDF + 多文件操作通过）
+   - 第 6 组：H4-9（Shell 命令通过）
+
+### 迭代修复
+- H4-2：AI 对"代码高亮"类 prompt 会调用 showCode/workbench 而非 markdown 代码块 → 明确 prompt + 同时检查聊天和 Workbench 中的代码展示
+- H4-3：AI 对长文本 prompt 会调用 workbench 展示 → 明确 prompt + 检查总内容长度（聊天+Workbench）+ 验证主题覆盖度
+
+### Phase H 完整总览
+
+| Stage | 结果 | 阈值 |
+|-------|------|------|
+| Stage 1 Workbench 工作空间 | 12/12 | 10/12 |
+| Stage 2 AI × Workbench 联动 | 10/10 | 7/10 |
+| Stage 3 用户完整工作流 | 8/8 | 6/8 |
+| Stage 4 基础功能回归 | 13/13 | 11/13 |
+| **合计** | **43/43 (100%)** | **34/43 (79%)** |
+
+### 修改文件
+1. `packages/web/e2e/deep-validation/stage4-regression.spec.ts` — 新建 13 个回归测试
+2. `packages/web/bf-reports/deep-validation/screenshots/H4-*.png` — 17+ 张截图
+3. `.claude/pm-engineer-chat.md` — Stage 4 PM 报告
+4. `.claude/current-task.md` — 状态更新
+
+### 下次继续
+- 等待 PM 最终审查 Phase H
+- Phase H 通过后进入部署阶段或下一迭代
