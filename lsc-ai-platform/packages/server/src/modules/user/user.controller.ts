@@ -45,9 +45,26 @@ export class UserController {
     });
   }
 
+  @Patch('change-password')
+  @ApiOperation({ summary: '修改密码' })
+  async changePassword(
+    @Request() req: any,
+    @Body()
+    body: {
+      currentPassword: string;
+      newPassword: string;
+    },
+  ) {
+    return this.userService.changePassword(req.user.id, body.currentPassword, body.newPassword);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '用户详情' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @Request() req: any) {
+    const isAdmin = req.user.roles?.includes('admin');
+    if (!isAdmin && id !== req.user.id) {
+      throw new ForbiddenException('无权查看该用户信息');
+    }
     return this.userService.findById(id);
   }
 

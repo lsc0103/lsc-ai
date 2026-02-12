@@ -13,8 +13,11 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 import { RagService } from '../../services/rag.service.js';
 
 @Controller('knowledge-bases')
@@ -22,7 +25,10 @@ import { RagService } from '../../services/rag.service.js';
 export class KnowledgeSearchController {
   private readonly logger = new Logger(KnowledgeSearchController.name);
 
-  constructor(private readonly ragService: RagService) {}
+  constructor(
+    private readonly ragService: RagService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * POST /api/knowledge-bases/:id/search
@@ -31,10 +37,23 @@ export class KnowledgeSearchController {
   @Post(':id/search')
   async searchInKnowledgeBase(
     @Param('id') knowledgeBaseId: string,
+    @Request() req: any,
     @Body() body: { query: string; topK?: number },
   ) {
     if (!body.query || typeof body.query !== 'string') {
       throw new HttpException('query 参数为必填字符串', HttpStatus.BAD_REQUEST);
+    }
+
+    // 校验知识库归属
+    const kb = await this.prisma.knowledgeBase.findUnique({
+      where: { id: knowledgeBaseId },
+      select: { userId: true },
+    });
+    if (!kb) {
+      throw new HttpException('知识库不存在', HttpStatus.NOT_FOUND);
+    }
+    if (kb.userId !== req.user.id) {
+      throw new ForbiddenException('无权搜索该知识库');
     }
 
     const query =
@@ -78,9 +97,22 @@ export class KnowledgeSearchController {
    * 在所有知识库中搜索
    */
   @Post('search')
-  async searchAll(@Body() body: { query: string; topK?: number }) {
+  async searchAll(
+    @Request() req: any,
+    @Body() body: { query: string; topK?: number },
+  ) {
     if (!body.query || typeof body.query !== 'string') {
       throw new HttpException('query 参数为必填字符串', HttpStatus.BAD_REQUEST);
+    }
+
+    // 获取当前用户拥有的知识库 ID 列表
+    const userKBs = await this.prisma.knowledgeBase.findMany({
+      where: { userId: req.user.id },
+      select: { id: true },
+    });
+
+    if (userKBs.length === 0) {
+      return { success: true, data: { query: body.query, results: [] } };
     }
 
     const query =
@@ -91,15 +123,26 @@ export class KnowledgeSearchController {
         : 5;
 
     try {
-      const results = await this.ragService.search(query, {
-        topK,
-      });
+      // 逐个知识库搜索，合并结果，按分数排序
+      const allResults: any[] = [];
+
+      for (const kb of userKBs) {
+        const results = await this.ragService.search(query, {
+          knowledgeBaseId: kb.id,
+          topK,
+        });
+        allResults.push(...results);
+      }
+
+      // 按分数降序排序，取 topK
+      allResults.sort((a, b) => b.score - a.score);
+      const topResults = allResults.slice(0, topK);
 
       return {
         success: true,
         data: {
           query,
-          results: results.map((r) => ({
+          results: topResults.map((r) => ({
             content: r.content,
             score: Math.round(r.score * 100) / 100,
             documentName: r.documentName,

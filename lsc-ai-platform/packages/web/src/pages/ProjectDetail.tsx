@@ -92,8 +92,10 @@ export default function ProjectDetailPage() {
       message.success('更新成功');
       setModalOpen(false);
       loadProject();
-    } catch {
-      // form validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || '更新项目失败');
+      }
     } finally {
       setSubmitting(false);
     }

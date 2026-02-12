@@ -75,8 +75,10 @@ export default function RolesPage() {
       message.success('角色创建成功');
       setCreateOpen(false);
       loadRoles();
-    } catch {
-      // validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || '创建角色失败');
+      }
     } finally {
       setCreateSubmitting(false);
     }
@@ -101,8 +103,10 @@ export default function RolesPage() {
       message.success('角色已更新');
       setEditOpen(false);
       loadRoles();
-    } catch {
-      // validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || '更新角色失败');
+      }
     } finally {
       setEditSubmitting(false);
     }

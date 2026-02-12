@@ -107,8 +107,10 @@ export default function UsersPage() {
       message.success('用户创建成功');
       setCreateOpen(false);
       loadUsers();
-    } catch {
-      // validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || '创建用户失败');
+      }
     } finally {
       setCreateSubmitting(false);
     }
@@ -133,8 +135,10 @@ export default function UsersPage() {
       message.success('用户信息已更新');
       setEditOpen(false);
       loadUsers();
-    } catch {
-      // validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || '更新用户信息失败');
+      }
     } finally {
       setEditSubmitting(false);
     }

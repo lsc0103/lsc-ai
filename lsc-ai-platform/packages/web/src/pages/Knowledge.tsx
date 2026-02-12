@@ -87,8 +87,10 @@ export default function KnowledgePage() {
       }
       setModalOpen(false);
       loadKnowledgeBases();
-    } catch {
-      // form validation error or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || (editingKb ? '更新知识库失败' : '创建知识库失败'));
+      }
     } finally {
       setSubmitting(false);
     }

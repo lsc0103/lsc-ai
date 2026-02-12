@@ -112,8 +112,10 @@ export default function ProjectsPage() {
       }
       setModalOpen(false);
       loadProjects();
-    } catch {
-      // form validation or API error
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || (editingProject ? '更新项目失败' : '创建项目失败'));
+      }
     } finally {
       setSubmitting(false);
     }

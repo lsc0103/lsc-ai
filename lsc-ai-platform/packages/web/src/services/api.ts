@@ -216,6 +216,8 @@ export const userApi = {
   delete: (id: string) => api.delete(`/users/${id}`),
   assignRoles: (id: string, roleIds: string[]) =>
     api.patch(`/users/${id}/roles`, { roleIds }),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.patch('/users/change-password', data),
 };
 
 export const roleApi = {

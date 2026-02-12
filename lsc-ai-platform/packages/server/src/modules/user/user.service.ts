@@ -166,6 +166,38 @@ export class UserService {
     return mapUserRoles(updated);
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    if (!currentPassword || !newPassword) {
+      throw new BadRequestException('当前密码和新密码不能为空');
+    }
+    if (newPassword.length < 8) {
+      throw new BadRequestException('新密码至少 8 个字符');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new BadRequestException('当前密码错误');
+    }
+
+    const isSame = await bcrypt.compare(newPassword, user.password);
+    if (isSame) {
+      throw new BadRequestException('新密码不能与当前密码相同');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: '密码修改成功' };
+  }
+
   async delete(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
