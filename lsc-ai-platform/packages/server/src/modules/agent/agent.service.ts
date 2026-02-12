@@ -121,13 +121,20 @@ export class AgentService {
 
     this.agentPairingCodes.delete(code);
 
-    // 通知 Agent 配对成功，并下发 LLM 配置
+    // 通知 Agent 配对成功，并下发 LLM 配置（从 ModelFactory 环境变量读取，支持 Provider 切换）
     if (this.agentGateway) {
+      const provider = this.configService.get<string>('LLM_DEFAULT_PROVIDER') || 'deepseek';
       const llmConfig: LLMConfig = {
-        apiProvider: 'deepseek',
-        apiBaseUrl: this.configService.get<string>('DEEPSEEK_API_BASE') || 'https://api.deepseek.com',
-        apiKey: this.configService.get<string>('DEEPSEEK_API_KEY') || '',
-        model: this.configService.get<string>('DEEPSEEK_MODEL') || 'deepseek-chat',
+        apiProvider: provider,
+        apiBaseUrl: this.configService.get<string>('LLM_DEFAULT_BASE_URL')
+          || this.configService.get<string>('DEEPSEEK_API_BASE')
+          || 'https://api.deepseek.com',
+        apiKey: this.configService.get<string>('LLM_DEFAULT_API_KEY')
+          || this.configService.get<string>('DEEPSEEK_API_KEY')
+          || '',
+        model: this.configService.get<string>('LLM_DEFAULT_MODEL')
+          || this.configService.get<string>('DEEPSEEK_MODEL')
+          || 'deepseek-chat',
       };
       this.agentGateway.notifyAgentPaired(deviceId, userId, llmConfig);
     }

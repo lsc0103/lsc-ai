@@ -214,6 +214,19 @@ export class UserService {
       throw new NotFoundException('用户不存在');
     }
 
+    // 验证所有 roleId 是否存在
+    if (roleIds.length > 0) {
+      const existingRoles = await this.prisma.role.findMany({
+        where: { id: { in: roleIds } },
+        select: { id: true },
+      });
+      const existingIds = new Set(existingRoles.map((r) => r.id));
+      const invalidIds = roleIds.filter((id) => !existingIds.has(id));
+      if (invalidIds.length > 0) {
+        throw new BadRequestException(`角色不存在: ${invalidIds.join(', ')}`);
+      }
+    }
+
     // Delete existing roles, then create new ones
     await this.prisma.$transaction([
       this.prisma.userRole.deleteMany({ where: { userId } }),

@@ -61,7 +61,7 @@ export const knowledgeApi = {
       },
     });
   },
-  deleteDocument: (docId: string) => api.delete(`/documents/${docId}`),
+  deleteDocument: (docId: string) => api.delete(`/knowledge-bases/documents/${docId}`),
 
   // 搜索
   search: (kbId: string, query: string, topK?: number) =>

@@ -162,10 +162,13 @@ export class PlatformSocketClient extends EventEmitter {
       // 保存 Platform 下发的 LLM 配置
       if (data.llmConfig) {
         console.log('[Socket] Received LLM config from Platform');
-        // 验证 apiProvider 是否为支持的类型
-        const provider = data.llmConfig.apiProvider as 'anthropic' | 'deepseek';
-        if (provider === 'anthropic' || provider === 'deepseek') {
-          configManager.set('apiProvider', provider);
+        // 验证 apiProvider 是否为支持的类型（deepseek / openai-compatible）
+        const provider = data.llmConfig.apiProvider as string;
+        if (provider === 'deepseek' || provider === 'openai-compatible') {
+          configManager.set('apiProvider', provider as 'deepseek' | 'openai-compatible');
+        } else {
+          console.warn(`[Socket] Unsupported LLM provider: ${provider}, defaulting to deepseek`);
+          configManager.set('apiProvider', 'deepseek');
         }
         configManager.set('apiBaseUrl', data.llmConfig.apiBaseUrl);
         configManager.set('apiKey', data.llmConfig.apiKey);

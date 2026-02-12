@@ -22,13 +22,15 @@ export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Get()
-  @ApiOperation({ summary: '角色列表' })
+  @Roles('admin')
+  @ApiOperation({ summary: '角色列表（管理员）' })
   async findAll() {
     return this.roleService.findAll();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '角色详情' })
+  @Roles('admin')
+  @ApiOperation({ summary: '角色详情（管理员）' })
   async findOne(@Param('id') id: string) {
     return this.roleService.findById(id);
   }
