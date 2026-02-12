@@ -11,6 +11,8 @@ import {
   LogoutOutlined,
   TeamOutlined,
   SafetyCertificateOutlined,
+  FileProtectOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 import { Tooltip, Dropdown, Avatar } from 'antd';
 import { useChatStore } from '../../stores/chat';
@@ -34,6 +36,8 @@ const navItems = [
   { key: 'apps', icon: AppstoreOutlined, label: '其他应用', path: '/apps' },
   { key: 'admin-users', icon: TeamOutlined, label: '用户管理', path: '/admin/users', adminOnly: true },
   { key: 'admin-roles', icon: SafetyCertificateOutlined, label: '角色管理', path: '/admin/roles', adminOnly: true },
+  { key: 'audit-log', icon: FileProtectOutlined, label: '审计日志', path: '/audit-log', adminOnly: true },
+  { key: 'sentinel', icon: DashboardOutlined, label: '监控中心', path: '/sentinel', adminOnly: true },
 ];
 
 /**

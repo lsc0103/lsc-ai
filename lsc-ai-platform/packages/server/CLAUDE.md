@@ -18,14 +18,20 @@ src/
 │   ├── session/                     # 会话管理
 │   ├── storage/                     # MinIO 文件存储 (minio.service + upload.service)
 │   ├── user/                        # 用户管理
-│   └── workflow/                    # RPA 流程 (controller)
+│   ├── workflow/                    # RPA 流程 (controller + dashboard)
+│   ├── audit/                       # 审计日志 (S4.5: interceptor + service + controller)
+│   ├── notification/                # 通知系统 (S4.5: email + notification + controller)
+│   ├── connector/                   # 外部DB连接器 (S4.5: MySQL/PG 只读查询)
+│   ├── queue/                       # BullMQ 队列 (S4.5: task-execution + email processors)
+│   ├── sentinel/                    # Sentinel Agent (S4.5: 指标采集 + 规则引擎 + 告警)
+│   └── knowledge/                   # RAG 知识库 (S2)
 ├── gateway/
 │   ├── chat.gateway.ts              # 对话 WebSocket (913行) — 核心入口
 │   └── agent.gateway.ts             # Agent WebSocket — 任务分发
 ├── services/
 │   ├── mastra-agent.service.ts      # AI Agent 编排 (916行) — 最重要的文件
-│   ├── mastra-workflow.service.ts   # RPA Workflow (362行)
-│   └── task-scheduler.service.ts    # CRON 调度 (171行)
+│   ├── mastra-workflow.service.ts   # RPA Workflow (S4.5: 8种确定性步骤执行)
+│   └── task-scheduler.service.ts    # CRON 调度 (S4.5: cron-parser + BullMQ 入队)
 ├── tools/
 │   ├── core-tools.ts                # 13 个核心工具 (文件/Shell/Git/搜索)
 │   ├── office-tools.ts              # 8 个 Office 工具
@@ -67,7 +73,7 @@ lastMessages: 50 | semanticRecall topK:3 | workingMemory: enabled
 
 ## 数据库 (Prisma)
 
-13 个表：User, Role, UserRole, UserPermission, Session, Project, File, ScheduledTask, TaskLog, RpaFlow, Credential, ClientAgent, SentinelAgent, AuditLog
+16+ 个表：User, Role, UserRole, UserPermission, Session, Project, File, ScheduledTask, TaskLog, RpaFlow, Credential, ClientAgent, SentinelAgent, AuditLog, SentinelMetric, AlertRule, AlertHistory + KnowledgeBase/Document/DocumentChunk
 
 ## 已知问题 (Server 相关)
 

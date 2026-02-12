@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -14,6 +15,11 @@ import { StorageModule } from './modules/storage/storage.module.js';
 import { WorkflowModule } from './modules/workflow/workflow.module.js';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { SentinelModule } from './modules/sentinel/sentinel.module.js';
+import { AuditModule } from './modules/audit/audit.module.js';
+import { NotificationModule } from './modules/notification/notification.module.js';
+import { ConnectorModule } from './modules/connector/connector.module.js';
+import { QueueModule } from './modules/queue/queue.module.js';
+import { AuditInterceptor } from './modules/audit/audit.interceptor.js';
 import { ChatGateway } from './gateway/chat.gateway.js';
 import { AgentGateway } from './gateway/agent.gateway.js';
 import { HealthController } from './health.controller.js';
@@ -51,8 +57,16 @@ import { HealthController } from './health.controller.js';
     WorkflowModule,
     KnowledgeModule,
     SentinelModule,
+    AuditModule,
+    NotificationModule,
+    ConnectorModule,
+    QueueModule,
   ],
   controllers: [HealthController],
-  providers: [ChatGateway, AgentGateway],
+  providers: [
+    ChatGateway,
+    AgentGateway,
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
 })
 export class AppModule {}

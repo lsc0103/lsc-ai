@@ -101,6 +101,21 @@ services:
     networks:
       - lscai-dev-network
 
+  # MailPit (开发邮件服务)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lscai-mailpit-dev
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      MP_MAX_MESSAGES: 500
+    restart: unless-stopped
+    networks:
+      - lscai-dev-network
+
   # ============== 数据库迁移 ==============
   migrate:
     image: lscai/server:latest

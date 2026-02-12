@@ -1,0 +1,44 @@
+<div style="max-width: 600px; margin: 0 auto; font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+  {{> header}}
+
+  <div style="padding: 32px;">
+    <div style="margin-bottom: 20px; padding: 12px 16px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; border-left: 4px solid #52c41a;">
+      <p style="margin: 0; font-size: 15px; color: #389e0d; font-weight: 600;">任务执行成功</p>
+    </div>
+
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
+      <tr>
+        <td style="padding: 12px 16px; background: #fafafa; border: 1px solid #f0f0f0; width: 100px; font-size: 14px; color: #666666;">
+          任务名称
+        </td>
+        <td style="padding: 12px 16px; border: 1px solid #f0f0f0; font-size: 14px; color: #333333; font-weight: 500;">
+          {{taskName}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 12px 16px; background: #fafafa; border: 1px solid #f0f0f0; font-size: 14px; color: #666666;">
+          完成时间
+        </td>
+        <td style="padding: 12px 16px; border: 1px solid #f0f0f0; font-size: 14px; color: #333333;">
+          {{executionTime}}
+        </td>
+      </tr>
+    </table>
+
+    {{#if resultSummary}}
+    <div style="margin-top: 20px; padding: 16px; background: #f6ffed; border-radius: 6px; border: 1px solid #b7eb8f;">
+      <p style="margin: 0 0 8px 0; font-size: 14px; color: #389e0d; font-weight: 500;">执行摘要</p>
+      <p style="margin: 0; font-size: 13px; color: #333333; line-height: 1.6; white-space: pre-wrap;">{{resultSummary}}</p>
+    </div>
+    {{/if}}
+
+    {{#if details}}
+    <div style="margin-top: 12px; padding: 16px; background: #fafafa; border-radius: 6px; border: 1px solid #f0f0f0;">
+      <p style="margin: 0 0 8px 0; font-size: 14px; color: #666666; font-weight: 500;">详细结果</p>
+      <p style="margin: 0; font-size: 13px; color: #333333; line-height: 1.6; white-space: pre-wrap;">{{details}}</p>
+    </div>
+    {{/if}}
+  </div>
+
+  {{> footer}}
+</div>

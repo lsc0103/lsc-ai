@@ -12,6 +12,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { MastraWorkflowService } from '../../services/mastra-workflow.service.js';
@@ -24,7 +26,89 @@ export class WorkflowController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workflowService: MastraWorkflowService,
+    @InjectQueue('task-execution') private readonly taskQueue: Queue,
   ) {}
+
+  // ==================== Dashboard ====================
+
+  @Get('dashboard')
+  @ApiOperation({ summary: '获取执行监控看板数据' })
+  async getDashboard() {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Queue stats from BullMQ
+    const jobCounts = await this.taskQueue.getJobCounts(
+      'waiting', 'active', 'completed', 'failed',
+    );
+
+    // Recent logs with task name
+    const recentLogs = await this.prisma.taskLog.findMany({
+      where: { startedAt: { gte: twentyFourHoursAgo } },
+      orderBy: { startedAt: 'desc' },
+      take: 20,
+      include: { task: { select: { name: true } } },
+    });
+
+    // All logs in last 24h for aggregation
+    const allLogs = await this.prisma.taskLog.findMany({
+      where: { startedAt: { gte: twentyFourHoursAgo } },
+      select: { status: true, startedAt: true, endedAt: true },
+    });
+
+    // Health metrics
+    const totalExecutions = allLogs.length;
+    const successCount = allLogs.filter((l) => l.status === 'success').length;
+    const successRate = totalExecutions > 0 ? Math.round((successCount / totalExecutions) * 100) : 0;
+
+    const durations = allLogs
+      .filter((l) => l.endedAt && l.startedAt)
+      .map((l) => new Date(l.endedAt!).getTime() - new Date(l.startedAt).getTime());
+    const avgDuration = durations.length > 0
+      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+      : 0;
+
+    // Trend: group by hour
+    const labels: string[] = [];
+    const successArr: number[] = [];
+    const failedArr: number[] = [];
+
+    for (let i = 23; i >= 0; i--) {
+      const hourStart = new Date(now.getTime() - i * 60 * 60 * 1000);
+      hourStart.setMinutes(0, 0, 0);
+      const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+
+      labels.push(`${hourStart.getHours().toString().padStart(2, '0')}:00`);
+
+      const hourLogs = allLogs.filter((l) => {
+        const t = new Date(l.startedAt).getTime();
+        return t >= hourStart.getTime() && t < hourEnd.getTime();
+      });
+
+      successArr.push(hourLogs.filter((l) => l.status === 'success').length);
+      failedArr.push(hourLogs.filter((l) => l.status === 'failed').length);
+    }
+
+    return {
+      queue: {
+        waiting: jobCounts.waiting ?? 0,
+        active: jobCounts.active ?? 0,
+        completed: jobCounts.completed ?? 0,
+        failed: jobCounts.failed ?? 0,
+      },
+      trend: { labels, success: successArr, failed: failedArr },
+      health: { avgDuration, successRate, totalExecutions },
+      recentLogs: recentLogs.map((log) => ({
+        id: log.id,
+        taskId: log.taskId,
+        taskName: log.task.name,
+        status: log.status,
+        startedAt: log.startedAt.toISOString(),
+        endedAt: log.endedAt?.toISOString(),
+        error: log.error ?? undefined,
+      })),
+    };
+  }
 
   // ==================== RPA 流程 ====================
 

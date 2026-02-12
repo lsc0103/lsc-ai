@@ -42,16 +42,61 @@ export interface RpaFlowDef {
   variables?: Record<string, any>;
 }
 
+export type RpaStepType =
+  | 'ai_chat'
+  | 'shell_command'
+  | 'web_fetch'
+  | 'file_operation'
+  | 'sql_query'
+  | 'send_email'
+  | 'condition'
+  | 'loop';
+
 export interface RpaStepDef {
   id: string;
-  type: 'ai_chat' | 'shell_command' | 'web_fetch' | 'file_operation' | 'condition' | 'loop';
+  type: RpaStepType;
   config: Record<string, any>;
   next?: string;
+  timeout?: number;       // ms, defaults to 30000
+  retries?: number;        // 0-3
+  onError?: 'stop' | 'continue' | 'fallback';
+}
+
+// ==================== Dashboard ====================
+
+export interface DashboardData {
+  queue: {
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+  };
+  trend: {
+    labels: string[];
+    success: number[];
+    failed: number[];
+  };
+  health: {
+    avgDuration: number;
+    successRate: number;
+    totalExecutions: number;
+  };
+  recentLogs: Array<{
+    id: string;
+    taskId: string;
+    taskName: string;
+    status: string;
+    startedAt: string;
+    endedAt?: string;
+    error?: string;
+  }>;
 }
 
 // ==================== API Methods ====================
 
 export const workflowApi = {
+  dashboard: () => api.get<DashboardData>('/workflows/dashboard'),
+
   tasks: {
     // 创建定时任务
     create: (data: {

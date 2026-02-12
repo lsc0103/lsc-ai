@@ -8,7 +8,7 @@
  * 4. 集成高级功能（上下文压缩、项目感知）作为辅助函数
  */
 
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Agent } from '@mastra/core/agent';
 import { Mastra } from '@mastra/core/mastra';
@@ -22,7 +22,7 @@ import { EmbeddingFactory } from '../mastra/embedding-factory.js';
 // 导入所有工具
 import { coreTools } from '../tools/core-tools.js';
 import { officeTools } from '../tools/office-tools.js';
-import { advancedTools } from '../tools/advanced-tools.js';
+import { advancedTools, setConnectorService } from '../tools/advanced-tools.js';
 import { ragTools } from '../tools/rag-tools.js';
 import {
   workbenchTool,
@@ -33,6 +33,7 @@ import {
 
 // 导入高级功能（作为辅助函数）
 import type { detectProjectContext } from '../utils/projectContext.js';
+import { ConnectorService } from '../modules/connector/connector.service.js';
 
 @Injectable()
 export class MastraAgentService implements OnModuleInit {
@@ -50,9 +51,17 @@ export class MastraAgentService implements OnModuleInit {
   // 项目感知函数（延迟加载）
   private detectProjectContextFn?: typeof detectProjectContext;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    @Optional() private connectorService?: ConnectorService,
+  ) {}
 
   async onModuleInit() {
+    // Inject ConnectorService into the queryDatabase tool
+    if (this.connectorService) {
+      setConnectorService(this.connectorService);
+      this.logger.log('ConnectorService 已注入到 queryDatabase 工具');
+    }
     await this.initialize();
   }
 
@@ -388,6 +397,7 @@ export class MastraAgentService implements OnModuleInit {
 - \`webFetch\` - 网页抓取
 - \`sql\` - SQL 查询
 - \`sqlConfig\` - 配置 SQL 数据源
+- \`queryDatabase\` - 查询外部数据库（通过连接名称执行只读SQL，管理员需在设置中配置连接）
 - \`notebookEdit\` - Jupyter Notebook 编辑
 
 ### 6. 任务管理

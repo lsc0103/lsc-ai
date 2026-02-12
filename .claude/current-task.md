@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — S4 验收通过，S5 待启动
-**状态**：S4 全部 6 个任务开发完成（T1-T6）并通过 PM Chrome 浏览器验收 (28/28 ✅)。
+**阶段**：Phase I 功能扩展 — S4.5 开发完成，待 PM 验收
+**状态**：S4.5 全部 12 个任务开发完成（T1-T12），Server+Web 双包 tsc 编译通过。
 **角色转变**：从「总工程师」升级为「执行负责人」，负责项目规划、代码审查、团队协调、记忆管理、代码入库
 
 ### Phase I Sprint 计划概览
@@ -19,6 +19,7 @@
 | **S2** | RAG 知识库 MVP | 2 周 | ✅ PM 二审通过，正式关闭 |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | ✅ 二审 P0 + 遗留 bug 全部修复 |
 | **S4** | 任务/RPA + Sentinel Agent | 2 周 | ✅ PM 验收通过 (28/28) |
+| **S4.5** | 核心引擎增强+通知+审计+Sentinel | 2 周 | ✅ 开发完成 (12/12)，待 PM 验收 |
 | **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
 
 ### 关键约束
@@ -326,10 +327,31 @@ e2e/
     - **T6 后端改进**: WebSocket task:execution 推送(ModuleRef) + 404/400 错误处理 + cancel 端点 + cron 验证
     - **DI修复**: ChatGateway 跨模块注入改为 ModuleRef { strict: false }
     - PM Chrome 验收 28/28 全部通过
+63. ✅ **S4.5 核心引擎增强+通知+审计+Sentinel 实质化** — 4 Agent 并行开发，~40 文件 (12 tasks)
+    - **T1 邮件服务**: NotificationModule + MailerModule + HandlebarsAdapter + 3 模板 + MailPit Docker
+    - **T2 BullMQ 队列**: QueueModule + TaskExecutionProcessor + EmailProcessor + TaskScheduler 重构(cron-parser)
+    - **T3 审计日志**: AuditModule + AuditInterceptor(全局) + AuditService + AuditController + AuditLog.tsx 前端
+    - **T4 确定性执行**: mastra-workflow.service.ts 重写 — 8 种步骤类型直接执行(非 AI 委托) + executeWithPolicy
+    - **T5 数据库连接器**: ConnectorModule + 连接池管理 + 只读SQL强制 + queryDatabase AI 工具
+    - **T6 通知模板**: NotificationService + NotifyPrefs(User.extraData) + Settings.tsx 通知偏好
+    - **T7 Workflow 增强**: condition 分支(switch/case) + loop(100 cap) + 步骤间数据传递 + 变量引用
+    - **T8 Sentinel 实质化**: SentinelMetric/AlertRule/AlertHistory 三表 + 指标采集 + 规则引擎 + 告警通知
+    - **T9 Sentinel 前端**: Sentinel.tsx(500行) + sentinel-api.ts + Agent列表/指标图表/告警中心/规则管理
+    - **T10 ReactFlow 编辑器**: FlowEditor.tsx + 4 节点类型 + FlowConverter 双向转换 + Tasks.tsx 可视化/JSON 双模式
+    - **T11 执行监控**: ExecutionMonitorTab + GET /workflows/dashboard + ECharts 趋势图 + 队列健康指标
+    - **T12 编译验证**: Server + Web 双包 tsc --noEmit 0 errors
+    - **修复**: notification.controller.ts 路由前缀重复 + notification.service.ts 未使用变量
+    - Prisma Schema: 新增 SentinelMetric + AlertRule + AlertHistory 三表 + User.extraData 通知偏好
 
 ---
 
 ## 最近完成的任务
+
+### 2026-02-12 — S4.5 核心引擎增强全栈实现
+- ✅ 12 个任务全部完成，4 阶段递进（基础设施→引擎升级→监控实质化→可视化+测试）
+- ✅ Server + Web 双包 TypeScript 编译 0 errors
+- ✅ Prisma generate 成功，3 张新表
+- ✅ 代码审查通过（安全: SQL注入防护、只读强制、敏感字段脱敏、权限守卫）
 
 ### 2026-01-30 (第4次) — 闭环测试全面验证
 - ✅ 新建 3 个测试文件（tools-verify/memory-verify/frontend-full），共 54 个新测试

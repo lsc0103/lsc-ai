@@ -236,6 +236,52 @@ export const modificationHistoryTool = createTool({
 });
 
 // ============================================================================
+// 数据库连接器查询工具
+// ============================================================================
+
+// ConnectorService 实例引用（由 MastraAgentService 注入）
+let _connectorService: any = null;
+
+/**
+ * 设置 ConnectorService 实例（在 MastraAgentService 初始化时调用）
+ */
+export function setConnectorService(service: any) {
+  _connectorService = service;
+}
+
+export const queryDatabaseTool = createTool({
+  id: 'queryDatabase',
+  description: '查询外部数据库。根据连接名称执行只读SQL查询，返回查询结果。使用此工具前，管理员需先在设置页面配置数据库连接。',
+  inputSchema: z.object({
+    connectionName: z.string().describe('数据库连接名称（在设置中配置的名称）'),
+    sql: z.string().describe('SQL查询语句（仅限只读SELECT查询）'),
+    params: z.array(z.any()).optional().describe('SQL参数（用于参数化查询）'),
+  }),
+  execute: async ({ connectionName, sql, params }) => {
+    try {
+      if (!_connectorService) {
+        throw new Error('数据库连接器服务未初始化，请联系管理员');
+      }
+
+      // Find the credential by name
+      const credential = await _connectorService.findByName(connectionName);
+      if (!credential) {
+        throw new Error(`未找到名为"${connectionName}"的数据库连接，请检查连接名称或在设置中配置`);
+      }
+
+      const result = await _connectorService.query(credential.id, sql, params);
+      return {
+        rows: result.rows,
+        rowCount: result.rowCount,
+        fields: result.fields,
+      };
+    } catch (error) {
+      throw new Error(`数据库查询失败: ${(error as Error).message}`);
+    }
+  },
+});
+
+// ============================================================================
 // 导出所有高级工具
 // ============================================================================
 
@@ -249,4 +295,5 @@ export const advancedTools = {
   askUser: askUserTool,
   undo: undoTool,
   modificationHistory: modificationHistoryTool,
+  queryDatabase: queryDatabaseTool,
 };

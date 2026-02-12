@@ -14,6 +14,9 @@ import {
   Drawer,
   Tooltip,
   Skeleton,
+  Statistic,
+  Progress,
+  Spin,
   message,
 } from 'antd';
 import {
@@ -24,18 +27,27 @@ import {
   PauseCircleOutlined,
   HistoryOutlined,
   CaretRightOutlined,
+  ReloadOutlined,
+  DashboardOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { motion } from 'framer-motion';
+import ReactECharts from 'echarts-for-react';
 import {
   workflowApi,
   type ScheduledTask,
   type TaskLog,
   type RpaFlow,
   type RpaFlowDef,
+  type DashboardData,
 } from '../services/workflow-api';
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
+const FlowEditor = lazy(() => import('../components/workflow/FlowEditor'));
 
 // ==================== Helpers ====================
 
@@ -126,6 +138,11 @@ export default function TasksPage() {
               key: 'rpa',
               label: 'RPA 流程',
               children: <RpaFlowTab />,
+            },
+            {
+              key: 'monitor',
+              label: 'Execution Monitor',
+              children: <ExecutionMonitorTab />,
             },
           ]}
         />
@@ -548,6 +565,8 @@ function RpaFlowTab() {
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [flowJson, setFlowJson] = useState(DEFAULT_FLOW_DATA);
+  const [editorMode, setEditorMode] = useState<'visual' | 'json'>('visual');
+  const [flowDef, setFlowDef] = useState<RpaFlowDef>(() => JSON.parse(DEFAULT_FLOW_DATA));
 
   // Execute modal
   const [execModalOpen, setExecModalOpen] = useState(false);
@@ -579,7 +598,10 @@ function RpaFlowTab() {
     setEditingFlow(null);
     form.resetFields();
     form.setFieldsValue({ status: 'draft' });
+    const defaultDef = JSON.parse(DEFAULT_FLOW_DATA);
     setFlowJson(DEFAULT_FLOW_DATA);
+    setFlowDef(defaultDef);
+    setEditorMode('visual');
     setModalOpen(true);
   };
 
@@ -590,12 +612,34 @@ function RpaFlowTab() {
       description: record.description,
       status: record.status,
     });
-    setFlowJson(
-      typeof record.flowData === 'string'
-        ? record.flowData
-        : JSON.stringify(record.flowData, null, 2),
-    );
+    const jsonStr = typeof record.flowData === 'string'
+      ? record.flowData
+      : JSON.stringify(record.flowData, null, 2);
+    setFlowJson(jsonStr);
+    try {
+      setFlowDef(typeof record.flowData === 'string' ? JSON.parse(record.flowData) : record.flowData);
+    } catch {
+      setFlowDef({ steps: [], variables: {} });
+    }
+    setEditorMode('visual');
     setModalOpen(true);
+  };
+
+  // Sync between visual and JSON modes
+  const switchEditorMode = (mode: 'visual' | 'json') => {
+    if (mode === 'json') {
+      // Visual -> JSON: serialize current flowDef
+      setFlowJson(JSON.stringify(flowDef, null, 2));
+    } else {
+      // JSON -> Visual: parse JSON into flowDef
+      try {
+        setFlowDef(JSON.parse(flowJson));
+      } catch {
+        message.warning('JSON 格式错误，无法切换到可视化模式');
+        return;
+      }
+    }
+    setEditorMode(mode);
   };
 
   const handleSubmit = async () => {
@@ -604,12 +648,16 @@ function RpaFlowTab() {
       setSubmitting(true);
 
       let flowData: RpaFlowDef;
-      try {
-        flowData = JSON.parse(flowJson);
-      } catch {
-        message.error('流程定义 JSON 格式错误');
-        setSubmitting(false);
-        return;
+      if (editorMode === 'visual') {
+        flowData = flowDef;
+      } else {
+        try {
+          flowData = JSON.parse(flowJson);
+        } catch {
+          message.error('流程定义 JSON 格式错误');
+          setSubmitting(false);
+          return;
+        }
       }
 
       const payload = {
@@ -791,7 +839,7 @@ function RpaFlowTab() {
         okText={editingFlow ? '保存' : '创建'}
         cancelText="取消"
         destroyOnClose
-        width={720}
+        width={960}
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item
@@ -817,27 +865,51 @@ function RpaFlowTab() {
               ]}
             />
           </Form.Item>
-          <Form.Item label="流程定义 (JSON)">
-            <div style={{ border: '1px solid #d9d9d9', borderRadius: 6 }}>
-              <Suspense fallback={<Skeleton.Input active block style={{ height: 300 }} />}>
-                <MonacoEditor
-                  height={300}
-                  language="json"
-                  value={flowJson}
-                  onChange={(val) => setFlowJson(val || '')}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    wordWrap: 'on',
-                  }}
-                />
-              </Suspense>
-            </div>
-            <div className="text-xs text-accent-500 mt-2">
-              步骤类型: ai_chat | shell_command | web_fetch | file_operation | condition | loop
-            </div>
+          <Form.Item label="流程定义">
+            <Tabs
+              size="small"
+              activeKey={editorMode}
+              onChange={(key) => switchEditorMode(key as 'visual' | 'json')}
+              items={[
+                {
+                  key: 'visual',
+                  label: 'Visual Editor',
+                  children: (
+                    <Suspense fallback={<Skeleton.Input active block style={{ height: 420 }} />}>
+                      <FlowEditor value={flowDef} onChange={setFlowDef} />
+                    </Suspense>
+                  ),
+                },
+                {
+                  key: 'json',
+                  label: 'JSON',
+                  children: (
+                    <>
+                      <div style={{ border: '1px solid #d9d9d9', borderRadius: 6 }}>
+                        <Suspense fallback={<Skeleton.Input active block style={{ height: 300 }} />}>
+                          <MonacoEditor
+                            height={300}
+                            language="json"
+                            value={flowJson}
+                            onChange={(val) => setFlowJson(val || '')}
+                            options={{
+                              minimap: { enabled: false },
+                              fontSize: 13,
+                              lineNumbers: 'on',
+                              scrollBeyondLastLine: false,
+                              wordWrap: 'on',
+                            }}
+                          />
+                        </Suspense>
+                      </div>
+                      <div className="text-xs text-accent-500 mt-2">
+                        Step types: ai_chat | shell_command | web_fetch | file_operation | sql_query | send_email | condition | loop
+                      </div>
+                    </>
+                  ),
+                },
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -886,6 +958,248 @@ function RpaFlowTab() {
         </div>
       </Modal>
     </>
+  );
+}
+
+// ==================== Tab 3: Execution Monitor ====================
+
+const GLASS_CARD: React.CSSProperties = {
+  background: 'var(--glass-bg-medium)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 8,
+  padding: 16,
+};
+
+function ExecutionMonitorTab() {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await workflowApi.dashboard();
+      const raw: any = res.data;
+      setData(raw?.data || raw);
+    } catch {
+      message.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+    pollingRef.current = setInterval(loadDashboard, 30000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [loadDashboard]);
+
+  const chartOption = data ? {
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis' as const },
+    legend: {
+      data: ['Success', 'Failed'],
+      textStyle: { color: 'rgba(255,255,255,0.65)' },
+      top: 0,
+    },
+    grid: { left: 40, right: 20, top: 36, bottom: 30 },
+    xAxis: {
+      type: 'category' as const,
+      data: data.trend.labels,
+      axisLabel: { color: 'rgba(255,255,255,0.45)', fontSize: 11 },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+    },
+    yAxis: {
+      type: 'value' as const,
+      minInterval: 1,
+      axisLabel: { color: 'rgba(255,255,255,0.45)', fontSize: 11 },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+    },
+    series: [
+      {
+        name: 'Success',
+        type: 'line' as const,
+        data: data.trend.success,
+        smooth: true,
+        itemStyle: { color: '#52c41a' },
+        areaStyle: { color: 'rgba(82,196,26,0.15)' },
+      },
+      {
+        name: 'Failed',
+        type: 'line' as const,
+        data: data.trend.failed,
+        smooth: true,
+        itemStyle: { color: '#f5222d' },
+        areaStyle: { color: 'rgba(245,34,45,0.15)' },
+      },
+    ],
+  } : {};
+
+  type RecentLog = DashboardData['recentLogs'][number];
+
+  const recentColumns: ColumnsType<RecentLog> = [
+    {
+      title: 'Task',
+      dataIndex: 'taskName',
+      key: 'taskName',
+      width: 160,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status: string) => {
+        const map: Record<string, { status: 'processing' | 'success' | 'error' | 'default'; text: string }> = {
+          running: { status: 'processing', text: 'Running' },
+          success: { status: 'success', text: 'Success' },
+          failed: { status: 'error', text: 'Failed' },
+          cancelled: { status: 'default', text: 'Cancelled' },
+        };
+        const info = map[status] || { status: 'default' as const, text: status };
+        return <Badge status={info.status} text={info.text} />;
+      },
+    },
+    {
+      title: 'Started',
+      dataIndex: 'startedAt',
+      key: 'startedAt',
+      width: 160,
+      render: (val: string) => formatDate(val),
+    },
+    {
+      title: 'Duration',
+      key: 'duration',
+      width: 100,
+      render: (_: unknown, record: RecentLog) => {
+        if (!record.startedAt || !record.endedAt) return '-';
+        const ms = new Date(record.endedAt).getTime() - new Date(record.startedAt).getTime();
+        if (ms < 1000) return `${ms}ms`;
+        return `${(ms / 1000).toFixed(1)}s`;
+      },
+    },
+    {
+      title: 'Error',
+      dataIndex: 'error',
+      key: 'error',
+      ellipsis: true,
+      render: (val: string | undefined) => val ? <span style={{ color: '#f5222d' }}>{val}</span> : '-',
+    },
+  ];
+
+  if (!data && loading) {
+    return <div className="flex justify-center py-20"><Spin size="large" /></div>;
+  }
+
+  return (
+    <div>
+      {/* Refresh button */}
+      <div className="mb-4 flex justify-end">
+        <Button icon={<ReloadOutlined />} loading={loading} onClick={loadDashboard}>
+          Refresh
+        </Button>
+      </div>
+
+      {/* Queue Status Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        <div style={GLASS_CARD}>
+          <Statistic
+            title={<span style={{ color: 'var(--text-tertiary)' }}>Waiting</span>}
+            value={data?.queue.waiting ?? 0}
+            prefix={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
+            valueStyle={{ color: '#1890ff' }}
+          />
+        </div>
+        <div style={GLASS_CARD}>
+          <Statistic
+            title={<span style={{ color: 'var(--text-tertiary)' }}>Active</span>}
+            value={data?.queue.active ?? 0}
+            prefix={<SyncOutlined spin={!!data?.queue.active} style={{ color: '#fa8c16' }} />}
+            valueStyle={{ color: '#fa8c16' }}
+          />
+        </div>
+        <div style={GLASS_CARD}>
+          <Statistic
+            title={<span style={{ color: 'var(--text-tertiary)' }}>Completed (24h)</span>}
+            value={data?.queue.completed ?? 0}
+            prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+            valueStyle={{ color: '#52c41a' }}
+          />
+        </div>
+        <div style={GLASS_CARD}>
+          <Statistic
+            title={<span style={{ color: 'var(--text-tertiary)' }}>Failed (24h)</span>}
+            value={data?.queue.failed ?? 0}
+            prefix={<CloseCircleOutlined style={{ color: '#f5222d' }} />}
+            valueStyle={{ color: '#f5222d' }}
+          />
+        </div>
+      </div>
+
+      {/* Trend Chart + Health */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="col-span-2" style={GLASS_CARD}>
+          <div className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            Execution Trend (24h)
+          </div>
+          {data && (
+            <ReactECharts
+              option={chartOption}
+              style={{ height: 260 }}
+              opts={{ renderer: 'canvas' }}
+            />
+          )}
+        </div>
+        <div style={GLASS_CARD}>
+          <div className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+            Health (24h)
+          </div>
+          <div className="flex flex-col items-center mb-4">
+            <Progress
+              type="circle"
+              percent={data?.health.successRate ?? 0}
+              size={100}
+              strokeColor="#52c41a"
+              trailColor="rgba(255,255,255,0.08)"
+              format={(pct) => <span style={{ color: 'var(--text-primary)' }}>{pct}%</span>}
+            />
+            <span className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>Success Rate</span>
+          </div>
+          <div className="space-y-3">
+            <Statistic
+              title={<span style={{ color: 'var(--text-tertiary)' }}>Avg Duration</span>}
+              value={data?.health.avgDuration ?? 0}
+              suffix="ms"
+              prefix={<DashboardOutlined />}
+              valueStyle={{ color: 'var(--text-primary)', fontSize: 18 }}
+            />
+            <Statistic
+              title={<span style={{ color: 'var(--text-tertiary)' }}>Total Executions</span>}
+              value={data?.health.totalExecutions ?? 0}
+              valueStyle={{ color: 'var(--text-primary)', fontSize: 18 }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Executions Table */}
+      <div style={GLASS_CARD}>
+        <div className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+          Recent Executions
+        </div>
+        <Table
+          columns={recentColumns}
+          dataSource={data?.recentLogs ?? []}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          size="small"
+          scroll={{ x: 700 }}
+        />
+      </div>
+    </div>
   );
 }
 

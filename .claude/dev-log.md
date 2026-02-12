@@ -1368,3 +1368,48 @@ PM（远程 Claude.ai Opus）在我提交 f699077 之后，私自提交了 3 个
 **下次继续**：
 - S5 IDP 智能文档处理规划
 - 修复 Sentinel PATCH 字段过滤问题（P2）
+
+---
+
+### 2026-02-12 — S4.5 核心引擎增强+通知+审计+Sentinel 实质化 (12 tasks)
+
+**目标**：从"能看"升级为"能用" — 邮件通知可达、任务执行确定可靠、审计合规、监控有实质
+
+**团队**：执行负责人(协调+审查) + 4 Engineer Agents 并行
+
+**完成任务 (12/12)**：
+
+| Task | 内容 | Engineer | 关键文件 |
+|------|------|----------|---------|
+| T1 | 邮件服务 (MailerModule + MailPit + Handlebars) | A | notification.module.ts, email.service.ts, templates/*.hbs |
+| T2 | BullMQ 队列 (3 queues + 2 processors) | B | queue.module.ts, task-execution.processor.ts, email.processor.ts |
+| T3 | 审计日志 (全局 Interceptor + 前端页面) | C | audit.*.ts, AuditLog.tsx |
+| T4 | 确定性执行 (8 步骤类型直接执行) | B | mastra-workflow.service.ts (重写) |
+| T5 | 数据库连接器 (MySQL/PG + AI 工具) | D | connector.*.ts, queryDatabase tool |
+| T6 | 通知模板 (NotificationService + 偏好) | A | notification.service.ts, notification.controller.ts |
+| T7 | Workflow 增强 (condition/loop/retry) | B | mastra-workflow.service.ts (扩展) |
+| T8 | Sentinel 实质化 (指标+规则+告警) | D | sentinel.service.ts (130→495行), 3 新 Prisma 表 |
+| T9 | Sentinel 前端 (仪表板+图表+告警) | new-eng | Sentinel.tsx, sentinel-api.ts |
+| T10 | ReactFlow 流程编辑器 (可视化拖拽) | new-eng | FlowEditor.tsx, FlowConverter.ts, 4 node types |
+| T11 | 执行监控看板 (队列+趋势+实时) | C | Tasks.tsx ExecutionMonitorTab, workflow.controller.ts dashboard |
+| T12 | 编译验证 (Server + Web tsc) | Lead | 0 errors both packages |
+
+**Prisma Schema 变更**：
+- 新增: SentinelMetric, AlertRule, AlertHistory 三表
+- 索引: [agentId,name], [agentId,createdAt], [metricName], [status], [createdAt]
+
+**关键修复**：
+- notification.controller.ts @Controller('api/notifications') → @Controller('notifications') (double prefix bug)
+- notification.service.ts 移除未使用的 getUserEmail() 方法
+
+**架构亮点**：
+- 确定性 RPA: shell_command 用 child_process.exec(), sql_query 用 mysql2/pg, send_email 用 EmailService — 不再全部委托 AI chat
+- 安全: SQL 写入关键词黑名单(14词), 表名正则验证, 参数化查询, 只读事务, 查询超时 30s, 结果限制 1000 行
+- BullMQ: 3 队列(task-execution/email/sentinel-metrics), WorkerHost pattern, ModuleRef 避免循环依赖
+- 审计: 全局 Interceptor 只拦截 POST/PATCH/PUT/DELETE, 异步写入不阻塞响应, 敏感字段脱敏(password/token/secret)
+- 告警: 规则引擎 + cooldown 防重复 + email/webhook 动作 + AlertHistory 追踪
+
+**下次继续**：
+- PM Chrome 浏览器验收 S4.5 (12 项冒烟测试)
+- Prisma migrate (需要数据库在线): `npx prisma migrate dev --name s4_5_sentinel_notification`
+- S5 IDP 智能文档处理规划

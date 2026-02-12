@@ -1,0 +1,65 @@
+<div style="max-width: 600px; margin: 0 auto; font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+  {{> header}}
+
+  <div style="padding: 32px;">
+    <h2 style="margin: 0 0 8px 0; font-size: 18px; color: #333333;">本周工作摘要</h2>
+    <p style="margin: 0 0 24px 0; font-size: 13px; color: #999999;">{{periodStart}} — {{periodEnd}}</p>
+
+    {{#if taskSummary}}
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #333333; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px;">任务执行统计</h3>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
+        <tr>
+          <td style="padding: 10px 16px; background: #f6ffed; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: #52c41a;">{{taskSummary.success}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">成功</div>
+          </td>
+          <td style="padding: 10px 16px; background: #fff2f0; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: #ff4d4f;">{{taskSummary.failed}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">失败</div>
+          </td>
+          <td style="padding: 10px 16px; background: #e6f7ff; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 24px; font-weight: 600; color: #1890ff;">{{taskSummary.total}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">总计</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    {{/if}}
+
+    {{#if alertSummary}}
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #333333; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px;">告警统计</h3>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
+        <tr>
+          <td style="padding: 10px 16px; background: #fff2f0; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #cf1322;">{{alertSummary.critical}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">紧急</div>
+          </td>
+          <td style="padding: 10px 16px; background: #fffbe6; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #d48806;">{{alertSummary.warning}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">警告</div>
+          </td>
+          <td style="padding: 10px 16px; background: #f6ffed; border: 1px solid #f0f0f0; text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #389e0d;">{{alertSummary.info}}</div>
+            <div style="font-size: 12px; color: #666666; margin-top: 2px;">信息</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    {{/if}}
+
+    {{#if highlights}}
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #333333; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px;">本周要点</h3>
+      <p style="margin: 0; font-size: 13px; color: #555555; line-height: 1.8; white-space: pre-wrap;">{{highlights}}</p>
+    </div>
+    {{/if}}
+
+    <p style="margin: 20px 0 0 0; font-size: 13px; color: #999999;">
+      生成时间: {{timestamp}}
+    </p>
+  </div>
+
+  {{> footer}}
+</div>
