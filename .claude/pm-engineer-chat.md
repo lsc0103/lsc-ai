@@ -6549,3 +6549,58 @@ Week 8     : 集成测试 + 回归验证 ─────────────
 
 ---
 
+### 九、PM Review — S1-T2/T3 ModelFactory 统一 + P2 修复（2026-02-12）
+
+#### 总评：✅ 通过，Sprint 1 关闭
+
+#### 变更范围（1 commit, 11 files, +233/-74）
+
+| 文件 | 变更 | 对应任务 |
+|------|------|---------|
+| `client-agent/src/agent/model-factory.ts` | **新增** (37行) | S1-T2: Client Agent ModelFactory |
+| `client-agent/src/agent/executor.ts` | **修改** (+73) | S1-T2 + P2-17 任务队列 |
+| `client-agent/src/socket/client.ts` | **修改** (+1) | P2-17 新增 `queued` 状态 |
+| `server/src/mastra/model-factory.ts` | **修改** (+15) | R-1 修复: `createFromEnv()` 模块级缓存 |
+| `server/src/gateway/chat.gateway.ts` | **修改** (+34) | P1-8 AgentNetwork 自动触发 |
+| `web/src/components/chat/ChatInput.tsx` | **修改** (+12) | P2-18 FileBrowser 自动出现 |
+| `web/.../code/CodeEditor.tsx` | **修改** | P2-19 Monaco Skeleton 占位 |
+| `web/.../code/SQLEditor.tsx` | **修改** | P2-19 Monaco Skeleton 占位 |
+| `web/.../code/CodeDiff.tsx` | **修改** | P2-19 Monaco Skeleton 占位 |
+| `web/.../context/WorkbenchStore.ts` | **修改** (+78/-44) | P2-16 Tab 追加模式 |
+| `web/src/services/socket.ts` | **修改** | P2-16 `loadState` → `mergeSchema` |
+
+#### 逐项审查结果
+
+| 任务 | 结果 | 审查要点 |
+|------|------|---------|
+| **S1-T2** Client Agent ModelFactory | ✅ 通过 | 精简版（无 `createFromEnv`），Client Agent 由 Platform 下发配置，设计合理；executor.ts if/else 消除干净 |
+| **R-1** Server 缓存优化 | ✅ 通过 | `_cachedModel` + `_cachedConfigKey` 模块级缓存，上轮 review 提的问题已修复 |
+| **P2-17** Agent 任务队列 | ✅ 通过 | `taskQueue[]` + `MAX_QUEUE_SIZE=5`，满了才拒绝；`processNextInQueue()` 用 `setTimeout(0)` 避免 finally 栈递归；`cancelCurrentTask()` 清空队列逐个发 cancelled |
+| **P2-18** FileBrowser 自动出现 | ✅ 通过 | `useEffect` 三重守卫 (`agentConnected && currentDeviceId && workDir`) + 仅 Workbench 为空时触发 |
+| **P2-19** Monaco 加载优化 | ✅ 通过 | 3 组件统一 Skeleton 占位 + `data-monaco-loaded` 属性供 Playwright 检测 |
+| **P1-8** AgentNetwork 自动触发 | ✅ 有条件通过 | >=2 领域命中才触发，保守策略正确；兼容前端 `useNetwork` 参数。见 R-3 |
+| **P2-16** Workbench Tab 追加 | ✅ 通过 | `mergeSchema` 增强：同 key 原地更新 + 新 Tab 追加 + `hasChanges` 优化 + 激活优先级合理 |
+
+#### 发现的问题（请工程团队评估）
+
+| 编号 | 问题 | 严重度 | 描述 | 建议 |
+|------|------|--------|------|------|
+| **R-3** | P1-8 关键词硬编码 | P2 | `shouldUseAgentNetwork()` 使用正则匹配三个领域关键词。复杂自然语言场景可能漏触发（如"分析这段代码的数据流"不会命中"数据分析"）。当前 >=2 领域的保守策略使得误触发风险低，但漏触发场景值得关注。 | 后续可考虑用 LLM 轻量意图分类替代正则。请工程团队评估：(1) 当前漏触发率是否可接受？(2) 替换为 LLM 分类的额外延迟成本？ |
+| **R-4** | 队列取消无 await | P3 | `cancelCurrentTask()` 中循环调用 `sendTaskResult()` 无 await。Socket.IO emit 是异步非阻塞的，实际不影响功能。 | 请工程团队确认：`sendTaskResult` 内部是否有异步操作需要等待完成？如果纯 emit 则无需修改。 |
+
+#### Sprint 1 完结状态
+
+| 任务 | 状态 | Review |
+|------|------|--------|
+| S1-T1 Server ModelFactory | ✅ 完成 | 第八节 review 通过 |
+| S1-T2 Client Agent 统一 | ✅ 完成 | 本节 review 通过 |
+| S1-T3 P2 修复 (5项) | ✅ 完成 | P2-17/18/19 + P1-8 + P2-16 全部通过 |
+| R-1 Server 缓存 | ✅ 已修复 | 本次提交一并修复 |
+| R-2 Client Agent if/else | ✅ 已消除 | S1-T2 解决 |
+
+**Sprint 1 关闭。工程团队进入 Sprint 2（RAG 知识库 MVP）。**
+
+R-3、R-4 归入 P2 优化清单，请工程团队在 Sprint 2 启动前简要评估上述两个问题并回复。
+
+---
+

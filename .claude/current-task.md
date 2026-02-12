@@ -7,14 +7,14 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — Sprint 1 进行中
-**状态**：S1-T1 ModelFactory 已完成，编译通过
+**阶段**：Phase I 功能扩展 — Sprint 1 完成，Sprint 2 待启动
+**状态**：S1 全部通过 PM Review，等待工程团队评估 R-3/R-4 后启动 S2
 
 ### Phase I Sprint 计划概览
 
 | Sprint | 名称 | 时长 | 状态 |
 |--------|------|------|------|
-| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | 🔧 T1 完成 |
+| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ✅ PM Review 通过 |
 | **S2** | RAG 知识库 MVP | 2 周 | 待 S1 完成 |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | 可与 S2 并行 |
 | **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待 S1 完成 |

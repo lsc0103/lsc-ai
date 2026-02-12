@@ -97,22 +97,26 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 12. ✅ **P0-10 ChatInput stale closure** — useCallback 闭包捕获旧 deviceId，本地模式消息未路由到 Agent
 
 ### P1 — 重要优化
-8. AgentNetwork 未自动触发（需前端传 `useNetwork:true`）
+8. ✅ AgentNetwork 未自动触发 — 已添加 `shouldUseAgentNetwork()` 跨领域检测（>=2 领域命中触发），兼容前端 `useNetwork` 参数
 9. Platform 端无 MCP（代码存在但未接入）
 10. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
 11. Workflow/RPA 前端无入口
 
 ### P2 — 深度验证发现
-17. Agent 连续操作时 `isExecuting` 锁导致"Agent is busy"报错——非锁泄漏 bug，是测试时序问题。单独执行已验证通过。归为任务队列优化（Stage 3 H3-5）
+17. ✅ Agent 连续操作时 `isExecuting` 锁导致"Agent is busy"报错 — 已改为任务队列（max 5），满了才拒绝
 
 ### P2 — 改进项
 12. Structured Output 未使用
 13. Client Agent tool-adapter 丢失嵌套 Schema
 14. Memory 不互通 (Platform ↔ Client Agent)
 15. DeepSeek 不支持图片
-16. Workbench Tab 追加模式：AI 多次生成时支持 Tab 累积而非完全替换（Stage 2 H2-8 发现）
-18. FileBrowser 在本地模式下未自动出现，需用户手动触发（Stage 3 H3-2/H3-7 发现）
-19. Monaco Editor 延迟加载导致 Playwright 选择器检测不到（Stage 3 H3-8 发现）
+16. ✅ Workbench Tab 追加模式 — `mergeSchema` 已实现：同 key 更新 + 新 Tab 追加 + 用户关闭不恢复
+18. ✅ FileBrowser 在本地模式下未自动出现 — ChatInput.tsx useEffect 监听 Agent 连接，自动注入 FileBrowser
+19. ✅ Monaco Editor 延迟加载 — 三组件统一 Skeleton 占位 + `data-monaco-loaded` 属性
+
+### P2 — PM Review 发现（待工程团队评估）
+20. R-3: AgentNetwork `shouldUseAgentNetwork()` 关键词硬编码，复杂自然语言可能漏触发。后续可考虑 LLM 轻量意图分类替代正则
+21. R-4: `cancelCurrentTask()` 循环 `sendTaskResult()` 无 await。Socket.IO emit 异步非阻塞，理论无影响，请工程确认
 
 > 修复一个问题后，立即在此标记 ✅ 并更新 dev-log
 
