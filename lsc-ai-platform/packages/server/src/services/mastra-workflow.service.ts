@@ -172,8 +172,20 @@ export class MastraWorkflowService implements OnModuleInit {
       data: { taskId, status: 'running', startedAt: new Date() },
     });
 
-    this.emitTaskExecution({ taskId, status: 'running', startedAt: new Date().toISOString() });
+    this.emitTaskExecution({ taskId, logId: log.id, status: 'running', startedAt: new Date().toISOString() });
 
+    // 异步执行，不阻塞 HTTP 响应；前端通过轮询/WebSocket 获取结果
+    this.runTaskAsync(task, taskConfig, log.id).catch((err) => {
+      this.logger.error(`[Workflow] Background task execution error: ${err.message}`);
+    });
+
+    return { logId: log.id, status: 'running', message: `Task "${task.name}" triggered` };
+  }
+
+  /**
+   * 异步执行任务逻辑，确保 TaskLog 状态始终被正确更新
+   */
+  private async runTaskAsync(task: any, taskConfig: Record<string, any>, logId: string) {
     try {
       let result: any;
 
@@ -188,38 +200,39 @@ export class MastraWorkflowService implements OnModuleInit {
 
       const endedAt = new Date();
       await this.prisma.taskLog.update({
-        where: { id: log.id },
+        where: { id: logId },
         data: { status: 'success', endedAt, result: result || {} },
       });
       await this.prisma.scheduledTask.update({
-        where: { id: taskId },
+        where: { id: task.id },
         data: { lastRunAt: new Date() },
       });
 
-      this.emitTaskExecution({ taskId, status: 'success', endedAt: endedAt.toISOString(), result });
+      this.emitTaskExecution({ taskId: task.id, logId, status: 'success', endedAt: endedAt.toISOString(), result });
 
       // 发送成功通知（异步，不阻塞主流程）
       const notifySvc = this.getNotificationService();
       if (notifySvc) {
-        notifySvc.notifyTaskComplete(task.userId, task.name, { taskId, result }).catch(() => {});
+        notifySvc.notifyTaskComplete(task.userId, task.name, { taskId: task.id, result }).catch(() => {});
       }
-
-      return result;
     } catch (error: any) {
+      this.logger.error(`[Workflow] Task "${task.name}" failed: ${error.message}`);
       const endedAt = new Date();
-      await this.prisma.taskLog.update({
-        where: { id: log.id },
-        data: { status: 'failed', endedAt, error: error.message },
-      });
-      this.emitTaskExecution({ taskId, status: 'failed', endedAt: endedAt.toISOString(), error: error.message });
+      try {
+        await this.prisma.taskLog.update({
+          where: { id: logId },
+          data: { status: 'failed', endedAt, error: error.message },
+        });
+      } catch (dbErr: any) {
+        this.logger.error(`[Workflow] Failed to update TaskLog status: ${dbErr.message}`);
+      }
+      this.emitTaskExecution({ taskId: task.id, logId, status: 'failed', endedAt: endedAt.toISOString(), error: error.message });
 
       // 发送失败通知（异步，不阻塞主流程）
       const notifySvc = this.getNotificationService();
       if (notifySvc) {
-        notifySvc.notifyTaskFailed(task.userId, task.name, error.message, { taskId }).catch(() => {});
+        notifySvc.notifyTaskFailed(task.userId, task.name, error.message, { taskId: task.id }).catch(() => {});
       }
-
-      throw error;
     }
   }
 

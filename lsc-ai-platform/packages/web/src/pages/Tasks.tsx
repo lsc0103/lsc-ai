@@ -279,8 +279,10 @@ function ScheduledTaskTab() {
     try {
       await workflowApi.tasks.execute(record.id);
       message.success('任务已触发执行');
+      // 自动打开日志 Drawer 并轮询执行状态
+      handleShowLogs(record);
     } catch {
-      message.error('执行失败');
+      message.error('执行触发失败');
     }
   };
 
