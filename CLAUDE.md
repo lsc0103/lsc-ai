@@ -10,7 +10,7 @@
 **工作过程中，你必须自动执行：**
 
 3. 完成一个任务后 → 立即更新 `.claude/current-task.md`（标记完成、写入下一步）
-4. 发现新问题/bug → 立即更新本文件第五节「已知问题」
+4. 发现新问题/bug → 立即更新本文件第六节「已知问题」
 5. 修改了某个子包的代码 → 更新对应的 `packages/*/CLAUDE.md`
 
 **每次对话结束前（用户说再见/结束/没有更多任务时），你必须自动执行：**
@@ -69,17 +69,46 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 
 ---
 
-## 四、开发进度
+## 四、团队架构
 
-**总进度：73%** (103/141) | **Mastra 迁移：87.5%** (Phase 1-4 完成, Phase 5 待开始)
+```
+刘帅成（项目总负责人）
+    │  重大决策 · 方向审批 · 人事任免
+    │
+执行负责人（主 Claude Code 实例）
+    │  项目规划 · 代码审查 · 团队协调 · 记忆管理 · 代码入库
+    │
+    ├── 工程师 Agent (.claude/agents/engineer.md)
+    │   代码实现 · 技术自测 · Bug 修复
+    │   工具: Read/Glob/Grep/Edit/Write/Bash/WebFetch/WebSearch
+    │
+    └── 产品经理 Agent (.claude/agents/pm.md)
+        业务测试 · 需求验收 · Bug 报告
+        工具: Read/Glob/Grep/WebFetch/WebSearch + Chrome 浏览器
+        限制: 无 Edit/Write/Bash — 物理上不可修改代码
+```
 
-**当前阶段：Phase 5 — 测试验证 + P0 问题修复**
+**分域对等原则**：
+- 技术架构、代码实现、修复方案 → 执行负责人决定
+- 需求定义、测试标准、质量判定、Bug 定级 → PM 决定
+- 验收通过/不通过 → PM 判定，执行负责人不能自行跳过
+- 重大分歧 → 升级给项目总负责人
+
+**Sprint 工作流**：规划(执行负责人) → 实现(工程师) → 代码审查(执行负责人) → 业务验收(PM) → 闭环(执行负责人)
+
+---
+
+## 五、开发进度
+
+**总进度：~80%** | **Phase I 进度：S1-S3 完成，S4/S5 待启动**
+
+**当前阶段：Phase I — 团队重组完成，S4 准入就绪**
 
 详细进度和当前任务见 → `.claude/current-task.md`
 
 ---
 
-## 五、已知问题 (必须跟踪)
+## 六、已知问题 (必须跟踪)
 
 ### P0 — 必须修复（S01/S02 场景测试发现）
 1. ✅ **Instructions 与工具不匹配** — 已添加 editWord/editExcel/sqlConfig/modificationHistory
@@ -122,9 +151,9 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 
 ---
 
-## 六、开发规则（必须遵守）
+## 七、开发规则（必须遵守）
 
-### 6.1 服务管理 — 严禁重复运行
+### 7.1 服务管理 — 严禁重复运行
 
 | 服务 | 固定端口 | 启动前检查 |
 |------|---------|-----------|
@@ -135,13 +164,13 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 
 **启动流程**：检查端口→杀已有进程→后台启动→确认成功。**绝不允许**出现 5173+5174 等多端口情况。
 
-### 6.2 架构文档维护
+### 7.2 架构文档维护
 
 **路径**：`应用化/架构文档/架构整合/`（本地 `D:\u3d-projects\lscmade7\应用化\架构文档\架构整合`）
 
 涉及架构变更时：先参考文档→实施→更新文档。保持文档与代码一致。
 
-### 6.3 代码规范
+### 7.3 代码规范
 
 - Monorepo: pnpm workspaces + Turborepo
 - Server: ES Modules, NestJS 模块化
@@ -149,26 +178,29 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 - 数据库: Prisma Migration
 - 禁止引入不必要的依赖
 
-### 6.4 记忆维护
+### 7.4 记忆维护
 
 记忆读写规则见本文件顶部「自动执行指令」，无需用户提醒，全部自动执行。
 
 ---
 
-## 七、记忆系统文件索引
+## 八、记忆系统文件索引
 
 | 文件 | 用途 | 更新频率 |
 |------|------|---------|
 | `CLAUDE.md`（本文件） | 项目级永久知识 | 有重大变更时 |
 | `.claude/current-task.md` | 当前任务上下文 | 每次任务切换时 |
 | `.claude/dev-log.md` | 会话开发日志 | 每次会话结束前 |
+| `.claude/test-plan.md` | PM 测试执行指南 | Sprint 验收前 |
+| `.claude/agents/pm.md` | PM Agent 角色定义 | 角色职责变更时 |
+| `.claude/agents/engineer.md` | 工程师 Agent 角色定义 | 角色职责变更时 |
 | `packages/server/CLAUDE.md` | Server 包详细记忆 | Server 代码变更时 |
 | `packages/web/CLAUDE.md` | Web 包详细记忆 | Web 代码变更时 |
 | `packages/client-agent/CLAUDE.md` | Client Agent 详细记忆 | Agent 代码变更时 |
 
 ---
 
-## 八、架构文档索引
+## 九、架构文档索引
 
 `应用化/架构文档/架构整合/sections/` 下 16 个文档：
 00-Mastra框架升级方案 | 01-架构总览 | 02-功能清单(153项) | 03-本地开发 | 04-数据存储 | 05-业务对接 | 06-RPA任务 | 07-安全权限 | 08-部署方案 | 09-前端组件 | 10-IDP智能文档 | 11-RAG知识库 | 12-Workbench工作台 | 13-前端UI设计规范 | 14-开发总进度 | 15-Mastra迁移开发计划

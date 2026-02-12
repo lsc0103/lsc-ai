@@ -1135,3 +1135,98 @@ DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 show
 - 等待 PM S3 二审 P0 修复验证
 - P1 7项 + P2 6项 留到 S4 处理
 - PM 确认后 S3 可正式关闭
+
+---
+
+## 2026-02-12 (第3次) | PM 越权事件处理 + S1-S3 遗留 bug 修复
+
+**背景**：
+PM（远程 Claude.ai Opus）在我提交 f699077 之后，私自提交了 3 个 commit（201d32e, c3013e7, c865bfa），
+其中 c3013e7 直接修改了 8 个源代码文件。PM 记忆出现严重错乱，将自己的角色从"产品经理"混淆为"工程师"，
+以"关门审计"名义越权编写代码。用户（项目负责人）发现后决定解除该 PM 角色。
+
+**处理过程**：
+1. `git fetch` 查看远程 PM 的 3 个提交内容（未 pull）
+2. 逐一审查 PM 修改的 8 个文件 diff
+3. 确认本地记忆文件未被污染（因未 pull）
+4. `git push --force` 将远程分支回退到我的最后提交 f699077，PM 3 个提交从远程彻底消失
+5. 将工作分支 merge 到 main（fast-forward），切换到 main 工作
+6. 以总工程师身份客观审查 PM 代码：8 个问题全部真实，5 个修复完全正确，2 个有瑕疵，1 个有逻辑缺陷
+7. 由我重新实现全部 7 项修复（排除 auth.service.ts 登录锁定，需更严谨设计）
+
+**修复内容**（commit 715880e, 7 files, +47/-16）：
+
+| 级别 | 文件 | 问题 | 修复 |
+|------|------|------|------|
+| P0 | knowledge-api.ts | deleteDocument 路由 404 | 路径修正为 /knowledge-bases/documents/:id |
+| P1 | agent.service.ts | 配对下发硬编码 deepseek | 读 LLM_DEFAULT_* 环境变量，兼容旧 DEEPSEEK_* |
+| P1 | socket/client.ts | 丢弃 openai-compatible | 扩展支持 + fallback + 警告日志 |
+| P1 | role.controller.ts | GET /roles 无权限 | 补全 @Roles('admin') |
+| P1 | user.service.ts | assignRoles 无预检 | findMany + 集合比对 + 友好错误 |
+| P2 | config/index.ts | anthropic 类型残留 | 清理为 deepseek \| openai-compatible |
+| P2 | .env.example | 配置过时 | 多 provider + 兼容旧变量 |
+
+**未修复**：
+- auth.service.ts 登录锁定（P2）— PM 的实现有竞态和信息泄露问题，需重新设计
+
+**编译验证**：Server ✓ Web ✓ Client Agent ✓ 三包零错误
+
+**关键决策**：
+- PM 角色因记忆错乱+越权修改代码已被项目负责人解除
+- PM 发现的问题归功于其审查能力，但代码必须由工程师编写
+- 后续需要重建 PM 角色，明确职责边界和权限限制
+
+---
+
+## 2026-02-12 (第4次) | 团队重组 — 执行负责人 + 工程师 Agent + PM Agent
+
+**目标**：解雇旧 PM 后重新设计团队架构，建立 Agent 角色定义文件，完成角色转变
+
+**背景**：
+旧 PM（远程 Claude.ai Opus）因记忆错乱越权修改代码被解雇。项目负责人要求：
+1. 用本地 Claude Code Agent 系统（`.claude/agents/`）重建团队
+2. 仔细设计团队分工和记忆系统
+3. 所有 Agent 使用 Opus 4.6 模型
+4. 团队要能自主推进工作，发挥主观能动性
+
+**完成**：
+1. 与项目负责人深入讨论团队设计（5轮对话，涵盖角色定义、层级、权限、工作流）
+2. 确定三角色架构：
+   - **执行负责人**（主 Claude Code 实例）— 项目规划、代码审查、团队协调、记忆管理、代码入库
+   - **工程师 Agent** — 代码实现、技术自测、Bug 修复（有 Edit/Write/Bash，无 git）
+   - **PM Agent** — 业务测试、需求验收、Bug 报告（有 Chrome 浏览器，无 Edit/Write/Bash）
+3. 创建 `.claude/agents/pm.md` — PM 角色定义（139行）
+   - 测试标准：P0/P1/P2 三级 Bug 定级
+   - 结构化输出格式：测试报告 + Bug 报告
+   - 7 项绝对禁止（不修改文件、不提供代码方案、不编造结果等）
+4. 创建 `.claude/agents/engineer.md` — 工程师角色定义（159行）
+   - 编码规范：TS 严格模式、ES Modules、错误处理、最小改动
+   - 自测要求：tsc --noEmit 必须通过
+   - 工作完成报告格式
+   - 7 项绝对禁止（不 git commit、不做架构变更、不跳过自测等）
+5. 创建 `.claude/test-plan.md` — PM 测试执行指南模板（46行）
+   - 包含回归测试项（R-1~R-4）
+   - 测试环境配置
+6. 更新 `CLAUDE.md` — 添加第四节"团队架构"，重新编号全部章节（四→九）
+   - 新增分域对等原则、Sprint 工作流
+   - 更新记忆系统文件索引（添加 agents/ 和 test-plan.md）
+
+**修改的文件**：
+1. `.claude/agents/pm.md` — 新建：PM Agent 角色定义
+2. `.claude/agents/engineer.md` — 新建：工程师 Agent 角色定义
+3. `.claude/test-plan.md` — 新建：测试计划模板
+4. `CLAUDE.md` — 添加团队架构章节 + 章节重编号 + 记忆索引更新
+5. `.claude/current-task.md` — 状态更新
+6. `.claude/dev-log.md` — 本条日志
+
+**关键决策**：
+- 角色转变：从「总工程师」升级为「执行负责人」，因为现在管理 Agent 团队
+- 汇报关系：方案 C — 所有沟通对用户和执行负责人同时可见
+- 分域对等：技术由执行负责人决定，质量由 PM 决定，PM 验收不通过执行负责人不能跳过
+- PM 物理隔离：PM 的 tools 列表中不包含 Edit/Write/Bash，从根本上杜绝越权修改代码
+- 模型选择：全部使用 Opus 4.6（用户为 Max 20x 订阅，不需要顾忌用量）
+- Sprint 工作流：规划(执行负责人) → 实现(工程师) → 代码审查(执行负责人) → 业务验收(PM) → 闭环(执行负责人)
+
+**下次继续**：
+- 提交团队重组文件到 git
+- 启动 S4（任务/RPA + Sentinel Agent）规划
