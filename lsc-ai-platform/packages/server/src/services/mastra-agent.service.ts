@@ -17,6 +17,7 @@ import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { fastembed } from '@mastra/fastembed';
 import { createLogger } from '@mastra/core/logger';
 import { ModelFactory } from '../mastra/model-factory.js';
+import { EmbeddingFactory } from '../mastra/embedding-factory.js';
 
 // 导入所有工具
 import { coreTools } from '../tools/core-tools.js';
@@ -61,6 +62,7 @@ export class MastraAgentService implements OnModuleInit {
   private async initialize() {
     this.logger.log('初始化 Mastra Agent 服务...');
     this.logger.log(`LLM 配置: ${ModelFactory.getConfigInfo()}`);
+    this.logger.log(`Embedding 配置: ${EmbeddingFactory.getConfigInfo()}`);
 
     // 1. 初始化存储
     const libsqlUrl =

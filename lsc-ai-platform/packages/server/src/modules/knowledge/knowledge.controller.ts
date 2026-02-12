@@ -22,6 +22,16 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { KnowledgeService } from './knowledge.service.js';
+import * as path from 'path';
+
+const ALLOWED_EXTENSIONS = ['.txt', '.md', '.pdf', '.docx', '.xlsx'];
+const ALLOWED_MIME_TYPES = [
+  'text/plain',
+  'text/markdown',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
 
 @ApiTags('知识库')
 @Controller('api/knowledge-bases')
@@ -95,6 +105,21 @@ export class KnowledgeController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const extOk = ALLOWED_EXTENSIONS.includes(ext);
+        const mimeOk = ALLOWED_MIME_TYPES.includes(file.mimetype);
+        if (extOk && mimeOk) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              '不支持的文件格式，仅支持 txt/md/pdf/docx/xlsx',
+            ),
+            false,
+          );
+        }
+      },
     }),
   )
   async uploadDocument(
@@ -110,8 +135,16 @@ export class KnowledgeController {
 
   @Get(':id/documents')
   @ApiOperation({ summary: '知识库文档列表' })
-  async findDocuments(@Param('id') id: string, @Request() req: any) {
-    return this.knowledgeService.findDocuments(id, req.user.id);
+  async findDocuments(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.knowledgeService.findDocuments(id, req.user.id, {
+      page: page ? parseInt(page, 10) : undefined,
+      pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+    });
   }
 
   @Delete('documents/:id')

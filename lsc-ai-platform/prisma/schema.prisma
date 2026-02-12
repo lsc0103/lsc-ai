@@ -283,6 +283,7 @@ model Document {
 
   @@index([knowledgeBaseId])
   @@index([status])
+  @@index([knowledgeBaseId, status])
   @@map("documents")
 }
 
@@ -310,6 +311,7 @@ model DocumentChunk {
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@unique([documentId, index])
   @@index([documentId])
   @@index([vectorId])
   @@map("document_chunks")

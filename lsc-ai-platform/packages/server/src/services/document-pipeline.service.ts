@@ -8,21 +8,19 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MinioService } from '../modules/storage/minio.service.js';
 import { LibSQLVector } from '@mastra/libsql';
-import { fastembed } from '@mastra/fastembed';
 import { extractText } from './text-extractor.js';
 import { chunkText } from './text-chunker.js';
+import { EmbeddingFactory } from '../mastra/embedding-factory.js';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 
-/** fastembed 默认输出维度（all-MiniLM-L6-v2） */
-const EMBEDDING_DIMENSION = 384;
-
 @Injectable()
 export class DocumentPipelineService {
   private readonly logger = new Logger(DocumentPipelineService.name);
   private vector!: LibSQLVector;
+  private embeddingFactory!: EmbeddingFactory;
   private initialized = false;
 
   constructor(
@@ -45,8 +43,12 @@ export class DocumentPipelineService {
       url: libsqlUrl,
     });
 
+    this.embeddingFactory = EmbeddingFactory.createFromEnv();
+    await this.embeddingFactory.initialize();
+
     this.initialized = true;
     this.logger.log(`LibSQLVector 已初始化 (document-pipeline): ${libsqlUrl}`);
+    this.logger.log(`EmbeddingFactory 已初始化: ${EmbeddingFactory.getConfigInfo()}`);
   }
 
   /**
@@ -116,10 +118,8 @@ export class DocumentPipelineService {
         const batch = chunks.slice(i, i + batchSize);
         const texts = batch.map((c) => c.content);
 
-        // 嵌入（使用 fastembed 模型的底层 doEmbed 方法）
-        const { embeddings } = await fastembed.doEmbed({
-          values: texts,
-        });
+        // 嵌入（通过 EmbeddingFactory，支持 fastembed / 公司 API 切换）
+        const embeddings = await this.embeddingFactory.embed(texts);
 
         // 准备元数据
         const metadata = batch.map((c) => ({
@@ -221,12 +221,13 @@ export class DocumentPipelineService {
     try {
       const indexes = await this.vector.listIndexes();
       if (!indexes.includes(indexName)) {
+        const dimension = this.embeddingFactory.getDimension();
         await this.vector.createIndex({
           indexName,
-          dimension: EMBEDDING_DIMENSION,
+          dimension,
           metric: 'cosine',
         });
-        this.logger.log(`创建向量索引: ${indexName}`);
+        this.logger.log(`创建向量索引: ${indexName} (dim=${dimension})`);
       }
     } catch (error) {
       // createIndex 可能因为已存在而抛错，忽略

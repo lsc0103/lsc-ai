@@ -12,6 +12,7 @@ import type { LibSQLVector } from '@mastra/libsql';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MastraAgentService } from './mastra-agent.service.js';
 import { setRagService } from '../tools/rag-tools.js';
+import { EmbeddingFactory } from '../mastra/embedding-factory.js';
 
 export interface RagSearchResult {
   content: string;
@@ -31,7 +32,7 @@ export class RagService implements OnModuleInit {
   private readonly logger = new Logger(RagService.name);
 
   private vector!: LibSQLVector;
-  private embedder: any; // fastembed
+  private embeddingFactory!: EmbeddingFactory;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -39,16 +40,19 @@ export class RagService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // 从 MastraAgentService 获取共享的 vector 和 embedder
+    // 从 MastraAgentService 获取共享的 vector
     this.vector = this.mastraAgentService.getVector();
-    // fastembed 是通过 @mastra/fastembed 包导出的
-    const { fastembed } = await import('@mastra/fastembed');
-    this.embedder = fastembed;
+
+    // 初始化 EmbeddingFactory（单例，与 DocumentPipeline 共享）
+    this.embeddingFactory = EmbeddingFactory.createFromEnv();
+    await this.embeddingFactory.initialize();
 
     // 注册自身到 rag-tools 模块级引用，供 searchKnowledge 工具调用
     setRagService(this);
 
-    this.logger.log('RAG 检索服务已初始化（vector + fastembed 就绪）');
+    this.logger.log(
+      `RAG 检索服务已初始化（vector: ${!!this.vector}, embedding: ${this.embeddingFactory.getProvider()}, rerank: ${this.embeddingFactory.supportsRerank()}）`,
+    );
   }
 
   /**
@@ -58,6 +62,10 @@ export class RagService implements OnModuleInit {
     query: string,
     options?: RagSearchOptions,
   ): Promise<RagSearchResult[]> {
+    if (!this.embeddingFactory || !this.vector) {
+      throw new Error('RAG 服务未初始化（embeddingFactory 或 vector 不可用）');
+    }
+
     const topK = options?.topK ?? 5;
     const knowledgeBaseId = options?.knowledgeBaseId;
 
@@ -66,12 +74,9 @@ export class RagService implements OnModuleInit {
     );
 
     try {
-      // 1. 使用 FastEmbed 编码 query 为向量
-      const embedResult = await this.embedder.embed(query);
-      // fastembed.embed 返回 number[][]，取第一个
-      const queryVector: number[] = Array.isArray(embedResult[0])
-        ? embedResult[0]
-        : embedResult;
+      // 1. 使用 EmbeddingFactory 编码 query 为向量
+      const embeddings = await this.embeddingFactory.embed([query]);
+      const queryVector: number[] = embeddings[0] || [];
 
       // 2. 确定搜索的 index 名称
       let results: Array<{ id: string; score: number; metadata?: Record<string, any> }> = [];
@@ -104,8 +109,9 @@ export class RagService implements OnModuleInit {
               queryVector,
               topK,
             });
-          } catch {
-            // index 可能不存在（知识库还没有文档），忽略
+          } catch (error) {
+            // index 可能不存在（知识库还没有文档），记录警告
+            this.logger.warn(`[RAG Search] index kb-${kb.id} 查询失败: ${(error as Error).message}`);
             return [];
           }
         });
@@ -154,6 +160,26 @@ export class RagService implements OnModuleInit {
           chunkIndex: chunk.index,
           metadata: (chunk.metadata as Record<string, any>) || {},
         });
+      }
+
+      // 5. Rerank 精排（如果可用）
+      if (this.embeddingFactory.supportsRerank() && searchResults.length > 1) {
+        try {
+          const docs = searchResults.map((r) => r.content);
+          const rerankResults = await this.embeddingFactory.rerank(query, docs, topK);
+          if (rerankResults && rerankResults.length > 0) {
+            const reranked: RagSearchResult[] = rerankResults
+              .filter((rr) => searchResults[rr.index])
+              .map((rr) => ({
+                ...searchResults[rr.index]!,
+                score: rr.score,
+              }));
+            this.logger.log(`[RAG Search] Rerank 完成: ${reranked.length} 条结果`);
+            return reranked;
+          }
+        } catch (rerankError) {
+          this.logger.warn(`[RAG Search] Rerank 失败，使用原始排序: ${(rerankError as Error).message}`);
+        }
       }
 
       this.logger.log(`[RAG Search] 返回 ${searchResults.length} 条结果`);

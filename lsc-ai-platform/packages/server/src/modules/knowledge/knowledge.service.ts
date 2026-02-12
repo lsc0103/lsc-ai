@@ -160,6 +160,13 @@ export class KnowledgeService {
       }
     }
 
+    // 清理向量索引（LibSQLVector 中的 kb-{id}）
+    try {
+      await this.pipeline.deleteKnowledgeBaseIndex(id);
+    } catch (error) {
+      this.logger.warn(`向量索引清理失败 (kb=${id}): ${error}`);
+    }
+
     await this.prisma.knowledgeBase.delete({ where: { id } });
 
     return kb;
@@ -220,15 +227,32 @@ export class KnowledgeService {
   }
 
   /**
-   * 获取知识库的文档列表
+   * 获取知识库的文档列表（分页）
    */
-  async findDocuments(knowledgeBaseId: string, userId: string) {
+  async findDocuments(
+    knowledgeBaseId: string,
+    userId: string,
+    options?: { page?: number; pageSize?: number },
+  ) {
     await this.verifyOwnership(knowledgeBaseId, userId);
 
-    return this.prisma.document.findMany({
-      where: { knowledgeBaseId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
+    const where = { knowledgeBaseId };
+
+    const [items, total] = await Promise.all([
+      this.prisma.document.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.document.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**
@@ -253,6 +277,13 @@ export class KnowledgeService {
       await this.minioService.deleteFile(document.objectKey);
     } catch (error) {
       this.logger.warn(`MinIO 删除失败: ${document.objectKey}, ${error}`);
+    }
+
+    // 清理文档在向量索引中的向量
+    try {
+      await this.pipeline.deleteDocumentVectors(documentId, document.knowledgeBaseId);
+    } catch (error) {
+      this.logger.warn(`文档向量清理失败 (doc=${documentId}): ${error}`);
     }
 
     // 删除数据库记录（级联删除分块）

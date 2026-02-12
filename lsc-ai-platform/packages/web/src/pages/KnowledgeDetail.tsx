@@ -153,9 +153,11 @@ export default function KnowledgeDetailPage() {
 
   const highlightText = (text: string, keyword: string) => {
     if (!keyword.trim()) return text;
-    const parts = text.split(new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    // Truncate keyword to prevent regex performance issues with very long strings
+    const safeKeyword = keyword.length > 100 ? keyword.slice(0, 100) : keyword;
+    const parts = text.split(new RegExp(`(${safeKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return parts.map((part, i) =>
-      part.toLowerCase() === keyword.toLowerCase() ? (
+      part.toLowerCase() === safeKeyword.toLowerCase() ? (
         <mark key={i} style={{ background: '#ffd666', padding: 0 }}>
           {part}
         </mark>

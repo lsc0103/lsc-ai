@@ -108,7 +108,7 @@ export function chunkText(
  */
 function splitIntoSentences(text: string): string[] {
   // 匹配中英文句子结束符
-  const sentenceEnds = /([。！？；.!?;])\s*/g;
+  const sentenceEnds = /([。！？；…：.!?;:])\s*/g;
   const sentences: string[] = [];
   let lastIndex = 0;
 

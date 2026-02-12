@@ -34,16 +34,23 @@ export class KnowledgeSearchController {
       throw new HttpException('query 参数为必填字符串', HttpStatus.BAD_REQUEST);
     }
 
+    const query =
+      body.query.length > 500 ? body.query.slice(0, 500) : body.query;
+    const topK =
+      typeof body.topK === 'number' && body.topK >= 1 && body.topK <= 50
+        ? body.topK
+        : 5;
+
     try {
-      const results = await this.ragService.search(body.query, {
+      const results = await this.ragService.search(query, {
         knowledgeBaseId,
-        topK: body.topK,
+        topK,
       });
 
       return {
         success: true,
         data: {
-          query: body.query,
+          query,
           knowledgeBaseId,
           results: results.map((r) => ({
             content: r.content,
@@ -73,15 +80,22 @@ export class KnowledgeSearchController {
       throw new HttpException('query 参数为必填字符串', HttpStatus.BAD_REQUEST);
     }
 
+    const query =
+      body.query.length > 500 ? body.query.slice(0, 500) : body.query;
+    const topK =
+      typeof body.topK === 'number' && body.topK >= 1 && body.topK <= 50
+        ? body.topK
+        : 5;
+
     try {
-      const results = await this.ragService.search(body.query, {
-        topK: body.topK,
+      const results = await this.ragService.search(query, {
+        topK,
       });
 
       return {
         success: true,
         data: {
-          query: body.query,
+          query,
           results: results.map((r) => ({
             content: r.content,
             score: Math.round(r.score * 100) / 100,
