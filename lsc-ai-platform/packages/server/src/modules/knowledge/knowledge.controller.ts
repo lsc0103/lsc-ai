@@ -34,7 +34,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 @ApiTags('知识库')
-@Controller('api/knowledge-bases')
+@Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class KnowledgeController {

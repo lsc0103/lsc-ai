@@ -98,14 +98,15 @@ export const sessionApi = {
 };
 
 export const projectApi = {
-  list: () => api.get('/projects'),
+  list: (params?: { search?: string; page?: number; pageSize?: number }) =>
+    api.get('/projects', { params }),
 
   get: (id: string) => api.get(`/projects/${id}`),
 
-  create: (data: { name: string; description?: string }) =>
+  create: (data: { name: string; description?: string; workingDir?: string }) =>
     api.post('/projects', data),
 
-  update: (id: string, data: { name?: string; description?: string }) =>
+  update: (id: string, data: { name?: string; description?: string; workingDir?: string }) =>
     api.patch(`/projects/${id}`, data),
 
   delete: (id: string) => api.delete(`/projects/${id}`),
@@ -202,4 +203,26 @@ export const uploadApi = {
   // 删除文件
   delete: (fileId: string) =>
     api.delete<{ success: boolean }>(`/upload/${fileId}`),
+};
+
+export const userApi = {
+  list: (params?: { search?: string; page?: number; pageSize?: number }) =>
+    api.get('/users', { params }),
+  get: (id: string) => api.get(`/users/${id}`),
+  create: (data: { username: string; password: string; displayName?: string; email?: string }) =>
+    api.post('/users', data),
+  update: (id: string, data: { displayName?: string; email?: string; status?: string }) =>
+    api.patch(`/users/${id}`, data),
+  delete: (id: string) => api.delete(`/users/${id}`),
+  assignRoles: (id: string, roleIds: string[]) =>
+    api.patch(`/users/${id}/roles`, { roleIds }),
+};
+
+export const roleApi = {
+  list: () => api.get('/roles'),
+  create: (data: { code: string; name: string; description?: string; permissions?: string[] }) =>
+    api.post('/roles', data),
+  update: (id: string, data: { name?: string; description?: string; permissions?: string[] }) =>
+    api.patch(`/roles/${id}`, data),
+  delete: (id: string) => api.delete(`/roles/${id}`),
 };

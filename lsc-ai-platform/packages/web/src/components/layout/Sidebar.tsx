@@ -9,6 +9,8 @@ import {
   SettingOutlined,
   MenuFoldOutlined,
   LogoutOutlined,
+  TeamOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { Tooltip, Dropdown, Avatar } from 'antd';
 import { useChatStore } from '../../stores/chat';
@@ -30,6 +32,8 @@ const navItems = [
   { key: 'projects', icon: FolderOutlined, label: '我的项目', path: '/projects' },
   { key: 'tasks', icon: ClockCircleOutlined, label: 'RPA/定时任务', path: '/tasks' },
   { key: 'apps', icon: AppstoreOutlined, label: '其他应用', path: '/apps' },
+  { key: 'admin-users', icon: TeamOutlined, label: '用户管理', path: '/admin/users', adminOnly: true },
+  { key: 'admin-roles', icon: SafetyCertificateOutlined, label: '角色管理', path: '/admin/roles', adminOnly: true },
 ];
 
 /**
@@ -152,7 +156,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
 
       {/* 导航区域 */}
       <div className="px-2 py-2 space-y-0.5">
-        {navItems.map((item) => {
+        {navItems.filter((item) => !('adminOnly' in item && item.adminOnly) || user?.roles?.includes('admin')).map((item) => {
           const content = (
             <div
               className={clsx(

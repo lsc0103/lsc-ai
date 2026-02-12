@@ -12,6 +12,9 @@ const TasksPage = lazy(() => import('./pages/Tasks'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
 const KnowledgePage = lazy(() => import('./pages/Knowledge'));
 const KnowledgeDetailPage = lazy(() => import('./pages/KnowledgeDetail'));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetail'));
+const UsersPage = lazy(() => import('./pages/admin/Users'));
+const RolesPage = lazy(() => import('./pages/admin/Roles'));
 
 // 路由守卫
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -21,6 +24,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  return <>{children}</>;
+}
+
+// 管理员路由守卫
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.roles?.includes('admin');
+  if (!isAdmin) return <Navigate to="/chat" replace />;
   return <>{children}</>;
 }
 
@@ -46,8 +57,11 @@ function App() {
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="knowledge/:id" element={<KnowledgeDetailPage />} />
             <Route path="projects" element={<ProjectsPage />} />
+            <Route path="projects/:id" element={<ProjectDetailPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="admin/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+            <Route path="admin/roles" element={<AdminRoute><RolesPage /></AdminRoute>} />
           </Route>
 
           {/* 404 */}

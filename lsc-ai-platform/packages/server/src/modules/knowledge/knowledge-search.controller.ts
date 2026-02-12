@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { RagService } from '../../services/rag.service.js';
 
-@Controller('api/knowledge-bases')
+@Controller('knowledge-bases')
 export class KnowledgeSearchController {
   private readonly logger = new Logger(KnowledgeSearchController.name);
 

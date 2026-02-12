@@ -40,19 +40,25 @@ export class RagService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // 从 MastraAgentService 获取共享的 vector
-    this.vector = this.mastraAgentService.getVector();
+    try {
+      // 从 MastraAgentService 获取共享的 vector
+      this.vector = this.mastraAgentService.getVector();
 
-    // 初始化 EmbeddingFactory（单例，与 DocumentPipeline 共享）
-    this.embeddingFactory = EmbeddingFactory.createFromEnv();
-    await this.embeddingFactory.initialize();
+      // 初始化 EmbeddingFactory（单例，与 DocumentPipeline 共享）
+      this.embeddingFactory = EmbeddingFactory.createFromEnv();
+      await this.embeddingFactory.initialize();
 
-    // 注册自身到 rag-tools 模块级引用，供 searchKnowledge 工具调用
-    setRagService(this);
+      // 注册自身到 rag-tools 模块级引用，供 searchKnowledge 工具调用
+      setRagService(this);
 
-    this.logger.log(
-      `RAG 检索服务已初始化（vector: ${!!this.vector}, embedding: ${this.embeddingFactory.getProvider()}, rerank: ${this.embeddingFactory.supportsRerank()}）`,
-    );
+      this.logger.log(
+        `RAG 检索服务已初始化（vector: ${!!this.vector}, embedding: ${this.embeddingFactory.getProvider()}, rerank: ${this.embeddingFactory.supportsRerank()}）`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `RAG 检索服务初始化失败: ${(error as Error).message}。知识库搜索功能不可用，其他模块不受影响。`,
+      );
+    }
   }
 
   /**

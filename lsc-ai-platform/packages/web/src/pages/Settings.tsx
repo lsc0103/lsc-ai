@@ -1,16 +1,38 @@
+import { useState } from 'react';
 import { Card, Form, Input, Button, Switch, Divider, message } from 'antd';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../stores/auth';
+import { userApi } from '../services/api';
 
-/**
- * 设置页面
- * TODO: 实现完整功能
- */
 export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
 
-  const handleSave = () => {
-    message.success('设置已保存');
+  const handleSave = async () => {
+    if (!user) return;
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+      const res = await userApi.update(user.id, {
+        displayName: values.displayName,
+        email: values.email,
+      });
+      const updated = res.data?.data || res.data;
+      if (updated) {
+        setUser({
+          ...user,
+          displayName: updated.displayName ?? values.displayName,
+          email: updated.email ?? values.email,
+        });
+      }
+      message.success('设置已保存');
+    } catch {
+      message.error('保存失败');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -31,15 +53,26 @@ export default function SettingsPage() {
 
         {/* 个人信息 */}
         <Card title="个人信息" className="shadow-sm mb-4">
-          <Form layout="vertical">
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{
+              displayName: user?.displayName,
+              email: user?.email,
+            }}
+          >
             <Form.Item label="用户名">
               <Input value={user?.username} disabled />
             </Form.Item>
-            <Form.Item label="显示名称">
-              <Input defaultValue={user?.displayName} placeholder="输入显示名称" />
+            <Form.Item name="displayName" label="显示名称">
+              <Input placeholder="输入显示名称" />
             </Form.Item>
-            <Form.Item label="邮箱">
-              <Input defaultValue={user?.email} placeholder="输入邮箱地址" />
+            <Form.Item
+              name="email"
+              label="邮箱"
+              rules={[{ type: 'email', message: '请输入有效的邮箱地址' }]}
+            >
+              <Input placeholder="输入邮箱地址" />
             </Form.Item>
           </Form>
         </Card>
@@ -60,14 +93,14 @@ export default function SettingsPage() {
                 <div className="font-medium text-accent-700">消息通知</div>
                 <div className="text-sm text-accent-500">接收任务完成通知</div>
               </div>
-              <Switch defaultChecked />
+              <Switch defaultChecked disabled />
             </div>
           </div>
         </Card>
 
         {/* 保存按钮 */}
         <div className="flex justify-end">
-          <Button type="primary" onClick={handleSave}>
+          <Button type="primary" onClick={handleSave} loading={saving}>
             保存设置
           </Button>
         </div>
