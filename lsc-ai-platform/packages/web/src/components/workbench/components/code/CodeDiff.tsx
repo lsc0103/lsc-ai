@@ -11,8 +11,8 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { DiffEditor, DiffOnMount } from '@monaco-editor/react';
 import clsx from 'clsx';
+import { Skeleton } from 'antd';
 import {
-  LoadingOutlined,
   SwapOutlined,
   ColumnWidthOutlined,
   MenuOutlined,
@@ -152,6 +152,11 @@ export const CodeDiff: React.FC<WorkbenchComponentProps<CodeDiffSchema>> = ({
   const handleEditorMount: DiffOnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
 
+    // P2-19: 设置 data-monaco-loaded 属性，供 Playwright 测试检测
+    if (containerRef.current) {
+      containerRef.current.setAttribute('data-monaco-loaded', 'true');
+    }
+
     // 自定义深色主题
     monaco.editor.defineTheme('lsc-diff-dark', {
       base: 'vs-dark',
@@ -273,9 +278,8 @@ export const CodeDiff: React.FC<WorkbenchComponentProps<CodeDiffSchema>> = ({
           theme="lsc-diff-dark"
           onMount={handleEditorMount}
           loading={
-            <div className="flex items-center justify-center h-full text-[var(--text-tertiary)]">
-              <LoadingOutlined className="mr-2" />
-              <span>加载对比视图...</span>
+            <div className="p-4">
+              <Skeleton active paragraph={{ rows: 8 }} title={false} />
             </div>
           }
           options={{

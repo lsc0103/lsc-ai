@@ -235,7 +235,11 @@ export class ChatGateway
     }
 
     // AgentNetwork 模式：多 Agent 协作
-    if (useNetwork) {
+    // P1-8: 自动检测跨领域任务，即使前端未传 useNetwork 也可触发
+    if (useNetwork || this.shouldUseAgentNetwork(message)) {
+      if (!useNetwork) {
+        this.logger.log('[Chat] 自动检测到跨领域任务，启用 AgentNetwork');
+      }
       return this.handleNetworkMessage(client, sessionId, message, workbenchContext);
     }
 
@@ -488,6 +492,34 @@ export class ChatGateway
       this.logger.error('处理聊天消息失败:', error);
       return { success: false, error: error.message || '处理失败' };
     }
+  }
+
+  /**
+   * P1-8: 简单意图检测 — 是否需要多 Agent 协作
+   * 宁可少触发不要误触发（误触发会导致响应变慢）
+   *
+   * 检测逻辑：消息中同时涉及两个或以上不同领域的关键词时才触发
+   * 领域划分：代码/开发、数据/分析、办公/文档
+   */
+  private shouldUseAgentNetwork(message: string): boolean {
+    // 各领域关键词（需同时命中 >=2 个领域才触发）
+    const domains = [
+      // 代码/开发领域
+      [/代码/, /编程/, /函数/, /接口/, /重构/, /debug/i, /编译/, /构建/],
+      // 数据/分析领域
+      [/数据分析/, /统计/, /图表/, /可视化/, /趋势/, /报表/, /Dashboard/i],
+      // 办公/文档领域
+      [/Word/i, /Excel/i, /PPT/i, /PDF/i, /文档/, /报告/, /演示/],
+    ];
+
+    let matchedDomains = 0;
+    for (const keywords of domains) {
+      if (keywords.some(kw => kw.test(message))) {
+        matchedDomains++;
+      }
+    }
+
+    return matchedDomains >= 2;
   }
 
   /**

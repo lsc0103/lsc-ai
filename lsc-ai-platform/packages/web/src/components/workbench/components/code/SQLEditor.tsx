@@ -9,7 +9,7 @@
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import Editor, { OnMount, OnChange } from '@monaco-editor/react';
-import { Button, Table, Tabs, Empty } from 'antd';
+import { Button, Table, Tabs, Empty, Skeleton } from 'antd';
 import {
   PlayCircleOutlined,
   LoadingOutlined,
@@ -50,6 +50,7 @@ export const SQLEditor: React.FC<WorkbenchComponentProps<SQLEditorSchema>> = ({
   } = schema;
 
   const { executeAction } = useActionContext(id, 'SQLEditor');
+  const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const [currentSql, setCurrentSql] = useState(sql);
   const [copied, setCopied] = useState(false);
@@ -64,6 +65,11 @@ export const SQLEditor: React.FC<WorkbenchComponentProps<SQLEditorSchema>> = ({
   // 编辑器挂载
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+
+    // P2-19: 设置 data-monaco-loaded 属性，供 Playwright 测试检测
+    if (containerRef.current) {
+      containerRef.current.setAttribute('data-monaco-loaded', 'true');
+    }
 
     // 自定义深色主题
     monaco.editor.defineTheme('sql-dark', {
@@ -155,6 +161,7 @@ export const SQLEditor: React.FC<WorkbenchComponentProps<SQLEditorSchema>> = ({
 
   return (
     <div
+      ref={containerRef}
       className={clsx(
         'workbench-sql-editor',
         'rounded-lg overflow-hidden',
@@ -242,9 +249,8 @@ export const SQLEditor: React.FC<WorkbenchComponentProps<SQLEditorSchema>> = ({
                     onMount={handleEditorMount}
                     onChange={handleChange}
                     loading={
-                      <div className="flex items-center justify-center h-full text-[var(--text-tertiary)]">
-                        <LoadingOutlined className="mr-2" />
-                        <span>加载编辑器...</span>
+                      <div className="p-4">
+                        <Skeleton active paragraph={{ rows: 6 }} title={false} />
                       </div>
                     }
                     options={{
@@ -308,9 +314,8 @@ export const SQLEditor: React.FC<WorkbenchComponentProps<SQLEditorSchema>> = ({
             onMount={handleEditorMount}
             onChange={handleChange}
             loading={
-              <div className="flex items-center justify-center h-full text-[var(--text-tertiary)]">
-                <LoadingOutlined className="mr-2" />
-                <span>加载编辑器...</span>
+              <div className="p-4">
+                <Skeleton active paragraph={{ rows: 6 }} title={false} />
               </div>
             }
             options={{

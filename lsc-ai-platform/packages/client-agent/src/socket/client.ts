@@ -41,7 +41,7 @@ export interface AgentTask {
 /**
  * 任务状态
  */
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type TaskStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * 任务结果

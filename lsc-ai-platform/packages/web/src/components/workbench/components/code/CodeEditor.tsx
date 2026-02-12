@@ -14,8 +14,8 @@ import clsx from 'clsx';
 
 // Monaco editor type
 type IStandaloneCodeEditor = Parameters<OnMount>[0];
-import { LoadingOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
+import { message, Skeleton } from 'antd';
 import type { CodeEditorSchema } from '../../schema/types';
 import type { WorkbenchComponentProps } from '../../registry';
 import { useWorkbenchStore } from '../../context';
@@ -115,6 +115,11 @@ export const CodeEditor: React.FC<WorkbenchComponentProps<CodeEditorSchema>> = (
   // 编辑器挂载
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+
+    // P2-19: 设置 data-monaco-loaded 属性，供 Playwright 测试检测
+    if (containerRef.current) {
+      containerRef.current.setAttribute('data-monaco-loaded', 'true');
+    }
 
     // 自定义深色主题（与玻璃拟态风格匹配）
     monaco.editor.defineTheme('lsc-dark', {
@@ -259,9 +264,8 @@ export const CodeEditor: React.FC<WorkbenchComponentProps<CodeEditorSchema>> = (
           onMount={handleEditorMount}
           onChange={handleChange}
           loading={
-            <div className="flex items-center justify-center h-full text-[var(--text-tertiary)]">
-              <LoadingOutlined className="mr-2" />
-              <span>加载编辑器...</span>
+            <div className="p-4">
+              <Skeleton active paragraph={{ rows: 8 }} title={false} />
             </div>
           }
           options={{

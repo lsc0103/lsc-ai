@@ -71,7 +71,7 @@ export default function ChatInput() {
     setPendingMessage,
   } = useChatStore();
 
-  const { currentDeviceId, workDir, setDevices, setConnected } = useAgentStore();
+  const { currentDeviceId, workDir, isConnected: agentConnected, setDevices, setConnected } = useAgentStore();
 
   // Workbench 状态
   const workbenchVisible = useWorkbenchVisible();
@@ -90,6 +90,16 @@ export default function ChatInput() {
       });
     }
   }, [currentDeviceId, setDevices, setConnected]);
+
+  // P2-18: Agent 连接成功后自动打开 FileBrowser（仅当 Workbench 为空时）
+  useEffect(() => {
+    if (agentConnected && currentDeviceId && workDir) {
+      const workbenchState = useWorkbenchStore.getState();
+      if (!workbenchState.schema) {
+        workbenchState.openBlank(workDir);
+      }
+    }
+  }, [agentConnected, currentDeviceId, workDir]);
 
   // 自动调整高度
   const adjustHeight = () => {

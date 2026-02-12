@@ -11,8 +11,11 @@ export interface ModelFactoryConfig {
 }
 
 export class ModelFactory {
+  private static _cachedModel: ReturnType<typeof ModelFactory.create> | null = null;
+  private static _cachedConfigKey: string = '';
+
   /**
-   * 从环境变量创建 LLM 模型实例
+   * 从环境变量创建 LLM 模型实例（带缓存，相同配置复用实例）
    */
   static createFromEnv() {
     const provider = (process.env.LLM_DEFAULT_PROVIDER || 'deepseek') as LLMProvider;
@@ -20,7 +23,15 @@ export class ModelFactory {
     const apiKey = process.env.LLM_DEFAULT_API_KEY || process.env.DEEPSEEK_API_KEY || '';
     const baseURL = process.env.LLM_DEFAULT_BASE_URL || undefined;
 
-    return ModelFactory.create({ provider, model, apiKey, baseURL });
+    const configKey = `${provider}:${model}:${apiKey}:${baseURL}`;
+    if (ModelFactory._cachedModel && ModelFactory._cachedConfigKey === configKey) {
+      return ModelFactory._cachedModel;
+    }
+
+    const instance = ModelFactory.create({ provider, model, apiKey, baseURL });
+    ModelFactory._cachedModel = instance;
+    ModelFactory._cachedConfigKey = configKey;
+    return instance;
   }
 
   /**

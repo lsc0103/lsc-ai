@@ -12,8 +12,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { fastembed } from '@mastra/fastembed';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createOpenAI } from '@ai-sdk/openai';
+import { ModelFactory, type LLMProvider } from './model-factory.js';
 import { convertAllTools } from './tool-adapter.js';
 import { workbenchTool, showTableTool, showChartTool, showCodeTool } from './workbench-tools.js';
 import { configManager } from '../config/index.js';
@@ -235,6 +234,8 @@ export class TaskExecutor {
   private isExecuting = false;
   private abortController: AbortController | null = null;
   private initialized = false;
+  private taskQueue: AgentTask[] = [];
+  private readonly MAX_QUEUE_SIZE = 5;
 
   /**
    * 初始化执行器（Mastra Agent 版本）
@@ -338,14 +339,17 @@ export class TaskExecutor {
     }
 
     // 选择模型 provider
-    const provider = config.apiProvider || 'deepseek';
+    const provider = (config.apiProvider || 'deepseek') as LLMProvider;
     const modelName = config.model || (provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
 
     console.log(`[Executor] API Key loaded: ${!!apiKey}, BaseURL: ${config.apiBaseUrl || 'default'}, Provider: ${provider}, Model: ${modelName}`);
 
-    const model = provider === 'deepseek'
-      ? createDeepSeek({ apiKey, baseURL: config.apiBaseUrl })(modelName)
-      : createOpenAI({ apiKey, baseURL: config.apiBaseUrl, compatibility: 'compatible' })(modelName);
+    const model = ModelFactory.create({
+      provider,
+      model: modelName,
+      apiKey,
+      baseURL: config.apiBaseUrl,
+    });
 
     return new Agent({
       id: 'client-agent',
@@ -379,12 +383,20 @@ export class TaskExecutor {
     }
 
     if (this.isExecuting) {
-      console.warn('[Executor] Already executing a task');
-      socketClient.sendTaskResult({
-        taskId: task.taskId,
-        sessionId: task.sessionId,
-        status: 'failed',
-        error: 'Agent is busy with another task',
+      if (this.taskQueue.length >= this.MAX_QUEUE_SIZE) {
+        console.warn(`[Executor] Task queue full (${this.MAX_QUEUE_SIZE}), rejecting task ${task.taskId}`);
+        socketClient.sendTaskResult({
+          taskId: task.taskId,
+          sessionId: task.sessionId,
+          status: 'failed',
+          error: `Agent is busy and task queue is full (max ${this.MAX_QUEUE_SIZE})`,
+        });
+        return;
+      }
+      console.log(`[Executor] Agent busy, queuing task ${task.taskId} (queue size: ${this.taskQueue.length + 1})`);
+      this.taskQueue.push(task);
+      socketClient.sendTaskStatus(task.taskId, 'queued', {
+        queuePosition: this.taskQueue.length,
       });
       return;
     }
@@ -526,7 +538,21 @@ export class TaskExecutor {
       this.currentTask = null;
       this.abortController = null;
       this.mastraAgent = null;
+
+      // Process next queued task
+      this.processNextInQueue();
     }
+  }
+
+  /**
+   * 处理队列中的下一个任务
+   */
+  private processNextInQueue(): void {
+    if (this.taskQueue.length === 0) return;
+    const nextTask = this.taskQueue.shift()!;
+    console.log(`[Executor] Dequeuing task ${nextTask.taskId} (remaining: ${this.taskQueue.length})`);
+    // Use setTimeout to avoid executing within the current finally block's call stack
+    setTimeout(() => this.executeTask(nextTask), 0);
   }
 
   /**
@@ -788,9 +814,23 @@ export class TaskExecutor {
   }
 
   /**
-   * 取消当前任务
+   * 取消当前任务并清空队列
    */
   cancelCurrentTask(): void {
+    // Cancel queued tasks first
+    for (const queuedTask of this.taskQueue) {
+      socketClient.sendTaskResult({
+        taskId: queuedTask.taskId,
+        sessionId: queuedTask.sessionId,
+        status: 'cancelled',
+      });
+    }
+    if (this.taskQueue.length > 0) {
+      console.log(`[Executor] Cancelled ${this.taskQueue.length} queued tasks`);
+    }
+    this.taskQueue = [];
+
+    // Cancel the currently executing task
     if (this.currentTask && this.abortController) {
       this.abortController.abort();
       socketClient.sendTaskResult({
@@ -810,6 +850,13 @@ export class TaskExecutor {
    */
   isBusy(): boolean {
     return this.isExecuting;
+  }
+
+  /**
+   * 获取队列中等待的任务数量
+   */
+  getQueueLength(): number {
+    return this.taskQueue.length;
   }
 
   /**

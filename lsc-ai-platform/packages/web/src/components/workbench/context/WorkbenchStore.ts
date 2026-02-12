@@ -229,44 +229,56 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
           return;
         }
 
-        // 合并：将新 schema 的标签页添加到现有 schema
+        // 合并：将新 schema 的标签页合并到现有 schema
         const mergedSchema = cloneSchema(currentSchema);
         const { userClosedTabs } = get();
 
-        // 按标题去重：如果标题已存在，跳过该标签页
+        // 构建现有 key -> index 映射（用于同 key 更新）
+        const existingKeyIndex = new Map(mergedSchema.tabs.map((t, i) => [t.key, i]));
         const existingTitles = new Set(mergedSchema.tabs.map(t => t.title));
         const existingKeys = new Set(mergedSchema.tabs.map(t => t.key));
 
-        const newTabs = sanitizedNewSchema.tabs
-          .filter(tab => {
-            // 跳过用户手动关闭的标签页
-            if (userClosedTabs.has(tab.title)) {
-              console.log(`[mergeSchema] 跳过用户已关闭的标签页: "${tab.title}"`);
-              return false;
-            }
-            // 跳过标题已存在的标签页（避免重复）
-            if (existingTitles.has(tab.title)) {
-              console.log(`[mergeSchema] 跳过重复标签页: "${tab.title}"`);
-              return false;
-            }
-            return true;
-          })
-          .map(tab => {
-            // 为新标签页生成唯一 key（避免 key 冲突）
-            let key = tab.key;
-            let counter = 1;
-            while (existingKeys.has(key)) {
-              key = `${tab.key}-${counter}`;
-              counter++;
-            }
-            existingKeys.add(key);
-            existingTitles.add(tab.title);
-            return { ...tab, key };
-          });
+        let hasChanges = false;
+        const newTabs: WorkbenchTab[] = [];
 
-        // 如果没有新标签页需要添加，直接返回
-        if (newTabs.length === 0) {
-          console.log('[mergeSchema] 所有标签页都已存在，跳过合并');
+        for (const tab of sanitizedNewSchema.tabs) {
+          // 跳过用户手动关闭的标签页
+          if (userClosedTabs.has(tab.title)) {
+            console.log(`[mergeSchema] 跳过用户已关闭的标签页: "${tab.title}"`);
+            continue;
+          }
+
+          // 同 key 的标签页 → 原地更新内容
+          const existingIdx = existingKeyIndex.get(tab.key);
+          if (existingIdx !== undefined) {
+            console.log(`[mergeSchema] 同 key 更新标签页: "${tab.key}" (${tab.title})`);
+            mergedSchema.tabs[existingIdx] = { ...tab };
+            hasChanges = true;
+            continue;
+          }
+
+          // 同标题但不同 key → 跳过（避免重复）
+          if (existingTitles.has(tab.title)) {
+            console.log(`[mergeSchema] 跳过重复标签页: "${tab.title}"`);
+            continue;
+          }
+
+          // 全新标签页 → 生成唯一 key 并追加
+          let key = tab.key;
+          let counter = 1;
+          while (existingKeys.has(key)) {
+            key = `${tab.key}-${counter}`;
+            counter++;
+          }
+          existingKeys.add(key);
+          existingTitles.add(tab.title);
+          newTabs.push({ ...tab, key });
+          hasChanges = true;
+        }
+
+        // 如果没有任何变化，直接返回
+        if (!hasChanges) {
+          console.log('[mergeSchema] 所有标签页都已存在且无变化，跳过合并');
           return;
         }
 
@@ -281,8 +293,8 @@ export const useWorkbenchStore = create<WorkbenchStore>()(
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push(cloneSchema(mergedSchema));
 
-        // 激活第一个新标签页
-        const firstNewTabKey = newTabs[0]?.key || currentSchema.tabs[0]?.key || '';
+        // 激活最新变化的标签页（新追加的优先，其次是更新的，最后是第一个已有的）
+        const firstNewTabKey = newTabs[0]?.key || sanitizedNewSchema.tabs[0]?.key || currentSchema.tabs[0]?.key || '';
 
         set({
           schema: mergedSchema,

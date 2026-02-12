@@ -624,16 +624,13 @@ export async function sendChatMessage(
           console.warn('[Socket] Schema 有非致命警告（部分渲染）:', validationResult.errors);
         }
 
-        // 更新 Workbench 状态（使用已验证的 sanitizedSchema）
+        // P2-16 修复：使用 mergeSchema 合并标签页，而不是 loadState 全量替换
+        // mergeSchema 会智能合并：相同标题跳过、用户关闭的不恢复、新标签页追加
         const sanitizedSchema = validationResult.sanitizedSchema;
         const workbenchStore = useWorkbenchStore.getState();
-        workbenchStore.loadState({
-          schema: sanitizedSchema,
-          visible: true,
-          activeTabKey: sanitizedSchema.defaultActiveKey || sanitizedSchema.tabs[0]?.key || '',
-        });
+        workbenchStore.mergeSchema(sanitizedSchema);
 
-        console.log('[Socket] Workbench 状态已更新，visible=true, activeTabKey:', sanitizedSchema.defaultActiveKey);
+        console.log('[Socket] Workbench 状态已合并，tabs:', sanitizedSchema.tabs.map((t: any) => t.title));
       } catch (err) {
         console.error('[Socket] Workbench 更新失败:', err);
       }
