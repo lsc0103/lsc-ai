@@ -7,15 +7,15 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — Sprint 1 完成，Sprint 2 待启动
-**状态**：S1 全部通过 PM Review，等待工程团队评估 R-3/R-4 后启动 S2
+**阶段**：Phase I 功能扩展 — Sprint 2 完成，等待 PM Review
+**状态**：S2 RAG 知识库 MVP 全栈实现，代码已提交推送，等待 PM 审查
 
 ### Phase I Sprint 计划概览
 
 | Sprint | 名称 | 时长 | 状态 |
 |--------|------|------|------|
 | **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ✅ PM Review 通过 |
-| **S2** | RAG 知识库 MVP | 2 周 | 待 S1 完成 |
+| **S2** | RAG 知识库 MVP | 2 周 | ✅ 代码完成，等待 PM Review |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | 可与 S2 并行 |
 | **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待 S1 完成 |
 | **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
@@ -290,6 +290,22 @@ e2e/
     - 修改 `client-agent/config/index.ts` — apiProvider 类型扩展 'openai-compatible'
     - 安装 `@ai-sdk/openai` + `@ai-sdk/provider` 到 server package
     - Server + Client Agent 双包 tsc --noEmit 编译通过
+60. ✅ **S2 RAG 知识库 MVP 全栈实现** — 4 Agent 并行开发，19 文件 2263 行 (commit a3c8b03)
+    - **S2-T1 CRUD API**: knowledge.module/controller/service.ts — 8 个 API 端点 + JWT 认证 + MinIO 集成
+    - **S2-T2 Document Pipeline**: document-pipeline.service.ts + text-extractor.ts + text-chunker.ts
+      - 支持 txt/md/pdf/docx/xlsx 五种格式
+      - 段落→句子→字符三级分块 + overlap
+      - fastembed 向量化 → LibSQLVector 存储
+    - **S2-T3 RAG 检索**: rag.service.ts + rag-tools.ts + knowledge-search.controller.ts
+      - searchKnowledge Mastra 工具（AI 对话自动调用）
+      - 语义搜索 API（单 KB / 全局）
+    - **S2-T4 前端 UI**: Knowledge.tsx + KnowledgeDetail.tsx + knowledge-api.ts
+      - 知识库列表（卡片+搜索+CRUD）
+      - 详情页（文档表格+上传Dragger+搜索测试+关键词高亮）
+      - Sidebar 导航 + ChatInput 知识库引用选择器
+    - **集成修复**: DocumentPipelineService 注册 + triggerPipeline 连接 + TS 编译错误修复
+    - Prisma Schema: KnowledgeBase + Document + DocumentChunk 三表
+    - Server + Web 双包 tsc --noEmit 编译通过
 
 ---
 
