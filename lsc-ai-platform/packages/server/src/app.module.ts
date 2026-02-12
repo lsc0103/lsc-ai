@@ -12,6 +12,7 @@ import { ProjectModule } from './modules/project/project.module.js';
 import { AgentModule } from './modules/agent/agent.module.js';
 import { StorageModule } from './modules/storage/storage.module.js';
 import { WorkflowModule } from './modules/workflow/workflow.module.js';
+import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { ChatGateway } from './gateway/chat.gateway.js';
 import { AgentGateway } from './gateway/agent.gateway.js';
 import { HealthController } from './health.controller.js';
@@ -47,6 +48,7 @@ import { HealthController } from './health.controller.js';
     AgentModule,
     StorageModule,
     WorkflowModule,
+    KnowledgeModule,
   ],
   controllers: [HealthController],
   providers: [ChatGateway, AgentGateway],

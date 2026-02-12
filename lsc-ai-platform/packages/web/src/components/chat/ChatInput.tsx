@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, KeyboardEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Dropdown, Tooltip, message, Spin } from 'antd';
+import { Button, Dropdown, Tooltip, message, Spin, Select } from 'antd';
 import {
   PlusOutlined,
   SendOutlined,
@@ -14,6 +14,7 @@ import {
   CloseCircleOutlined,
   LoadingOutlined,
   AppstoreOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -23,6 +24,7 @@ import { sessionApi, uploadApi, agentApi, FileInfo } from '../../services/api';
 import { sendChatMessage, connectSocket, stopGeneration } from '../../services/socket';
 import { WorkspaceSelectModal, AgentStatusIndicator } from '../agent';
 import { useWorkbenchStore, useWorkbenchVisible } from '../workbench';
+import { knowledgeApi, type KnowledgeBase } from '../../services/knowledge-api';
 
 /**
  * 聊天输入框组件
@@ -56,6 +58,8 @@ export default function ChatInput() {
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [selectedKbId, setSelectedKbId] = useState<string | undefined>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -90,6 +94,16 @@ export default function ChatInput() {
       });
     }
   }, [currentDeviceId, setDevices, setConnected]);
+
+  // 加载知识库列表
+  useEffect(() => {
+    knowledgeApi.list().then((res) => {
+      const list = res.data?.data || res.data || [];
+      setKnowledgeBases(Array.isArray(list) ? list : []);
+    }).catch(() => {
+      // 静默失败，知识库功能为可选
+    });
+  }, []);
 
   // P2-18: Agent 连接成功后自动打开 FileBrowser（仅当 Workbench 为空时）
   useEffect(() => {
@@ -203,6 +217,7 @@ export default function ChatInput() {
           fileIds: fileIds.length > 0 ? fileIds : undefined,
           deviceId: latestDeviceId || undefined,
           workDir: latestWorkDir || undefined,
+          knowledgeBaseId: selectedKbId || undefined,
         }
       );
     } catch (error: any) {
@@ -210,7 +225,7 @@ export default function ChatInput() {
       message.error(error.response?.data?.message || '发送消息失败');
       setLoading(false);
     }
-  }, [isLoading, isNewChat, currentSessionId, addSession, setCurrentSession, addMessage, navigate, setLoading, uploadedFiles]);
+  }, [isLoading, isNewChat, currentSessionId, addSession, setCurrentSession, addMessage, navigate, setLoading, uploadedFiles, selectedKbId]);
 
   // 监听待发送消息
   useEffect(() => {
@@ -343,6 +358,31 @@ export default function ChatInput() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 知识库引用选择 */}
+      {knowledgeBases.length > 0 && (
+        <div className="mb-2 flex items-center gap-2">
+          <BookOutlined className="text-[var(--text-tertiary)]" />
+          <Select
+            allowClear
+            placeholder="引用知识库（可选）"
+            value={selectedKbId}
+            onChange={(val) => setSelectedKbId(val)}
+            options={knowledgeBases.map((kb) => ({
+              label: kb.name,
+              value: kb.id,
+            }))}
+            style={{ width: 220 }}
+            size="small"
+            className="knowledge-select"
+          />
+          {selectedKbId && (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              对话将检索此知识库
+            </span>
+          )}
+        </div>
+      )}
 
       {/* 隐藏的文件输入 */}
       <input

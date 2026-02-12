@@ -41,6 +41,7 @@ model User {
   userPermissions UserPermission[]
   sessions        Session[]
   projects        Project[]
+  knowledgeBases  KnowledgeBase[]
   scheduledTasks  ScheduledTask[]
   rpaFlows        RpaFlow[]
   credentials     Credential[]
@@ -52,12 +53,12 @@ model User {
 
 // 角色表
 model Role {
-  id          String   @id @default(uuid())
-  code        String   @unique @db.VarChar(50)
-  name        String   @db.VarChar(100)
-  description String?  @db.VarChar(500)
-  permissions Json     @default("[]") // 权限列表
-  isSystem    Boolean  @default(false) @map("is_system")
+  id          String  @id @default(uuid())
+  code        String  @unique @db.VarChar(50)
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(500)
+  permissions Json    @default("[]") // 权限列表
+  isSystem    Boolean @default(false) @map("is_system")
 
   // 扩展字段
   expand1   String? @map("expand_1") @db.VarChar(500)
@@ -125,16 +126,16 @@ model UserPermission {
 
 // 文件表
 model File {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  sessionId   String?  @map("session_id")
-  filename    String   @db.VarChar(255)
+  id           String  @id @default(uuid())
+  userId       String  @map("user_id")
+  sessionId    String? @map("session_id")
+  filename     String  @db.VarChar(255)
   originalName String  @map("original_name") @db.VarChar(255)
-  mimeType    String   @map("mime_type") @db.VarChar(100)
-  size        Int      // 文件大小（字节）
-  bucket      String   @db.VarChar(100)
-  objectKey   String   @map("object_key") @db.VarChar(500)
-  url         String?  @db.VarChar(1000)
+  mimeType     String  @map("mime_type") @db.VarChar(100)
+  size         Int // 文件大小（字节）
+  bucket       String  @db.VarChar(100)
+  objectKey    String  @map("object_key") @db.VarChar(500)
+  url          String? @db.VarChar(1000)
 
   // 扩展字段
   expand1   String? @map("expand_1") @db.VarChar(500)
@@ -174,8 +175,8 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@map("sessions")
@@ -202,25 +203,130 @@ model Project {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions Session[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions       Session[]
+  knowledgeBases KnowledgeBase[]
 
   @@index([userId])
   @@map("projects")
+}
+
+// ==================== RAG 知识库 ====================
+
+// 知识库
+model KnowledgeBase {
+  id          String  @id @default(uuid())
+  userId      String  @map("user_id")
+  name        String  @db.VarChar(200)
+  description String? @db.VarChar(1000)
+  projectId   String? @map("project_id")
+
+  // 配置
+  chunkSize      Int    @default(512) @map("chunk_size")
+  chunkOverlap   Int    @default(64) @map("chunk_overlap")
+  embeddingModel String @default("fastembed") @map("embedding_model") @db.VarChar(100)
+
+  // 统计
+  documentCount Int @default(0) @map("document_count")
+  chunkCount    Int @default(0) @map("chunk_count")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  documents Document[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("knowledge_bases")
+}
+
+// 知识库文档
+model Document {
+  id              String @id @default(uuid())
+  knowledgeBaseId String @map("knowledge_base_id")
+  filename        String @db.VarChar(255)
+  originalName    String @map("original_name") @db.VarChar(255)
+  mimeType        String @map("mime_type") @db.VarChar(100)
+  size            Int // 字节
+  bucket          String @db.VarChar(100)
+  objectKey       String @map("object_key") @db.VarChar(500)
+
+  // 解析状态
+  status     String    @default("pending") @db.VarChar(20) // pending, processing, completed, failed
+  chunkCount Int       @default(0) @map("chunk_count")
+  error      String?   @db.Text
+  parsedAt   DateTime? @map("parsed_at")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  knowledgeBase KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  chunks        DocumentChunk[]
+
+  @@index([knowledgeBaseId])
+  @@index([status])
+  @@map("documents")
+}
+
+// 文档分块
+model DocumentChunk {
+  id         String @id @default(uuid())
+  documentId String @map("document_id")
+  index      Int // 块序号
+  content    String @db.Text // 文本内容
+  metadata   Json   @default("{}") // 元信息：页码、标题层级等
+  tokenCount Int    @default(0) @map("token_count")
+
+  // 向量 ID（对应 LibSQLVector 中的记录）
+  vectorId String? @map("vector_id") @db.VarChar(200)
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([vectorId])
+  @@map("document_chunks")
 }
 
 // ==================== 定时任务与RPA ====================
 
 // 定时任务表
 model ScheduledTask {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String   @db.VarChar(200)
-  description String?  @db.VarChar(1000)
-  cronExpr    String   @map("cron_expr") @db.VarChar(100)
-  taskType    String   @map("task_type") @db.VarChar(50) // prompt, rpa
-  taskConfig  Json     @map("task_config")
-  status      String   @default("active") @db.VarChar(20) // active, paused, disabled
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String    @db.VarChar(200)
+  description String?   @db.VarChar(1000)
+  cronExpr    String    @map("cron_expr") @db.VarChar(100)
+  taskType    String    @map("task_type") @db.VarChar(50) // prompt, rpa
+  taskConfig  Json      @map("task_config")
+  status      String    @default("active") @db.VarChar(20) // active, paused, disabled
   lastRunAt   DateTime? @map("last_run_at")
   nextRunAt   DateTime? @map("next_run_at")
 
@@ -244,13 +350,13 @@ model ScheduledTask {
 
 // 任务执行日志
 model TaskLog {
-  id        String   @id @default(uuid())
-  taskId    String   @map("task_id")
-  status    String   @db.VarChar(20) // running, success, failed
-  startedAt DateTime @map("started_at")
+  id        String    @id @default(uuid())
+  taskId    String    @map("task_id")
+  status    String    @db.VarChar(20) // running, success, failed
+  startedAt DateTime  @map("started_at")
   endedAt   DateTime? @map("ended_at")
   result    Json?
-  error     String?  @db.Text
+  error     String?   @db.Text
 
   // 扩展字段
   expand1   String? @map("expand_1") @db.VarChar(500)
@@ -296,11 +402,11 @@ model RpaFlow {
 
 // 凭证表（加密存储）
 model Credential {
-  id              String  @id @default(uuid())
-  userId          String  @map("user_id")
-  name            String  @db.VarChar(200)
-  type            String  @db.VarChar(50) // database, api, ssh, etc.
-  encryptedData   String  @map("encrypted_data") @db.Text
+  id            String @id @default(uuid())
+  userId        String @map("user_id")
+  name          String @db.VarChar(200)
+  type          String @db.VarChar(50) // database, api, ssh, etc.
+  encryptedData String @map("encrypted_data") @db.Text
 
   // 扩展字段
   expand1   String? @map("expand_1") @db.VarChar(500)
@@ -379,17 +485,17 @@ model SentinelAgent {
 
 // 审计日志表
 model AuditLog {
-  id           String   @id @default(uuid())
-  userId       String?  @map("user_id")
-  username     String?  @db.VarChar(50)
-  action       String   @db.VarChar(100)
-  resourceType String?  @map("resource_type") @db.VarChar(50)
-  resourceId   String?  @map("resource_id") @db.VarChar(100)
+  id           String  @id @default(uuid())
+  userId       String? @map("user_id")
+  username     String? @db.VarChar(50)
+  action       String  @db.VarChar(100)
+  resourceType String? @map("resource_type") @db.VarChar(50)
+  resourceId   String? @map("resource_id") @db.VarChar(100)
   details      Json?
-  ipAddress    String?  @map("ip_address") @db.VarChar(50)
-  userAgent    String?  @map("user_agent") @db.VarChar(500)
-  success      Boolean  @default(true)
-  errorMessage String?  @map("error_message") @db.Text
+  ipAddress    String? @map("ip_address") @db.VarChar(50)
+  userAgent    String? @map("user_agent") @db.VarChar(500)
+  success      Boolean @default(true)
+  errorMessage String? @map("error_message") @db.Text
 
   // 扩展字段
   expand1   String? @map("expand_1") @db.VarChar(500)

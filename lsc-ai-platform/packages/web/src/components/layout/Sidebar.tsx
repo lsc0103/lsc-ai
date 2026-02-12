@@ -3,6 +3,7 @@ import {
   PlusOutlined,
   SearchOutlined,
   FolderOutlined,
+  BookOutlined,
   ClockCircleOutlined,
   AppstoreOutlined,
   SettingOutlined,
@@ -25,6 +26,7 @@ interface SidebarProps {
 const navItems = [
   { key: 'new', icon: PlusOutlined, label: '新对话', action: true },
   { key: 'search', icon: SearchOutlined, label: '搜索', action: true },
+  { key: 'knowledge', icon: BookOutlined, label: '知识库', path: '/knowledge' },
   { key: 'projects', icon: FolderOutlined, label: '我的项目', path: '/projects' },
   { key: 'tasks', icon: ClockCircleOutlined, label: 'RPA/定时任务', path: '/tasks' },
   { key: 'apps', icon: AppstoreOutlined, label: '其他应用', path: '/apps' },

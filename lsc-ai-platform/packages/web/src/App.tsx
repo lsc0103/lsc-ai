@@ -10,6 +10,8 @@ const ChatPage = lazy(() => import('./pages/Chat'));
 const ProjectsPage = lazy(() => import('./pages/Projects'));
 const TasksPage = lazy(() => import('./pages/Tasks'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
+const KnowledgePage = lazy(() => import('./pages/Knowledge'));
+const KnowledgeDetailPage = lazy(() => import('./pages/KnowledgeDetail'));
 
 // 路由守卫
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -41,6 +43,8 @@ function App() {
           >
             <Route index element={<Navigate to="/chat" replace />} />
             <Route path="chat/:sessionId?" element={<ChatPage />} />
+            <Route path="knowledge" element={<KnowledgePage />} />
+            <Route path="knowledge/:id" element={<KnowledgeDetailPage />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="settings" element={<SettingsPage />} />

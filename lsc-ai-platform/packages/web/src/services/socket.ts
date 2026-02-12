@@ -265,6 +265,8 @@ export async function sendChatMessage(
     // 新增：Client Agent 路由参数
     deviceId?: string;
     workDir?: string;
+    // 知识库 RAG 检索
+    knowledgeBaseId?: string;
   },
 ): Promise<void> {
   const { onStart, onChunk, onToolCall, onToolResult, onDone, onError } = callbacks;
@@ -662,6 +664,8 @@ export async function sendChatMessage(
         // Client Agent 路由参数
         deviceId: options?.deviceId,
         workDir: options?.workDir,
+        // 知识库 RAG 检索
+        knowledgeBaseId: options?.knowledgeBaseId,
         // Workbench 上下文（让 AI 知道用户正在看什么）
         workbenchContext: workbenchContext || undefined,
       },

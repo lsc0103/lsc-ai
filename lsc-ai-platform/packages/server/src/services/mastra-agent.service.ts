@@ -22,6 +22,7 @@ import { ModelFactory } from '../mastra/model-factory.js';
 import { coreTools } from '../tools/core-tools.js';
 import { officeTools } from '../tools/office-tools.js';
 import { advancedTools } from '../tools/advanced-tools.js';
+import { ragTools } from '../tools/rag-tools.js';
 import {
   workbenchTool,
   showCodeTool,
@@ -130,6 +131,7 @@ export class MastraAgentService implements OnModuleInit {
         ...coreTools,
         ...officeTools,
         ...advancedTools,
+        ...ragTools,
       },
     });
 
@@ -391,6 +393,13 @@ export class MastraAgentService implements OnModuleInit {
 - \`askUser\` - 询问用户
 - \`undo\` - 撤销操作
 - \`modificationHistory\` - 查看修改历史
+
+### 7. 知识库检索
+- \`searchKnowledge\` - 在知识库中搜索相关内容
+  - 当用户询问业务知识、文档内容、规章制度等需要查阅资料的问题时，使用此工具
+  - 搜索结果会返回相关文档片段和来源信息
+  - 引用知识库内容时请注明出处（文档名称）
+  - 可指定 knowledgeBaseId 搜索特定知识库，不传则搜索全部
 
 ## 🚨 强制规则
 
