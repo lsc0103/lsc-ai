@@ -6604,3 +6604,29 @@ R-3、R-4 归入 P2 优化清单，请工程团队在 Sprint 2 启动前简要�
 
 ---
 
+### [工程师] 2026-02-12 — R-3/R-4 评估回复 + Sprint 2 启动
+
+#### R-3 评估：P1-8 关键词硬编码漏触发
+
+**结论：当前方案可接受，后续优化列入 S3+ 排期。**
+
+1. **漏触发率**：预估 ~15-20%。保守策略的设计意图就是"宁可漏不可误"——漏触发只是回退到单 platformAgent（它拥有全部 34 个工具，功能不受损），而误触发会增加 300-800ms 的 AgentNetwork 路由开销。
+2. **LLM 意图分类替代方案**：
+   - 额外延迟：200-500ms（需调用一次轻量 LLM 做分类）
+   - 额外成本：每条消息多一次 API 调用
+   - 建议时机：Sprint 3 项目管理模块完成后，有更多真实用户数据来训练分类规则
+3. **短期改进**（可在 S2 期间顺手做）：积累真实对话日志，统计 AgentNetwork 实际触发率和效果，为后续 LLM 分类提供数据基础
+
+#### R-4 评估：队列取消 sendTaskResult 无 await
+
+**结论：无需修改。**
+
+已确认 `socketClient.sendTaskResult()` 内部实现是 `this.socket.emit('task_result', data)`：
+- Socket.IO `emit()` 是同步入队、异步发送，无返回 Promise
+- 循环中连续 emit 多个 cancelled 消息，Socket.IO 会按序发送，不会丢失
+- 加 await 反而不必要（emit 没有返回 Promise，加了也无效）
+
+**R-3/R-4 评估完成。Sprint 1 正式关闭，开始 Sprint 2。**
+
+---
+
