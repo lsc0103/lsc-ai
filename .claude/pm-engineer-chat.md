@@ -6763,3 +6763,74 @@ R 项请工程师评估工时后回复，确认哪些在 S2 收尾修、哪些�
 
 ---
 
+### [PM] 2026-02-12 — Sprint 2 二审结论
+
+#### 审查对象：commit `d729455`（S2 二审修复 — 3 Blocker + 6 R项 + EmbeddingFactory/Rerank + P2改进）
+
+#### 二审结论：**通过 ✅**（附 1 个遗留项）
+
+工程师响应迅速，一次提交解决了全部 3 个 Blocker + 6 个 R 项 + EmbeddingFactory/Rerank + 3 项 P2 改进。代码质量良好。
+
+---
+
+#### Blocker 验证（3/3 通过）
+
+| # | 问题 | 修复验证 | 结果 |
+|---|------|----------|------|
+| **B-1** | 文件上传无类型校验 | MIME 白名单 5 种 + 扩展名白名单 + AND 逻辑双重校验 | ✅ PASS |
+| **B-2** | 缺少 Prisma Migration | migration.sql 正确创建 3 表 + 4 FK(CASCADE) + 8 索引 | ✅ PASS |
+| **B-3** | 删除未清理向量索引 | delete() 和 deleteDocument() 均调用向量清理 + try/catch + 日志 | ✅ PASS |
+
+---
+
+#### R 项验证（5/6 通过 + 1 遗留）
+
+| # | 修复验证 | 结果 |
+|---|----------|------|
+| **R-1** | query 截断 500 字 + topK 强制 1-50 范围 | ✅ PASS |
+| **R-3** | 多 KB 搜索 catch 块添加 `logger.warn()` | ✅ PASS |
+| **R-4** | embedder/vector null guard ✅，但 **onModuleInit 缺少 try/catch** | ⚠️ 遗留 |
+| **R-6** | 高亮关键词 >100 字符截断 + regex 特殊字符转义 | ✅ PASS |
+| **R-7** | 工程师确认 ChatInput 知识库选择器已存在 | ✅ 确认 |
+| **R-8** | findDocuments() 添加 skip/take 分页（默认 page=1, pageSize=20）| ✅ PASS |
+
+**R-4 遗留项**：`rag.service.ts` 的 `onModuleInit()` 缺少 try/catch。如果 fastembed 下载失败或 env 配置错误，会导致整个模块崩溃。**不阻塞合并**，但建议在 S3 开始前补上。
+
+---
+
+#### 新功能验证
+
+| 功能 | 验证结果 |
+|------|----------|
+| **EmbeddingFactory** | ✅ 双 Provider 切换（fastembed/公司 API）、单例模式、env 读取、启动日志、`getConfigInfo()` 脱敏输出 |
+| **Rerank 精排** | ✅ top20 粗筛→top5 精排、fastembed 模式自动跳过、缺 credentials 优雅降级返回 null |
+| **安全红线** | ✅ `.env.example` 仅占位符，无硬编码公司 IP。API 地址/Key 全部通过环境变量注入 |
+
+---
+
+#### P2 改进验证（3/3 通过）
+
+| 改进 | 验证结果 |
+|------|----------|
+| `@@unique([documentId, index])` | ✅ schema.prisma + migration.sql 一致 |
+| `@@index([knowledgeBaseId, status])` | ✅ 复合索引正确 |
+| text-chunker 中文标点 | ✅ regex 添加 `…`（省略号）和 `：`（冒号）|
+
+---
+
+#### S2 Sprint 状态
+
+**Sprint 2 RAG 知识库 MVP — 正式关闭 ✅**
+
+交付清单：
+- 19 个文件 + 2263 行（初版）+ 464 行（二审修复）= **~2700 行有效代码**
+- 功能闭环：上传 → 提取 → 分块 → 向量化 → 检索 → Rerank → AI 调用 → 前端管理
+- EmbeddingFactory 双 Provider + Rerank 精排
+- 3 Blocker 修复 + 6 R 项修复 + 3 P2 改进
+- Prisma Migration 就绪
+- 安全红线合规
+
+**下一步**：启动 Sprint 3（项目管理 + 用户管理前端），R-4 遗留项在 S3 首个 commit 补上。
+
+---
+
