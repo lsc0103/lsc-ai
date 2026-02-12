@@ -88,6 +88,41 @@
 第3层: packages/*/CLAUDE.md         ← 子包级详细记忆（进入子包目录时自动加载）
 ```
 
+---
+
+## 2026-02-12 | S4 Sprint — 任务/RPA 管理 + Sentinel Agent MVP
+
+**目标**：将 Tasks.tsx 从空壳变为完整可用的任务管理系统，建立 Sentinel Agent 后端基础
+
+**完成**：
+1. **T1 workflow-api.ts** (新建 120 行) — 5 个接口 + 13 个 API 方法，匹配后端 WorkflowController 全部端点
+2. **T2 定时任务 UI** — Table 7 列 + CRUD Modal + describeCron 辅助函数 + 状态切换
+3. **T3 RPA 流程 UI** — Table 6 列 + Monaco Editor JSON 编辑器(lazy) + 执行弹窗(inputData + 结果展示)
+4. **T4 日志 Drawer** — 600px Drawer + 状态 Badge + 耗时计算 + 展开行(JSON/error) + 5s 轮询
+5. **T5 Sentinel Agent MVP** (新建 3 文件 ~240 行) — 7 REST 端点 + Admin 权限 + @Cron 离线检测
+6. **T6 后端改进** — ChatGateway WebSocket 推送 task:execution + NotFoundException/BadRequestException + cancel 端点
+
+**修改的文件**：
+- 新建 `packages/web/src/services/workflow-api.ts` (T1)
+- 重写 `packages/web/src/pages/Tasks.tsx` (67→986 行) (T2+T3+T4)
+- 新建 `packages/server/src/modules/sentinel/sentinel.module.ts` (T5)
+- 新建 `packages/server/src/modules/sentinel/sentinel.controller.ts` (T5)
+- 新建 `packages/server/src/modules/sentinel/sentinel.service.ts` (T5)
+- 修改 `packages/server/src/app.module.ts` — 添加 SentinelModule (T5)
+- 修改 `packages/server/src/modules/workflow/workflow.controller.ts` (T6)
+- 修改 `packages/server/src/services/mastra-workflow.service.ts` (T6)
+
+**团队执行**：2 个 Engineer Agent 并行
+- frontend-engineer: T1→T2→T3→T4（前端全量）
+- backend-engineer: T5→T6（后端全量）
+
+**编译验证**：Server + Web 双包 tsc --noEmit 通过 (0 errors)
+
+**下次继续**：
+1. PM Chrome 浏览器验收 5 个场景
+2. 如有 bug → 修复后重新验收
+3. 验收通过 → git commit + 更新 CLAUDE.md 进度
+
 **下次继续**：
 - Phase 5 第一步：修复 3 个 P0 bug（同上次）
 
@@ -1230,3 +1265,65 @@ PM（远程 Claude.ai Opus）在我提交 f699077 之后，私自提交了 3 个
 **下次继续**：
 - 提交团队重组文件到 git
 - 启动 S4（任务/RPA + Sentinel Agent）规划
+
+---
+
+## 2026-02-12 (第5次) | S1-S3 功能回归测试 + Bug 修复
+
+**目标**：在启动 S4 之前，通过浏览器实际操作验证 S1-S3 所有功能正常
+
+**完成**：
+1. ✅ 后端服务启动 + Prisma 迁移部署（2 个 pending migration）
+2. ✅ API 层全量验证（Auth/Session/Knowledge/Project/User/Role/ChangePassword）
+3. ✅ Chrome 浏览器 6 项功能测试全部通过：
+   - T1 基础对话：登录 + 发消息 + AI 流式回复
+   - T2 侧边栏导航：6 个页面全部可达
+   - T3 知识库 CRUD：创建/列表/详情/删除
+   - T4 项目管理：列表/创建/详情/删除
+   - T5 用户/角色管理：用户列表/角色分配/角色列表
+   - T6 设置：修改密码 + 新密码验证 + 密码恢复
+4. ✅ 发现并修复 1 个 P1 Bug：Knowledge.tsx 列表数据解析
+
+**修改的文件**：
+- `packages/web/src/pages/Knowledge.tsx` — 修复 `res.data?.data` → `res.data?.items || res.data?.data`
+
+**发现的问题**：
+- **P1（已修复）**：Knowledge.tsx:40 前端读 `data` 字段，后端返 `items` 字段，导致列表永远为空
+- **P2（待修复）**：JWT 过期后前端不跳转登录页（token=null 但 user 存在，API 静默 401）
+- **注意**：React 受控组件需要 native value setter + dispatchEvent 才能通过 Chrome 自动化工具正确设值
+
+**重要决策**：
+- S1-S3 功能完整性确认通过，可以安全进入 S4 开发
+- Knowledge.tsx Bug 为前后端接口字段不一致，属于 S2 开发时的疏漏
+
+**下次继续**：
+- 提交 Knowledge.tsx Bug 修复
+- 启动 S4（任务/RPA + Sentinel Agent）规划
+
+---
+
+### 2026-02-12 (第6次) | Bug 修复验收 + 提交
+
+**目标**：完成 Bug #22/#23 的工程师修复审查、PM 验收、代码提交
+
+**完成**：
+- 工程师 A 完成 Knowledge.tsx 修复（responseData?.items ?? []）
+- 工程师 B 完成 JWT 过期修复（onRehydrateStorage + PrivateRoute accessToken 检查）
+- 执行负责人代码审查：两项修复均 APPROVED
+- PM Agent 尝试验收但缺少 Chrome MCP 工具，如实汇报无法测试
+- 执行负责人使用 Chrome 浏览器代行 PM 验收，5/5 测试通过
+- 提交 commit b6d04d7
+
+**修改的文件**：
+- `packages/web/src/pages/Knowledge.tsx` — 列表解析 items 字段
+- `packages/web/src/services/knowledge-api.ts` — 类型定义匹配服务端
+- `packages/web/src/stores/auth.ts` — onRehydrateStorage JWT 清理
+- `packages/web/src/App.tsx` — PrivateRoute 双重检查
+
+**发现的问题**：
+- PM Agent (pm subagent_type) 没有 Chrome MCP 工具，无法执行浏览器验收
+- 需要用 general-purpose 类型或由执行负责人代行
+
+**下次继续**：
+- 启动 S4（任务/RPA + Sentinel Agent）规划
+- 考虑解决 PM Agent Chrome 工具可用性问题

@@ -102,7 +102,7 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 
 **总进度：~80%** | **Phase I 进度：S1-S3 完成，S4/S5 待启动**
 
-**当前阶段：Phase I — 团队重组完成，S4 准入就绪**
+**当前阶段：Phase I — S4 开发完成，待 PM 验收**
 
 详细进度和当前任务见 → `.claude/current-task.md`
 
@@ -130,9 +130,11 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 9. Platform 端无 MCP（代码存在但未接入）
 10. 项目感知未注入（`mastra-agent.service.ts:392-399` 注释掉了）
 11. Workflow/RPA 前端无入口
+22. ✅ **Knowledge.tsx 列表不显示** — 前端读 `res.data?.data`，后端返回 `items` 字段。已修复为 `responseData?.items ?? []` (commit b6d04d7)
 
 ### P2 — 深度验证发现
 17. ✅ Agent 连续操作时 `isExecuting` 锁导致"Agent is busy"报错 — 已改为任务队列（max 5），满了才拒绝
+23. ✅ **JWT 过期后前端不跳转登录页** — Zustand persist isAuthenticated=true 但 accessToken=null。已修复：auth.ts onRehydrateStorage + App.tsx PrivateRoute 双重检查 (commit b6d04d7)
 
 ### P2 — 改进项
 12. Structured Output 未使用
@@ -146,6 +148,9 @@ lsc-ai-platform/                    # pnpm workspaces + Turborepo
 ### P2 — PM Review 发现（待工程团队评估）
 20. R-3: AgentNetwork `shouldUseAgentNetwork()` 关键词硬编码，复杂自然语言可能漏触发。后续可考虑 LLM 轻量意图分类替代正则
 21. R-4: `cancelCurrentTask()` 循环 `sendTaskResult()` 无 await。Socket.IO emit 异步非阻塞，理论无影响，请工程确认
+
+### P2 — S1-S3 回归测试发现
+23. JWT 过期后前端不跳转登录页（token=null 但 user 对象仍在 Zustand store，API 静默 401）
 
 > 修复一个问题后，立即在此标记 ✅ 并更新 dev-log
 

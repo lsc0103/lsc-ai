@@ -8,6 +8,8 @@ import {
   Body,
   UseGuards,
   Request,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
@@ -54,9 +56,13 @@ export class WorkflowController {
   @Get('rpa/:id')
   @ApiOperation({ summary: '获取 RPA 流程详情' })
   async getRpaFlow(@Param('id') id: string, @Request() req: any) {
-    return this.prisma.rpaFlow.findFirst({
+    const flow = await this.prisma.rpaFlow.findFirst({
       where: { id, userId: req.user.id },
     });
+    if (!flow) {
+      throw new NotFoundException(`RPA flow not found: ${id}`);
+    }
+    return flow;
   }
 
   @Patch('rpa/:id')
@@ -66,11 +72,12 @@ export class WorkflowController {
     @Request() req: any,
     @Body() body: { name?: string; description?: string; flowData?: any; status?: string },
   ) {
-    // 验证所有权
     const flow = await this.prisma.rpaFlow.findFirst({
       where: { id, userId: req.user.id },
     });
-    if (!flow) return null;
+    if (!flow) {
+      throw new NotFoundException(`RPA flow not found: ${id}`);
+    }
 
     return this.prisma.rpaFlow.update({
       where: { id },
@@ -89,7 +96,9 @@ export class WorkflowController {
     const flow = await this.prisma.rpaFlow.findFirst({
       where: { id, userId: req.user.id },
     });
-    if (!flow) return null;
+    if (!flow) {
+      throw new NotFoundException(`RPA flow not found: ${id}`);
+    }
 
     return this.prisma.rpaFlow.delete({ where: { id } });
   }
@@ -118,6 +127,10 @@ export class WorkflowController {
       taskConfig: any;
     },
   ) {
+    if (body.cronExpr.trim().split(/\s+/).length !== 5) {
+      throw new BadRequestException('Invalid cron expression: must have exactly 5 fields');
+    }
+
     return this.prisma.scheduledTask.create({
       data: {
         userId: req.user.id,
@@ -142,10 +155,14 @@ export class WorkflowController {
   @Get('tasks/:id')
   @ApiOperation({ summary: '获取定时任务详情' })
   async getScheduledTask(@Param('id') id: string, @Request() req: any) {
-    return this.prisma.scheduledTask.findFirst({
+    const task = await this.prisma.scheduledTask.findFirst({
       where: { id, userId: req.user.id },
       include: { taskLogs: { orderBy: { startedAt: 'desc' }, take: 20 } },
     });
+    if (!task) {
+      throw new NotFoundException(`Scheduled task not found: ${id}`);
+    }
+    return task;
   }
 
   @Patch('tasks/:id')
@@ -164,7 +181,9 @@ export class WorkflowController {
     const task = await this.prisma.scheduledTask.findFirst({
       where: { id, userId: req.user.id },
     });
-    if (!task) return null;
+    if (!task) {
+      throw new NotFoundException(`Scheduled task not found: ${id}`);
+    }
 
     return this.prisma.scheduledTask.update({
       where: { id },
@@ -184,7 +203,9 @@ export class WorkflowController {
     const task = await this.prisma.scheduledTask.findFirst({
       where: { id, userId: req.user.id },
     });
-    if (!task) return null;
+    if (!task) {
+      throw new NotFoundException(`Scheduled task not found: ${id}`);
+    }
 
     return this.prisma.scheduledTask.delete({ where: { id } });
   }
@@ -193,6 +214,36 @@ export class WorkflowController {
   @ApiOperation({ summary: '手动执行定时任务' })
   async executeScheduledTask(@Param('id') id: string) {
     return this.workflowService.executeScheduledTask(id);
+  }
+
+  @Post('tasks/:id/cancel')
+  @ApiOperation({ summary: '取消正在执行的定时任务' })
+  async cancelScheduledTask(@Param('id') id: string, @Request() req: any) {
+    const task = await this.prisma.scheduledTask.findFirst({
+      where: { id, userId: req.user.id },
+    });
+    if (!task) {
+      throw new NotFoundException(`Scheduled task not found: ${id}`);
+    }
+
+    const runningLog = await this.prisma.taskLog.findFirst({
+      where: { taskId: id, status: 'running' },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    if (!runningLog) {
+      return { message: '没有正在运行的任务' };
+    }
+
+    await this.prisma.taskLog.update({
+      where: { id: runningLog.id },
+      data: {
+        status: 'cancelled',
+        endedAt: new Date(),
+      },
+    });
+
+    return { message: '任务已取消', logId: runningLog.id };
   }
 
   @Get('tasks/:id/logs')

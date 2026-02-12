@@ -8,10 +8,12 @@
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { MastraAgentService } from './mastra-agent.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ChatGateway } from '../gateway/chat.gateway.js';
 
 /** RPA 步骤类型 */
 interface RpaStepDef {
@@ -34,7 +36,30 @@ export class MastraWorkflowService implements OnModuleInit {
   constructor(
     private readonly mastraAgentService: MastraAgentService,
     private readonly prisma: PrismaService,
+    private readonly moduleRef: ModuleRef,
   ) {}
+
+  /**
+   * 通过 ModuleRef 跨模块获取 ChatGateway（strict: false 允许跨模块查找）
+   */
+  private getChatGateway(): ChatGateway | null {
+    try {
+      return this.moduleRef.get(ChatGateway, { strict: false });
+    } catch {
+      return null;
+    }
+  }
+
+  private emitTaskExecution(payload: Record<string, any>) {
+    try {
+      const gateway = this.getChatGateway();
+      if (gateway?.server) {
+        gateway.server.emit('task:execution', payload);
+      }
+    } catch {
+      // Gateway not available, skip WebSocket push
+    }
+  }
 
   async onModuleInit() {
     this.logger.log('Mastra Workflow Service 初始化完成');
@@ -116,6 +141,10 @@ export class MastraWorkflowService implements OnModuleInit {
       },
     });
 
+    // Emit task:execution running event
+    const startedAt = new Date().toISOString();
+    this.emitTaskExecution({ taskId, status: 'running', startedAt });
+
     try {
       let result: any;
 
@@ -131,11 +160,12 @@ export class MastraWorkflowService implements OnModuleInit {
       }
 
       // 更新日志
+      const endedAt = new Date();
       await this.prisma.taskLog.update({
         where: { id: log.id },
         data: {
           status: 'success',
-          endedAt: new Date(),
+          endedAt,
           result: result || {},
         },
       });
@@ -146,17 +176,24 @@ export class MastraWorkflowService implements OnModuleInit {
         data: { lastRunAt: new Date() },
       });
 
+      // Emit task:execution success event
+      this.emitTaskExecution({ taskId, status: 'success', endedAt: endedAt.toISOString(), result });
+
       return result;
     } catch (error: any) {
       // 更新日志
+      const endedAt = new Date();
       await this.prisma.taskLog.update({
         where: { id: log.id },
         data: {
           status: 'failed',
-          endedAt: new Date(),
+          endedAt,
           error: error.message,
         },
       });
+
+      // Emit task:execution failed event
+      this.emitTaskExecution({ taskId, status: 'failed', endedAt: endedAt.toISOString(), error: error.message });
 
       throw error;
     }
