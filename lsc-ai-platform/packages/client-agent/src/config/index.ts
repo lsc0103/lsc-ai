@@ -19,7 +19,7 @@ export interface ClientAgentConfig {
   // 默认工作目录
   workDir: string;
   // API 提供商配置（由 Platform 下发）
-  apiProvider: 'anthropic' | 'deepseek';
+  apiProvider: 'anthropic' | 'deepseek' | 'openai-compatible';
   apiKey?: string;
   apiBaseUrl?: string;
   model?: string;

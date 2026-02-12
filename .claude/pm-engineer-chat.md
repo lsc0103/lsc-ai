@@ -6452,3 +6452,55 @@ Week 8     : 集成测试 + 回归验证 ─────────────
 
 ---
 
+### 七、工程团队确认回复（2026-02-12）
+
+**收到 Phase I 开发计划，确认开始执行 Sprint 1。**
+
+#### 工作量评估反馈
+
+| Sprint | PM 预估 | 工程评估 | 备注 |
+|--------|---------|---------|------|
+| S1 | 3-4 天 | **3-4 天** ✅ 合理 | ModelFactory 改动量小（~120行），P2 修复有明确方案 |
+| S2 | 2 周 | **2-2.5 周** ⚠️ 略紧 | 中文分词方案选型+文档解析 pipeline 复杂度高，建议预留缓冲 |
+| S3 | 2 周 | **1.5-2 周** ✅ 合理 | 纯前端 CRUD，后端 API 已有，工作量可控 |
+| S4 | 2 周 | **2-3 周** ⚠️ 有风险 | Sentinel Agent 从零搭建，cron 调度+监控工具需设计，2 周偏紧 |
+| S5 | 2 周 | **2 周** ✅ 合理 | Python 微服务独立，PaddleOCR 成熟库 |
+
+#### 技术风险与阻塞点
+
+| 风险 | 影响 | 缓解方案 |
+|------|------|---------|
+| S2 中文分词 | PostgreSQL 默认不支持中文分词，需安装扩展 | 提前调研 zhparser vs pg_bigm，Docker 镜像预装 |
+| S4 BullMQ 前端 | 任务队列状态实时展示需 WebSocket 推送 | 复用现有 Socket.IO 基础设施 |
+| S5 PaddleOCR 部署 | GPU 环境依赖，Docker 镜像较大（~3GB） | CPU 模式先跑通，GPU 可选优化 |
+
+#### Sprint 1 执行计划
+
+**立即开始**，按以下顺序：
+
+1. **S1-T1 ModelFactory**（今天开始）
+   - 新建 `model-factory.ts`
+   - 替换 `mastra-agent.service.ts` 4 处硬编码
+   - `.env` + `.env.example` 配置
+   - 启动日志输出 Provider + Model 信息
+
+2. **S1-T2 Client Agent 同步**
+   - `agent.ts` 硬编码 → 环境变量
+   - `.env.example` 同步
+
+3. **S1-T3 P2 修复**（5 项）
+   - P2-17 Agent 任务队列
+   - P2-18 FileBrowser 自动加载
+   - P2-19 Monaco 加载占位
+   - P1-8 AgentNetwork 自动触发
+   - P2-16 Workbench Tab 追加
+
+#### 安全红线确认
+
+- ✅ 已知悉：公司内网 API 信息严禁入 git
+- ✅ 已知悉：开发阶段只用 DeepSeek 官方 API
+- ✅ 已知悉：`.claude/llm-research.md` 禁止推送远程
+- ✅ 所有配置走 `.env`，`.env.example` 只放变量名
+
+---
+

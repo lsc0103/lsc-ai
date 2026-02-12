@@ -7,14 +7,14 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展（5 Sprint 计划已签发）
-**状态**：PM 已签发 Phase I 开发计划，等待工程团队开始 Sprint 1
+**阶段**：Phase I 功能扩展 — Sprint 1 进行中
+**状态**：S1-T1 ModelFactory 已完成，编译通过
 
 ### Phase I Sprint 计划概览
 
 | Sprint | 名称 | 时长 | 状态 |
 |--------|------|------|------|
-| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ⏳ 待开始 |
+| **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | 🔧 T1 完成 |
 | **S2** | RAG 知识库 MVP | 2 周 | 待 S1 完成 |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | 可与 S2 并行 |
 | **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待 S1 完成 |
@@ -282,6 +282,14 @@ e2e/
     - S4: 任务/RPA + Sentinel Agent（2周）
     - S5: IDP 智能文档处理（2周，可并行）
     - 安全约束：开发阶段用 DeepSeek 官方 API，严禁提交公司 LLM API 信息
+59. ✅ **S1-T1 ModelFactory 实现完成** — Server 端 4 处硬编码替换为 ModelFactory.createFromEnv()
+    - 新建 `packages/server/src/mastra/model-factory.ts` — 工厂类（deepseek + openai-compatible）
+    - 新建 `packages/server/.env.example` — LLM 环境变量配置模板
+    - 修改 `mastra-agent.service.ts` — import 替换 + 4 处 model 替换 + 启动日志
+    - 修改 `client-agent/executor.ts` — createOpenAI 加 compatibility:'compatible'
+    - 修改 `client-agent/config/index.ts` — apiProvider 类型扩展 'openai-compatible'
+    - 安装 `@ai-sdk/openai` + `@ai-sdk/provider` 到 server package
+    - Server + Client Agent 双包 tsc --noEmit 编译通过
 
 ---
 

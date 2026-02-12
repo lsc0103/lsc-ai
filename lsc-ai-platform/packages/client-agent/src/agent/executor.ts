@@ -345,7 +345,7 @@ export class TaskExecutor {
 
     const model = provider === 'deepseek'
       ? createDeepSeek({ apiKey, baseURL: config.apiBaseUrl })(modelName)
-      : createOpenAI({ apiKey, baseURL: config.apiBaseUrl })(modelName);
+      : createOpenAI({ apiKey, baseURL: config.apiBaseUrl, compatibility: 'compatible' })(modelName);
 
     return new Agent({
       id: 'client-agent',
