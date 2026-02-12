@@ -7,17 +7,17 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — Sprint 2 完成，等待 PM Review
-**状态**：S2 RAG 知识库 MVP 全栈实现，代码已提交推送，等待 PM 审查
+**阶段**：Phase I 功能扩展 — Sprint 3 完成，等待 PM Review
+**状态**：S3 项目管理+用户管理全栈实现，代码已提交推送，等待 PM 审查
 
 ### Phase I Sprint 计划概览
 
 | Sprint | 名称 | 时长 | 状态 |
 |--------|------|------|------|
 | **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ✅ PM Review 通过 |
-| **S2** | RAG 知识库 MVP | 2 周 | ✅ 代码完成，等待 PM Review |
-| **S3** | 项目管理 + 用户管理前端 | 2 周 | 可与 S2 并行 |
-| **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待 S1 完成 |
+| **S2** | RAG 知识库 MVP | 2 周 | ✅ PM 二审通过，正式关闭 |
+| **S3** | 项目管理 + 用户管理前端 | 2 周 | ✅ 代码完成，等待 PM Review |
+| **S4** | 任务/RPA + Sentinel Agent | 2 周 | 待启动 |
 | **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
 
 ### 关键约束
@@ -305,6 +305,16 @@ e2e/
       - Sidebar 导航 + ChatInput 知识库引用选择器
     - **集成修复**: DocumentPipelineService 注册 + triggerPipeline 连接 + TS 编译错误修复
     - Prisma Schema: KnowledgeBase + Document + DocumentChunk 三表
+    - Server + Web 双包 tsc --noEmit 编译通过
+61. ✅ **S3 项目管理+用户管理全栈实现** — 4 Agent 并行开发，20 文件 1971 行 (commit 18cb5a6)
+    - **S3-T1 User/Role API**: user.controller/service + role.controller/service + RolesGuard + @Roles 装饰器
+      - 用户 CRUD（7 端点）+ 角色 CRUD（5 端点）+ Admin Guard
+      - bcrypt 密码 hash + password 排除 + 系统角色保护
+    - **S3-T2 Project 增强**: search/pagination/workingDir/_count 统计
+    - **S3-T3 前端 Projects**: Projects.tsx 完整重写 + ProjectDetail.tsx 详情页
+    - **S3-T4 前端 Admin**: Users.tsx + Roles.tsx + AdminRoute + Sidebar 管理入口 + Settings 功能化
+    - **集成修复**: Controller 路由前缀修复（knowledge 模块 api/ 重复前缀）
+    - **R-4 遗留修复**: rag.service.ts onModuleInit try/catch
     - Server + Web 双包 tsc --noEmit 编译通过
 
 ---

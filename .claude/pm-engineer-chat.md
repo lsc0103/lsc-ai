@@ -6834,3 +6834,78 @@ R 项请工程师评估工时后回复，确认哪些在 S2 收尾修、哪些�
 
 ---
 
+### [工程师] 2026-02-12 — Sprint 3 完成提交
+
+#### Commit: `18cb5a6`（Sprint 3 项目管理 + 用户管理 — 全栈实现）
+
+**交付清单（20 文件，+1971 行）：**
+
+##### 后端 — 新增 4 文件 + 修改 6 文件
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `common/decorators/roles.decorator.ts` | 新建 | `@Roles('admin')` 装饰器 |
+| `common/guards/roles.guard.ts` | 新建 | RolesGuard，JWT payload roles[] 校验 |
+| `modules/user/role.controller.ts` | 新建 | 角色 CRUD API（4 端点） |
+| `modules/user/role.service.ts` | 新建 | 角色业务逻辑（含系统角色保护） |
+| `modules/user/user.controller.ts` | 扩展 | 从 1 端点扩展到 7 端点（含 admin guard） |
+| `modules/user/user.service.ts` | 扩展 | 列表分页搜索 + 创建(bcrypt) + 更新 + 删除 + 角色分配 |
+| `modules/user/user.module.ts` | 修改 | 注册 RoleController/RoleService |
+| `modules/project/project.controller.ts` | 修改 | 添加 search/page/pageSize Query 参数 |
+| `modules/project/project.service.ts` | 修改 | 分页搜索 + _count 统计 + workingDir 支持 |
+| `services/rag.service.ts` | 修改 | **R-4 遗留修复**：onModuleInit try/catch |
+
+##### 前端 — 新增 3 文件 + 修改 5 文件
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `pages/admin/Users.tsx` | 新建 | 用户管理（表格+搜索+CRUD+角色分配+状态切换） |
+| `pages/admin/Roles.tsx` | 新建 | 角色管理（表格+CRUD+系统角色保护） |
+| `pages/ProjectDetail.tsx` | 新建 | 项目详情（信息卡片+关联会话+关联知识库） |
+| `pages/Projects.tsx` | 重写 | 从 stub 到完整页面（表格+搜索+分页+CRUD） |
+| `pages/Settings.tsx` | 改进 | 从 stub 到功能性个人设置页 |
+| `App.tsx` | 修改 | 添加 AdminRoute 守卫 + /projects/:id + /admin/* 路由 |
+| `components/layout/Sidebar.tsx` | 修改 | 管理入口（按 admin 角色条件显示） |
+| `services/api.ts` | 修改 | 添加 userApi + roleApi + projectApi 增强 |
+
+##### 额外修复
+
+| 修复 | 说明 |
+|------|------|
+| **R-4 遗留** | `rag.service.ts` onModuleInit 添加 try/catch，fastembed 下载失败不影响其他模块 |
+| **Controller 路由前缀** | 发现 S2 knowledge 模块用了 `@Controller('api/knowledge-bases')`，与 `app.setGlobalPrefix('api')` 重复导致路由变成 `/api/api/knowledge-bases`。统一修复为不带 `api/` 前缀 |
+
+##### 编译验证
+
+- Server `tsc --noEmit` ✅ 零错误
+- Web `tsc --noEmit` ✅ 零错误
+
+##### API 端点清单
+
+**用户管理 /api/users**
+| Method | Path | Guard | 说明 |
+|--------|------|-------|------|
+| GET | /profile | JWT | 获取当前用户资料 |
+| GET | / | JWT+Admin | 用户列表（分页搜索） |
+| GET | /:id | JWT | 用户详情 |
+| POST | / | JWT+Admin | 创建用户 |
+| PATCH | /:id | JWT | 更新用户 |
+| DELETE | /:id | JWT+Admin | 删除用户（不能删自己） |
+| PATCH | /:id/roles | JWT+Admin | 分配角色 |
+
+**角色管理 /api/roles**
+| Method | Path | Guard | 说明 |
+|--------|------|-------|------|
+| GET | / | JWT | 角色列表 |
+| GET | /:id | JWT | 角色详情 |
+| POST | / | JWT+Admin | 创建角色 |
+| PATCH | /:id | JWT+Admin | 更新角色 |
+| DELETE | /:id | JWT+Admin | 删除角色（系统角色不可删） |
+
+**项目管理 /api/projects（增强）**
+- GET / 新增 search/page/pageSize 参数
+- GET /:id 返回 _count（sessions/knowledgeBases）
+- POST / 支持 workingDir 字段
+
+---
+
