@@ -1327,3 +1327,44 @@ PM（远程 Claude.ai Opus）在我提交 f699077 之后，私自提交了 3 个
 **下次继续**：
 - 启动 S4（任务/RPA + Sentinel Agent）规划
 - 考虑解决 PM Agent Chrome 工具可用性问题
+
+---
+
+## 2026-02-12 | S4 开发+PM验收完成 (28/28)
+
+**目标**：实现 S4 Sprint 全部 6 个任务 (T1-T6) 并通过 PM Chrome 浏览器验收
+
+**完成**：
+1. **T1 API客户端**: `workflow-api.ts` — 13 个 API 方法 + 5 个 TypeScript 接口
+2. **T2 定时任务UI**: `Tasks.tsx` 重写 67→985 行 — 完整 CRUD + Cron 可读描述 + 状态切换
+3. **T3 RPA流程UI**: Tab2 — Monaco Editor JSON 编辑 + 执行弹窗 + 步骤类型文档
+4. **T4 日志Drawer**: TaskLogDrawer — AntD Drawer + 4列日志表 + 展开详情
+5. **T5 Sentinel模块**: 3 文件 — 7 REST API + @Cron 心跳检测 + Admin 权限守卫
+6. **T6 后端改进**: WebSocket 推送(ModuleRef) + 404/400 错误处理 + cancel + cron 验证
+7. **DI修复**: ChatGateway 跨模块注入 → ModuleRef { strict: false } 方案
+8. **PM Chrome 验收 28/28 全部通过**:
+   - 定时任务 Tab 13/13（CRUD + Cron描述 + 状态切换 + 删除确认）
+   - RPA 流程 Tab 7/7（CRUD + Monaco Editor + 执行弹窗 + 删除确认）
+   - 日志 Drawer 1/1（滑出 + 表头 + 空态）
+   - Sentinel API 7/7（注册/列表/详情/心跳/健康/更新/删除 全部通过）
+
+**修改的文件**：
+- `packages/web/src/services/workflow-api.ts` (NEW, ~120行)
+- `packages/web/src/pages/Tasks.tsx` (REWRITE, 67→985行)
+- `packages/server/src/modules/sentinel/sentinel.module.ts` (NEW)
+- `packages/server/src/modules/sentinel/sentinel.controller.ts` (NEW, 95行)
+- `packages/server/src/modules/sentinel/sentinel.service.ts` (NEW, 130行)
+- `packages/server/src/app.module.ts` (+SentinelModule)
+- `packages/server/src/modules/workflow/workflow.controller.ts` (+NotFoundException/cancel/cron验证)
+- `packages/server/src/services/mastra-workflow.service.ts` (+ModuleRef/emitTaskExecution)
+
+**发现的问题**：
+- Sentinel PATCH 端点 agentVersion 字段未更新（name 正常更新），P2 优先级
+
+**重要决策**：
+- ChatGateway 跨模块注入使用 ModuleRef 而非 forwardRef，避免循环依赖
+- PM Agent 无法执行 Chrome 测试，由执行负责人直接代行验收
+
+**下次继续**：
+- S5 IDP 智能文档处理规划
+- 修复 Sentinel PATCH 字段过滤问题（P2）

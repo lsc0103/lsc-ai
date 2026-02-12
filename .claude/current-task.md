@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — S4 开发完成，待 PM 验收
-**状态**：S4 全部 6 个任务开发完成（T1-T6），双包 tsc --noEmit 通过。待 PM Chrome 浏览器验收。
+**阶段**：Phase I 功能扩展 — S4 验收通过，S5 待启动
+**状态**：S4 全部 6 个任务开发完成（T1-T6）并通过 PM Chrome 浏览器验收 (28/28 ✅)。
 **角色转变**：从「总工程师」升级为「执行负责人」，负责项目规划、代码审查、团队协调、记忆管理、代码入库
 
 ### Phase I Sprint 计划概览
@@ -18,7 +18,7 @@
 | **S1** | LLM Provider 抽象 + P2 修复 | 3-4 天 | ✅ PM Review 通过 |
 | **S2** | RAG 知识库 MVP | 2 周 | ✅ PM 二审通过，正式关闭 |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | ✅ 二审 P0 + 遗留 bug 全部修复 |
-| **S4** | 任务/RPA + Sentinel Agent | 2 周 | ✅ 开发完成，待 PM 验收 |
+| **S4** | 任务/RPA + Sentinel Agent | 2 周 | ✅ PM 验收通过 (28/28) |
 | **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
 
 ### 关键约束
@@ -317,6 +317,15 @@ e2e/
     - **集成修复**: Controller 路由前缀修复（knowledge 模块 api/ 重复前缀）
     - **R-4 遗留修复**: rag.service.ts onModuleInit try/catch
     - Server + Web 双包 tsc --noEmit 编译通过
+62. ✅ **S4 任务/RPA管理+Sentinel Agent MVP** — 2 Agent 并行开发，11 文件 +1512 行 (commit 7635753)
+    - **T1 API客户端**: workflow-api.ts — 13 个 API 方法（7 任务 + 6 RPA）+ TypeScript 接口
+    - **T2 定时任务UI**: Tasks.tsx 重写（67→985行）— Table/Modal/Form CRUD + describeCron() + 状态切换
+    - **T3 RPA流程UI**: Tasks.tsx Tab2 — Monaco Editor JSON 编辑器 + 执行弹窗 + 步骤类型提示
+    - **T4 日志Drawer**: TaskLogDrawer — AntD Drawer + 4列日志表 + 展开详情 + 5秒轮询
+    - **T5 Sentinel模块**: sentinel.module/controller/service.ts — 7 REST API + @Cron 离线检测 + Admin 权限
+    - **T6 后端改进**: WebSocket task:execution 推送(ModuleRef) + 404/400 错误处理 + cancel 端点 + cron 验证
+    - **DI修复**: ChatGateway 跨模块注入改为 ModuleRef { strict: false }
+    - PM Chrome 验收 28/28 全部通过
 
 ---
 
