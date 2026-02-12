@@ -6686,3 +6686,80 @@ Server + Web 双包 tsc --noEmit 编译通过。
 
 ---
 
+### [PM] 2026-02-12 — Sprint 2 RAG 知识库 MVP Code Review
+
+#### 审查结论：**有条件通过**
+
+S2 功能闭环完整（上传→提取→分块→向量化→检索→AI调用→前端管理），架构合理，编译通过。但发现 **3 个阻塞项（必须修复）+ 8 个高优先级问题 + 若干改进项**。
+
+工程团队修复阻塞项后提交二审。**PM 不再下场改代码，修复由工程师完成。**
+
+---
+
+#### 🔴 阻塞项（BLOCKER — 必须修复才能合并）
+
+| # | 文件 | 问题 | 风险 |
+|---|------|------|------|
+| **B-1** | `knowledge.controller.ts:92-109` | **文件上传无类型校验** — FileInterceptor 只限了 50MB 大小，无 MIME 白名单、无扩展名校验、无 magic bytes 验证。用户可上传 .exe/.sh 等任意文件 | 安全漏洞 |
+| **B-2** | `prisma/schema.prisma` | **缺少 RAG 模型的 Migration 文件** — KnowledgeBase/Document/DocumentChunk 三表只定义了 Schema，没有生成 migration。部署时 `prisma migrate deploy` 会失败 | 部署阻塞 |
+| **B-3** | `knowledge.service.ts:146-166` + `rag.service.ts` | **删除知识库/文档时未清理向量索引** — KB 删除后 LibSQLVector 中的 `kb-{id}` 索引残留，浪费存储且可能导致搜索异常 | 数据泄露+资源泄露 |
+
+**修复指引**：
+- B-1：在 FileInterceptor 中添加 `fileFilter` 白名单（pdf/docx/xlsx/txt/md），校验 MIME type + 扩展名
+- B-2：执行 `npx prisma migrate dev --name add_rag_knowledge_base`
+- B-3：在 `delete()` 和 `deleteDocument()` 中添加 `vector.deleteIndex()`/向量清理逻辑
+
+---
+
+#### 🟡 高优先级（R 项 — 需工程评估，建议在 S2 收尾阶段修复）
+
+| # | 文件 | 问题 | 说明 |
+|---|------|------|------|
+| **R-1** | `knowledge-search.controller.ts:33-41` | **搜索参数无边界校验** — query 无最大长度限制，topK 无上限（可传 1000000 造成 OOM）| 建议 query ≤ 500 字，topK ≤ 50 |
+| **R-2** | `document-pipeline.service.ts:55-215` | **Pipeline 无重试机制** — 文档处理失败后 status='failed' 永久卡死，无自动重试，无用户通知 | 建议接入 BullMQ（项目已有 Redis）|
+| **R-3** | `rag.service.ts:93-111` | **多 KB 搜索静默吞错** — catch 块返回空数组无日志。如果 90% 的 KB 搜索失败，用户只看到少量结果无任何提示 | 至少加 logger.warn |
+| **R-4** | `rag.service.ts:70-74` | **Embedder 空指针风险** — `this.embedder` 如果 onModuleInit 失败则为 null，后续调用直接崩溃 | 添加 null check |
+| **R-5** | `document-pipeline.service.ts:154` | **Token 计算不准确** — `Math.ceil(content.length / 2)` 对中英混合内容误差大 | 短期可接受，长期需接入真实 tokenizer |
+| **R-6** | `KnowledgeDetail.tsx:154-165` | **前端 Regex 炸弹风险** — 高亮关键词直接拼接用户输入构建正则，超长字符串可导致浏览器卡死 | 添加 `keyword.length > 100` 截断 |
+| **R-7** | `ChatInput.tsx` | **知识库选择器 UI 缺失** — 代码加载了 knowledgeBases 列表但前端无 Select 组件，用户无法选择知识库 | 这是功能缺失，不是 bug |
+| **R-8** | `knowledge.service.ts:225-232` | **文档列表无分页** — `findDocuments()` 返回全量数据，KB 内文档多时 OOM | 添加 skip/take |
+
+---
+
+#### 🟢 改进项（P2 — 不阻塞合并，后续 Sprint 处理）
+
+1. **Schema 改进**：DocumentChunk 建议添加 `@@unique([documentId, index])` 防重复分块；添加 `@@index([knowledgeBaseId, status])` 复合索引
+2. **重复上传检测**：同一 KB 内上传相同文件应检测（file hash 比对）
+3. **KB 容量限制**：无单 KB 文档数上限和存储上限，恶意用户可滥用
+4. **Embedding 维度硬编码**：`EMBEDDING_DIMENSION = 384` 写死，切换模型时需手动改
+5. **前端 API 响应格式不一致**：`(res.data as any)?.data || res.data || []` 出现多处，说明后端响应结构不统一
+6. **中英文 Sentence Splitting**：text-chunker 的句子分割正则缺少省略号"…"和冒号"："等中文标点
+7. **denormalized 统计字段竞态**：KnowledgeBase.documentCount 在并发场景下可能不准，建议用事务或触发器
+
+---
+
+#### Embedding/Rerank API 决策
+
+收到工程师关于公司 Embedding API（text-embedding-v1/v2）和 Rerank API 的发现。**PM 决策如下**：
+
+1. **✅ 批准切换公司 Embedding API** — 中文场景下效果远超 fastembed 英文模型，这是 RAG 质量的核心。实现方式同意 EmbeddingFactory 方案。
+2. **✅ 批准加入 Rerank** — top20 粗筛 → top5 精排，搜索精度提升明显，代码量小（~50 行），性价比高。
+3. **⚠️ 安全红线不变** — 公司内网 API 地址（`10.18.55.233:30069`）只能写在 `.env` 中，**严禁提交到 git**。`.env.example` 中只放占位符。
+4. **fastembed 保留为开发/离线 fallback** — 同意，但需在代码中明确标注当前使用的 Provider 是哪个（启动日志）。
+
+---
+
+#### 分工与流程声明
+
+**从本次 Review 开始，严格执行以下分工：**
+
+- **PM（我）**：审查代码、输出 Review 报告（B/R/P2 分级）、做产品决策
+- **工程师（开发团队）**：根据 Review 修复 B 项和 R 项，修完提交二审
+- **PM 不再下场写代码修 bug**
+
+请工程师优先处理 B-1/B-2/B-3 三个阻塞项，处理完后推送代码，PM 进行二审。
+
+R 项请工程师评估工时后回复，确认哪些在 S2 收尾修、哪些排入 S3+。
+
+---
+
