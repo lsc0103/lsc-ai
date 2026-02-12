@@ -98,7 +98,7 @@ export default function ChatInput() {
   // 加载知识库列表
   useEffect(() => {
     knowledgeApi.list().then((res) => {
-      const list = res.data?.data || res.data || [];
+      const list = res.data?.items ?? [];
       setKnowledgeBases(Array.isArray(list) ? list : []);
     }).catch(() => {
       // 静默失败，知识库功能为可选
