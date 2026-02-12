@@ -6504,3 +6504,48 @@ Week 8     : 集成测试 + 回归验证 ─────────────
 
 ---
 
+### 八、PM Review — S1-T1 ModelFactory 实现（2026-02-12）
+
+#### 总评：✅ 通过，授权继续推进 S1-T2/T3
+
+#### 变更范围
+
+| 文件 | 变更 | 说明 |
+|------|------|------|
+| `server/src/mastra/model-factory.ts` | **新增** (59行) | LLM Provider 工厂类，deepseek + openai-compatible |
+| `server/.env.example` | **新增** (30行) | 环境变量配置模板，无实际 Key |
+| `server/src/services/mastra-agent.service.ts` | **修改** | import 替换 + 4 处 model 改为 `ModelFactory.createFromEnv()` + 启动日志 |
+| `server/package.json` | **修改** | 新增 `@ai-sdk/openai` + `@ai-sdk/provider` |
+| `client-agent/src/agent/executor.ts` | **修改** (1行) | createOpenAI 加 `compatibility: 'compatible'` |
+| `client-agent/src/config/index.ts` | **修改** (1行) | apiProvider 类型扩展 `'openai-compatible'` |
+
+#### 逐项检查
+
+| 检查项 | 结果 | 说明 |
+|--------|------|------|
+| `model-factory.ts` 代码质量 | ✅ | 工厂模式 + 环境变量驱动，两个 Provider 分支，简洁清晰 |
+| API Key 安全 | ✅ | `getConfigInfo()` 只输出 `set/missing`，不暴露 Key 值 |
+| `.env.example` 规范 | ✅ | 只有变量名+注释，无实际 Key，兼容旧 `DEEPSEEK_API_KEY` |
+| Server 4 处硬编码替换 | ✅ | 4 个 Agent 全部从 `deepseek('deepseek-chat')` → `ModelFactory.createFromEnv()` |
+| 启动日志 | ✅ | `initialize()` 首行输出 LLM 配置信息 |
+| Client Agent 兼容 | ✅ | `executor.ts` 加 `compatibility`，config 类型扩展 |
+| 新依赖 | ✅ | `@ai-sdk/openai` + `@ai-sdk/provider`，合理必要 |
+| 编译检查 | ✅ | 工程师声明 `tsc --noEmit` 双包通过 |
+| `.env` 安全 | ✅ | 确认 `.env` 在两层 `.gitignore` 均已配置 |
+
+#### 发现的问题（非阻塞）
+
+| 编号 | 问题 | 严重度 | 处理建议 |
+|------|------|--------|---------|
+| R-1 | Server 4 个 Agent 每次独立调用 `createFromEnv()`，重复创建 Provider 实例 | P2 | 后续优化为模块级缓存，当前功能正确 |
+| R-2 | Client Agent 未复用 ModelFactory，仍是独立 if/else | P2 | S1-T2 任务处理 |
+
+#### 决定
+
+**S1-T1 通过。** 工程团队继续推进：
+1. **S1-T2**：Client Agent 统一使用 ModelFactory（消除 R-2）
+2. **S1-T3**：P2 修复（5 项）
+3. R-1 归入 P2 优化清单，不阻塞当前 Sprint
+
+---
+
