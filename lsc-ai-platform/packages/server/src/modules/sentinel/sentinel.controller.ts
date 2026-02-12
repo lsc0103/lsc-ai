@@ -26,7 +26,129 @@ export class SentinelController {
   constructor(private readonly sentinelService: SentinelService) {}
 
   // =====================================================================
-  // Agent CRUD
+  // Alert Rules (MUST be before :id routes to avoid route collision)
+  // =====================================================================
+
+  @Post('alert-rules')
+  @ApiOperation({ summary: 'Create an alert rule' })
+  async createAlertRule(
+    @Body() body: {
+      name: string;
+      description?: string;
+      metricName: string;
+      condition: string;
+      threshold: number;
+      duration?: number;
+      severity?: string;
+      enabled?: boolean;
+      actions?: any[];
+      cooldown?: number;
+    },
+  ) {
+    if (!body.name || !body.metricName || !body.condition || body.threshold === undefined) {
+      throw new BadRequestException('name, metricName, condition, and threshold are required');
+    }
+    const validConditions = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
+    if (!validConditions.includes(body.condition)) {
+      throw new BadRequestException(`condition must be one of: ${validConditions.join(', ')}`);
+    }
+    return this.sentinelService.createAlertRule(body);
+  }
+
+  @Get('alert-rules')
+  @ApiOperation({ summary: 'List all alert rules' })
+  async listAlertRules() {
+    return this.sentinelService.listAlertRules();
+  }
+
+  @Get('alert-rules/:ruleId')
+  @ApiOperation({ summary: 'Get an alert rule by ID' })
+  async getAlertRule(@Param('ruleId') ruleId: string) {
+    const rule = await this.sentinelService.getAlertRule(ruleId);
+    if (!rule) {
+      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
+    }
+    return rule;
+  }
+
+  @Patch('alert-rules/:ruleId')
+  @ApiOperation({ summary: 'Update an alert rule' })
+  async updateAlertRule(
+    @Param('ruleId') ruleId: string,
+    @Body() body: {
+      name?: string;
+      description?: string;
+      metricName?: string;
+      condition?: string;
+      threshold?: number;
+      duration?: number;
+      severity?: string;
+      enabled?: boolean;
+      actions?: any[];
+      cooldown?: number;
+    },
+  ) {
+    const rule = await this.sentinelService.getAlertRule(ruleId);
+    if (!rule) {
+      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
+    }
+    if (body.condition) {
+      const validConditions = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
+      if (!validConditions.includes(body.condition)) {
+        throw new BadRequestException(`condition must be one of: ${validConditions.join(', ')}`);
+      }
+    }
+    return this.sentinelService.updateAlertRule(ruleId, body);
+  }
+
+  @Delete('alert-rules/:ruleId')
+  @ApiOperation({ summary: 'Delete an alert rule' })
+  async deleteAlertRule(@Param('ruleId') ruleId: string) {
+    const rule = await this.sentinelService.getAlertRule(ruleId);
+    if (!rule) {
+      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
+    }
+    return this.sentinelService.deleteAlertRule(ruleId);
+  }
+
+  // =====================================================================
+  // Alert History
+  // =====================================================================
+
+  @Get('alerts')
+  @ApiOperation({ summary: 'List alert history' })
+  async listAlerts(
+    @Query('agentId') agentId?: string,
+    @Query('ruleId') ruleId?: string,
+    @Query('severity') severity?: string,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.sentinelService.listAlertHistory({
+      agentId,
+      ruleId,
+      severity,
+      status,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Patch('alerts/:alertId/acknowledge')
+  @ApiOperation({ summary: 'Acknowledge an alert' })
+  async acknowledgeAlert(@Param('alertId') alertId: string) {
+    return this.sentinelService.acknowledgeAlert(alertId);
+  }
+
+  @Patch('alerts/:alertId/resolve')
+  @ApiOperation({ summary: 'Resolve an alert' })
+  async resolveAlert(@Param('alertId') alertId: string) {
+    return this.sentinelService.resolveAlert(alertId);
+  }
+
+  // =====================================================================
+  // Agent CRUD (MUST be after alert-rules/alerts to avoid :id collision)
   // =====================================================================
 
   @Post()
@@ -160,127 +282,5 @@ export class SentinelController {
       throw new NotFoundException(`Sentinel Agent not found: ${id}`);
     }
     return this.sentinelService.getLatestMetrics(id);
-  }
-
-  // =====================================================================
-  // Alert Rules
-  // =====================================================================
-
-  @Post('alert-rules')
-  @ApiOperation({ summary: 'Create an alert rule' })
-  async createAlertRule(
-    @Body() body: {
-      name: string;
-      description?: string;
-      metricName: string;
-      condition: string;
-      threshold: number;
-      duration?: number;
-      severity?: string;
-      enabled?: boolean;
-      actions?: any[];
-      cooldown?: number;
-    },
-  ) {
-    if (!body.name || !body.metricName || !body.condition || body.threshold === undefined) {
-      throw new BadRequestException('name, metricName, condition, and threshold are required');
-    }
-    const validConditions = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
-    if (!validConditions.includes(body.condition)) {
-      throw new BadRequestException(`condition must be one of: ${validConditions.join(', ')}`);
-    }
-    return this.sentinelService.createAlertRule(body);
-  }
-
-  @Get('alert-rules')
-  @ApiOperation({ summary: 'List all alert rules' })
-  async listAlertRules() {
-    return this.sentinelService.listAlertRules();
-  }
-
-  @Get('alert-rules/:ruleId')
-  @ApiOperation({ summary: 'Get an alert rule by ID' })
-  async getAlertRule(@Param('ruleId') ruleId: string) {
-    const rule = await this.sentinelService.getAlertRule(ruleId);
-    if (!rule) {
-      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
-    }
-    return rule;
-  }
-
-  @Patch('alert-rules/:ruleId')
-  @ApiOperation({ summary: 'Update an alert rule' })
-  async updateAlertRule(
-    @Param('ruleId') ruleId: string,
-    @Body() body: {
-      name?: string;
-      description?: string;
-      metricName?: string;
-      condition?: string;
-      threshold?: number;
-      duration?: number;
-      severity?: string;
-      enabled?: boolean;
-      actions?: any[];
-      cooldown?: number;
-    },
-  ) {
-    const rule = await this.sentinelService.getAlertRule(ruleId);
-    if (!rule) {
-      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
-    }
-    if (body.condition) {
-      const validConditions = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
-      if (!validConditions.includes(body.condition)) {
-        throw new BadRequestException(`condition must be one of: ${validConditions.join(', ')}`);
-      }
-    }
-    return this.sentinelService.updateAlertRule(ruleId, body);
-  }
-
-  @Delete('alert-rules/:ruleId')
-  @ApiOperation({ summary: 'Delete an alert rule' })
-  async deleteAlertRule(@Param('ruleId') ruleId: string) {
-    const rule = await this.sentinelService.getAlertRule(ruleId);
-    if (!rule) {
-      throw new NotFoundException(`Alert rule not found: ${ruleId}`);
-    }
-    return this.sentinelService.deleteAlertRule(ruleId);
-  }
-
-  // =====================================================================
-  // Alert History
-  // =====================================================================
-
-  @Get('alerts')
-  @ApiOperation({ summary: 'List alert history' })
-  async listAlerts(
-    @Query('agentId') agentId?: string,
-    @Query('ruleId') ruleId?: string,
-    @Query('severity') severity?: string,
-    @Query('status') status?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
-    return this.sentinelService.listAlertHistory({
-      agentId,
-      ruleId,
-      severity,
-      status,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      offset: offset ? parseInt(offset, 10) : undefined,
-    });
-  }
-
-  @Patch('alerts/:alertId/acknowledge')
-  @ApiOperation({ summary: 'Acknowledge an alert' })
-  async acknowledgeAlert(@Param('alertId') alertId: string) {
-    return this.sentinelService.acknowledgeAlert(alertId);
-  }
-
-  @Patch('alerts/:alertId/resolve')
-  @ApiOperation({ summary: 'Resolve an alert' })
-  async resolveAlert(@Param('alertId') alertId: string) {
-    return this.sentinelService.resolveAlert(alertId);
   }
 }
