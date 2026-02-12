@@ -16,11 +16,13 @@ const ProjectDetailPage = lazy(() => import('./pages/ProjectDetail'));
 const UsersPage = lazy(() => import('./pages/admin/Users'));
 const RolesPage = lazy(() => import('./pages/admin/Roles'));
 
-// 路由守卫
+// 路由守卫 — 同时检查 isAuthenticated 和 accessToken
+// 防止 JWT 过期后 persist 中 isAuthenticated 仍为 true 但 token 已失效的情况
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !accessToken) {
     return <Navigate to="/login" replace />;
   }
 

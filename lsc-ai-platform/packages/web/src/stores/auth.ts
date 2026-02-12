@@ -60,6 +60,15 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      // 修复 JWT 过期后 persist 状态不一致的问题：
+      // accessToken 为空但 isAuthenticated 仍为 true 时，强制清理为未登录状态
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state && state.isAuthenticated && !state.accessToken) {
+            state.logout();
+          }
+        };
+      },
     },
   ),
 );

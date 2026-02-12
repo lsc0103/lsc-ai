@@ -37,7 +37,8 @@ export default function KnowledgePage() {
     setLoading(true);
     try {
       const res = await knowledgeApi.list({ search: searchText || undefined });
-      const list = res.data?.data || res.data || [];
+      const responseData = res.data;
+      const list = responseData?.items ?? [];
       setKnowledgeBases(Array.isArray(list) ? list : []);
     } catch {
       message.error('加载知识库列表失败');

@@ -37,7 +37,7 @@ export interface SearchResult {
 export const knowledgeApi = {
   // 知识库 CRUD
   list: (params?: { page?: number; pageSize?: number; search?: string }) =>
-    api.get<{ data: KnowledgeBase[]; total: number }>('/knowledge-bases', { params }),
+    api.get<{ items: KnowledgeBase[]; total: number; page: number; pageSize: number; totalPages: number }>('/knowledge-bases', { params }),
   create: (data: { name: string; description?: string; projectId?: string }) =>
     api.post<KnowledgeBase>('/knowledge-bases', data),
   getById: (id: string) => api.get<KnowledgeBase>(`/knowledge-bases/${id}`),
