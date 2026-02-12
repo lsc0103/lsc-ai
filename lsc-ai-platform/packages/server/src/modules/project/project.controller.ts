@@ -47,22 +47,23 @@ export class ProjectController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取项目详情' })
-  async findOne(@Param('id') id: string) {
-    return this.projectService.findById(id);
+  async findOne(@Param('id') id: string, @Request() req: any) {
+    return this.projectService.findById(id, req.user.id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: '更新项目' })
   async update(
     @Param('id') id: string,
+    @Request() req: any,
     @Body() body: { name?: string; description?: string; workingDir?: string },
   ) {
-    return this.projectService.update(id, body);
+    return this.projectService.update(id, req.user.id, body);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除项目' })
-  async remove(@Param('id') id: string) {
-    return this.projectService.delete(id);
+  async remove(@Param('id') id: string, @Request() req: any) {
+    return this.projectService.delete(id, req.user.id);
   }
 }

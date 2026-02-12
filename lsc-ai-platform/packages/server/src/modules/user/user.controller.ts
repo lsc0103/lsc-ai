@@ -72,6 +72,7 @@ export class UserController {
   @ApiOperation({ summary: '更新用户' })
   async update(
     @Param('id') id: string,
+    @Request() req: any,
     @Body()
     body: {
       displayName?: string;
@@ -80,6 +81,14 @@ export class UserController {
       password?: string;
     },
   ) {
+    const isAdmin = req.user.roles?.includes('admin');
+    if (!isAdmin && id !== req.user.id) {
+      throw new ForbiddenException('只能修改自己的信息');
+    }
+    // 非管理员不允许修改 status
+    if (!isAdmin) {
+      delete body.status;
+    }
     return this.userService.update(id, body);
   }
 

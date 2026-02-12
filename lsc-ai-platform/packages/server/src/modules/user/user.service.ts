@@ -14,16 +14,31 @@ const USER_SELECT = {
   displayName: true,
   avatar: true,
   status: true,
+  lastLoginAt: true,
   createdAt: true,
   updatedAt: true,
 } as const;
+
+/** Transform userRoles relation to flat roles array for frontend */
+function mapUserRoles(user: any) {
+  if (!user) return user;
+  const { userRoles, ...rest } = user;
+  return {
+    ...rest,
+    roles: userRoles?.map((ur: any) => ({
+      id: ur.role.id,
+      code: ur.role.code,
+      name: ur.role.name,
+    })) ?? [],
+  };
+}
 
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
         ...USER_SELECT,
@@ -32,6 +47,7 @@ export class UserService {
         },
       },
     });
+    return mapUserRoles(user);
   }
 
   async findByUsername(username: string) {
@@ -53,7 +69,7 @@ export class UserService {
       ];
     }
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
         select: {
@@ -69,7 +85,7 @@ export class UserService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { items, total, page, pageSize };
+    return { items: rawItems.map(mapUserRoles), total, page, pageSize };
   }
 
   async create(data: {
@@ -112,7 +128,7 @@ export class UserService {
       },
     });
 
-    return user;
+    return mapUserRoles(user);
   }
 
   async update(
@@ -137,7 +153,7 @@ export class UserService {
       updateData.password = await bcrypt.hash(data.password, 10);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: updateData,
       select: {
@@ -147,6 +163,7 @@ export class UserService {
         },
       },
     });
+    return mapUserRoles(updated);
   }
 
   async delete(id: string) {
@@ -175,7 +192,7 @@ export class UserService {
       ),
     ]);
 
-    return this.prisma.user.findUnique({
+    const result = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         ...USER_SELECT,
@@ -184,5 +201,6 @@ export class UserService {
         },
       },
     });
+    return mapUserRoles(result);
   }
 }

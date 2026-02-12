@@ -12,10 +12,13 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RagService } from '../../services/rag.service.js';
 
 @Controller('knowledge-bases')
+@UseGuards(JwtAuthGuard)
 export class KnowledgeSearchController {
   private readonly logger = new Logger(KnowledgeSearchController.name);
 

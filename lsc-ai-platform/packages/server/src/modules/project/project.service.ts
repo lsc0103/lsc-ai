@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 @Injectable()
@@ -50,8 +50,8 @@ export class ProjectService {
     return { data, total, page, pageSize };
   }
 
-  async findById(id: string) {
-    return this.prisma.project.findUnique({
+  async findById(id: string, userId?: string) {
+    const project = await this.prisma.project.findUnique({
       where: { id },
       include: {
         sessions: {
@@ -69,16 +69,37 @@ export class ProjectService {
         },
       },
     });
+    if (!project) {
+      throw new NotFoundException('项目不存在');
+    }
+    if (userId && project.userId !== userId) {
+      throw new ForbiddenException('无权访问该项目');
+    }
+    return project;
   }
 
-  async update(id: string, data: { name?: string; description?: string; workingDir?: string }) {
+  async update(id: string, userId: string, data: { name?: string; description?: string; workingDir?: string }) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      throw new NotFoundException('项目不存在');
+    }
+    if (project.userId !== userId) {
+      throw new ForbiddenException('无权修改该项目');
+    }
     return this.prisma.project.update({
       where: { id },
       data,
     });
   }
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      throw new NotFoundException('项目不存在');
+    }
+    if (project.userId !== userId) {
+      throw new ForbiddenException('无权删除该项目');
+    }
     return this.prisma.project.delete({
       where: { id },
     });
