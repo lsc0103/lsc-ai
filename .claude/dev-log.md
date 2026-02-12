@@ -1055,3 +1055,83 @@ DeepSeek 对开放式长代码生成倾向在文本中写代码而非调用 show
 - 等待工程团队确认收到 Phase I 计划并反馈工作量评估
 - 工程团队开始 Sprint 1（ModelFactory + P2 修复）
 - PM 审查 Sprint 1 交付物
+
+---
+
+## 2026-02-12 | S3 总工程师代码审查 — 5 项安全/数据问题修复
+
+**目标**：对 Sprint 3 全部 20 个文件做逐行代码审查，修复所有安全和逻辑问题
+
+**完成**：
+1. 读取全部 S3 后端文件：user.controller/service, role.controller/service, project.controller/service, knowledge-search.controller, roles.guard, roles.decorator, user.module
+2. 读取全部 S3 前端文件：Projects.tsx, ProjectDetail.tsx, Users.tsx, Roles.tsx, App.tsx, Sidebar.tsx, api.ts, auth.ts
+3. 读取 JWT 认证链：jwt.strategy.ts, auth.service.ts, prisma/schema.prisma
+4. 发现 5 个问题并全部修复：
+   - P0: PATCH /users/:id 无权限检查（任意用户可改他人密码）→ 添加 owner check
+   - P1: 前端 roles[] vs 后端 userRoles[].role 数据不匹配 → 添加 mapUserRoles() 转换
+   - P1: Project CRUD 无 owner 验证（跨用户操作）→ Service 层验证归属
+   - P1: knowledge-search 搜索端点无 JWT（S2遗留）→ 添加 @UseGuards(JwtAuthGuard)
+   - P2: lastLoginAt 未在 SELECT 中 → 添加到 USER_SELECT
+5. Server + Web 双包 tsc --noEmit 编译通过
+
+**修改的文件**：
+1. `packages/server/src/modules/user/user.controller.ts` — PATCH /:id 添加 owner check + status 限制
+2. `packages/server/src/modules/user/user.service.ts` — mapUserRoles() 转换 + lastLoginAt + 所有返回点统一
+3. `packages/server/src/modules/project/project.controller.ts` — GET/PATCH/DELETE 传入 userId
+4. `packages/server/src/modules/project/project.service.ts` — findById/update/delete 验证 owner + NotFoundException
+5. `packages/server/src/modules/knowledge/knowledge-search.controller.ts` — 添加 JwtAuthGuard
+
+**提交**：`e54458f` — 5 files, +68/-16
+
+**下次继续**：
+- 等待 PM 审查 S3 代码（含代码审查修复）
+- PM 通过后进入 Sprint 4
+
+---
+
+## 2026-02-12 (第2次) | S3 二审 P0 修复 — 4项阻塞问题全部解决
+
+**目标**：执行 PM S3 二审发现的 4 个 P0 阻塞项修复
+
+**完成**：
+1. 拉取 PM 最新指令（commit 86da84f）：S3 二审结果 4P0 + 7P1 + 6P2
+2. 逐一修复 4 个 P0：
+
+**P0-R1: 设置页修改密码（全栈）**
+- Backend: UserService.changePassword() — 旧密码验证 + 新密码不能重复 + bcrypt hash
+- Backend: UserController PATCH /users/change-password — 路由放在 :id 之前避免参数冲突
+- Frontend: Settings.tsx — 新增修改密码卡片（当前密码+新密码+确认密码+表单校验）
+- API: userApi.changePassword() 方法
+
+**P0-R2: GET /users/:id 越权访问**
+- UserController.findOne() 添加 admin/self 权限检查，非管理员只能查看自己
+
+**P0-R3: 知识库搜索数据隔离**
+- 单库搜索: 验证 KB.userId === req.user.id，否则 403
+- 全局搜索: 只搜索当前用户的知识库，逐库搜索+合并排序
+
+**P0-R4: 7处空 catch 块补全错误提示**
+- Users.tsx(2处), Roles.tsx(2处), Projects.tsx, ProjectDetail.tsx, Knowledge.tsx
+- 统一模式: 区分 AntD 表单校验错误(errorFields) 和 API 错误
+
+3. 修复编译错误（knowledge-search.controller.ts 未使用变量 userKBIds）
+4. Server + Web 双包 tsc --noEmit 编译通过，零错误
+
+**修改的文件**（10个）：
+1. `packages/server/src/modules/user/user.controller.ts` — change-password 端点 + findOne 权限检查
+2. `packages/server/src/modules/user/user.service.ts` — changePassword() 方法
+3. `packages/server/src/modules/knowledge/knowledge-search.controller.ts` — 所有权验证
+4. `packages/web/src/pages/Settings.tsx` — 修改密码 UI
+5. `packages/web/src/services/api.ts` — changePassword API
+6. `packages/web/src/pages/admin/Users.tsx` — 2处空 catch
+7. `packages/web/src/pages/admin/Roles.tsx` — 2处空 catch
+8. `packages/web/src/pages/Projects.tsx` — 1处空 catch
+9. `packages/web/src/pages/ProjectDetail.tsx` — 1处空 catch
+10. `packages/web/src/pages/Knowledge.tsx` — 1处空 catch
+
+**提交**：`f169a35` — 10 files, +209/-30，已推送
+
+**下次继续**：
+- 等待 PM S3 二审 P0 修复验证
+- P1 7项 + P2 6项 留到 S4 处理
+- PM 确认后 S3 可正式关闭
