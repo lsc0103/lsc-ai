@@ -47,6 +47,7 @@ model User {
   credentials     Credential[]
   clientAgents    ClientAgent[]
   auditLogs       AuditLog[]
+  idpJobs         IdpJob[]
 
   @@map("users")
 }
@@ -592,4 +593,38 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ==================== IDP 智能文档处理 ====================
+
+// IDP 批量处理任务
+model IdpJob {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  status             String    @default("queued") @db.VarChar(20) // queued, processing, completed, failed
+  totalDocuments     Int       @map("total_documents")
+  completedDocuments Int       @default(0) @map("completed_documents")
+  failedDocuments    Int       @default(0) @map("failed_documents")
+  documentIds        Json      @map("document_ids")
+  results            Json?
+  error              String?   @db.Text
+  startedAt          DateTime? @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+
+  // 扩展字段
+  expand1   String? @map("expand_1") @db.VarChar(500)
+  expand2   String? @map("expand_2") @db.VarChar(500)
+  expand3   String? @map("expand_3") @db.VarChar(500)
+  expand4   String? @map("expand_4") @db.VarChar(500)
+  expand5   String? @map("expand_5") @db.VarChar(500)
+  extraData Json    @default("{}") @map("extra_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("idp_jobs")
 }

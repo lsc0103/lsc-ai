@@ -24,6 +24,12 @@ import { coreTools } from '../tools/core-tools.js';
 import { officeTools } from '../tools/office-tools.js';
 import { advancedTools, setConnectorService } from '../tools/advanced-tools.js';
 import { ragTools } from '../tools/rag-tools.js';
+import { idpTools, setIdpService } from '../tools/idp-tools.js';
+import {
+  processPaintingListTool, setPaintingListIdpService,
+  processInspectionReportTool, setInspectionReportIdpService,
+  reviewContractTool, setContractReviewIdpService,
+} from '../tools/idp-scenarios/index.js';
 import {
   workbenchTool,
   showCodeTool,
@@ -34,6 +40,7 @@ import {
 // 导入高级功能（作为辅助函数）
 import type { detectProjectContext } from '../utils/projectContext.js';
 import { ConnectorService } from '../modules/connector/connector.service.js';
+import { IdpService } from '../modules/idp/idp.service.js';
 
 @Injectable()
 export class MastraAgentService implements OnModuleInit {
@@ -54,6 +61,7 @@ export class MastraAgentService implements OnModuleInit {
   constructor(
     private configService: ConfigService,
     @Optional() private connectorService?: ConnectorService,
+    @Optional() private idpService?: IdpService,
   ) {}
 
   async onModuleInit() {
@@ -61,6 +69,13 @@ export class MastraAgentService implements OnModuleInit {
     if (this.connectorService) {
       setConnectorService(this.connectorService);
       this.logger.log('ConnectorService 已注入到 queryDatabase 工具');
+    }
+    if (this.idpService) {
+      setIdpService(this.idpService);
+      setPaintingListIdpService(this.idpService);
+      setInspectionReportIdpService(this.idpService);
+      setContractReviewIdpService(this.idpService);
+      this.logger.log('IdpService 已注入到 IDP 工具');
     }
     await this.initialize();
   }
@@ -143,6 +158,10 @@ export class MastraAgentService implements OnModuleInit {
         ...officeTools,
         ...advancedTools,
         ...ragTools,
+        ...idpTools,
+        processPaintingList: processPaintingListTool,
+        processInspectionReport: processInspectionReportTool,
+        reviewContract: reviewContractTool,
       },
     });
 
@@ -329,6 +348,7 @@ export class MastraAgentService implements OnModuleInit {
         workbench: workbenchTool,
         showTable: showTableTool,
         ...officeTools,
+        ...idpTools,
       },
     });
 
@@ -413,6 +433,22 @@ export class MastraAgentService implements OnModuleInit {
   - 引用知识库内容时请注明出处（文档名称）
   - 可指定 knowledgeBaseId 搜索特定知识库，不传则搜索全部
 
+### 8. 智能文档处理 (IDP)
+- \`ocrDocument\` - OCR 文字识别（支持 PDF/图片，中英文）
+  - 关键词: "识别"、"OCR"、"扫描"、"文字提取"
+- \`extractTable\` - 从文档提取表格数据
+  - 关键词: "提取表格"、"表格识别"、"读取表格"
+- \`analyzeDocument\` - 全面文档分析（OCR+表格+版面）
+  - 关键词: "分析文档"、"文档分析"
+- \`compareDocuments\` - 对比两份文档差异
+  - 关键词: "对比文档"、"比较文件"
+- \`processPaintingList\` - 处理涂装清单（跨页表格合并）
+  - 关键词: "涂装清单"、"出入涂"
+- \`processInspectionReport\` - 处理检验报告（NDT 分类+字段提取）
+  - 关键词: "检验报告"、"NDT"、"无损检测"
+- \`reviewContract\` - 合同审查（要素提取+风险评估）
+  - 关键词: "审查合同"、"合同审查"、"合同风险"
+
 ## 🚨 强制规则
 
 ### 关键词触发规则（最高优先级）
@@ -425,6 +461,11 @@ export class MastraAgentService implements OnModuleInit {
 | "图表"、"柱状图"、"折线图"、"饼图"、"chart" | \`showChart\` | "用柱状图展示销售数据" |
 | "代码"、"代码展示"、"展示代码"、"写一段代码" | \`showCode\` | "展示一段排序算法代码" |
 | "工作台"、"workbench"、"在工作台展示" | \`workbench\` | "在工作台展示分析结果" |
+| "识别"、"OCR"、"扫描"、"文字提取" | \`ocrDocument\` | "识别这份文档" |
+| "提取表格"、"表格识别" | \`extractTable\` | "从PDF中提取表格" |
+| "涂装清单"、"出入涂" | \`processPaintingList\` | "处理这份涂装清单" |
+| "检验报告"、"NDT" | \`processInspectionReport\` | "分析这份检验报告" |
+| "审查合同"、"合同审查" | \`reviewContract\` | "审查这份合同" |
 
 ⚠️ **禁止行为**：
 - 禁止用 markdown 表格（\`| col1 | col2 |\`）代替 \`showTable\` 工具

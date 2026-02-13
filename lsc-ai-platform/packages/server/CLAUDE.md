@@ -24,7 +24,8 @@ src/
 │   ├── connector/                   # 外部DB连接器 (S4.5: MySQL/PG 只读查询)
 │   ├── queue/                       # BullMQ 队列 (S4.5: task-execution + email processors)
 │   ├── sentinel/                    # Sentinel Agent (S4.5: 指标采集 + 规则引擎 + 告警)
-│   └── knowledge/                   # RAG 知识库 (S2)
+│   ├── knowledge/                   # RAG 知识库 (S2)
+│   └── idp/                         # IDP 智能文档处理 (S5: OCR桥接 + BullMQ批处理 + IdpJob)
 ├── gateway/
 │   ├── chat.gateway.ts              # 对话 WebSocket (913行) — 核心入口
 │   └── agent.gateway.ts             # Agent WebSocket — 任务分发
@@ -37,6 +38,8 @@ src/
 │   ├── office-tools.ts              # 8 个 Office 工具
 │   ├── advanced-tools.ts            # 9 个高级工具 (web/sql/todo/ask)
 │   ├── workbench/                   # 4 个 Workbench 工具 (workbench/showCode/showTable/showChart)
+│   ├── idp-tools.ts                 # 4 个 IDP 工具 (S5: ocrDocument/extractTable/analyzeDocument/compareDocuments)
+│   ├── idp-scenarios/               # 3 个 IDP 场景工具 (S5: 涂装清单/检验报告/合同审查)
 │   └── mastra/                      # @lsc-ai/core 工具实现 (35个)
 │       └── office/                  # Office 工具实现
 ├── prisma/                          # PrismaService
@@ -73,7 +76,7 @@ lastMessages: 50 | semanticRecall topK:3 | workingMemory: enabled
 
 ## 数据库 (Prisma)
 
-16+ 个表：User, Role, UserRole, UserPermission, Session, Project, File, ScheduledTask, TaskLog, RpaFlow, Credential, ClientAgent, SentinelAgent, AuditLog, SentinelMetric, AlertRule, AlertHistory + KnowledgeBase/Document/DocumentChunk
+17+ 个表：User, Role, UserRole, UserPermission, Session, Project, File, ScheduledTask, TaskLog, RpaFlow, Credential, ClientAgent, SentinelAgent, AuditLog, SentinelMetric, AlertRule, AlertHistory, IdpJob + KnowledgeBase/Document/DocumentChunk
 
 ## 已知问题 (Server 相关)
 

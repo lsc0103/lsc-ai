@@ -17,6 +17,8 @@ const UsersPage = lazy(() => import('./pages/admin/Users'));
 const RolesPage = lazy(() => import('./pages/admin/Roles'));
 const AuditLogPage = lazy(() => import('./pages/AuditLog'));
 const SentinelPage = lazy(() => import('./pages/Sentinel'));
+const IdpPage = lazy(() => import('./pages/Idp'));
+const IdpJobDetailPage = lazy(() => import('./pages/IdpJobDetail'));
 
 // 路由守卫 — 同时检查 isAuthenticated 和 accessToken
 // 防止 JWT 过期后 persist 中 isAuthenticated 仍为 true 但 token 已失效的情况
@@ -68,6 +70,8 @@ function App() {
             <Route path="admin/roles" element={<AdminRoute><RolesPage /></AdminRoute>} />
             <Route path="audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
             <Route path="sentinel" element={<AdminRoute><SentinelPage /></AdminRoute>} />
+            <Route path="idp" element={<IdpPage />} />
+            <Route path="idp/:jobId" element={<IdpJobDetailPage />} />
           </Route>
 
           {/* 404 */}

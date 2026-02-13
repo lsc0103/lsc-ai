@@ -18,6 +18,7 @@ import { SentinelModule } from './modules/sentinel/sentinel.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { ConnectorModule } from './modules/connector/connector.module.js';
+import { IdpModule } from './modules/idp/idp.module.js';
 import { QueueModule } from './modules/queue/queue.module.js';
 import { AuditInterceptor } from './modules/audit/audit.interceptor.js';
 import { ChatGateway } from './gateway/chat.gateway.js';
@@ -60,6 +61,7 @@ import { HealthController } from './health.controller.js';
     AuditModule,
     NotificationModule,
     ConnectorModule,
+    IdpModule,
     QueueModule,
   ],
   controllers: [HealthController],

@@ -13,6 +13,7 @@ import {
   SafetyCertificateOutlined,
   FileProtectOutlined,
   DashboardOutlined,
+  FileSearchOutlined,
 } from '@ant-design/icons';
 import { Tooltip, Dropdown, Avatar } from 'antd';
 import { useChatStore } from '../../stores/chat';
@@ -33,6 +34,7 @@ const navItems = [
   { key: 'knowledge', icon: BookOutlined, label: '知识库', path: '/knowledge' },
   { key: 'projects', icon: FolderOutlined, label: '我的项目', path: '/projects' },
   { key: 'tasks', icon: ClockCircleOutlined, label: '自动化任务', path: '/tasks' },
+  { key: 'idp', icon: FileSearchOutlined, label: '文档处理', path: '/idp' },
   { key: 'apps', icon: AppstoreOutlined, label: '其他应用', path: '/apps' },
   { key: 'admin-users', icon: TeamOutlined, label: '用户管理', path: '/admin/users', adminOnly: true },
   { key: 'admin-roles', icon: SafetyCertificateOutlined, label: '角色管理', path: '/admin/roles', adminOnly: true },

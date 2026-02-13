@@ -26,6 +26,7 @@ import { EmailProcessor } from './email.processor.js';
       { name: 'task-execution' },
       { name: 'email' },
       { name: 'sentinel-metrics' },
+      { name: 'idp-processing' },
     ),
   ],
   providers: [TaskExecutionProcessor, EmailProcessor],

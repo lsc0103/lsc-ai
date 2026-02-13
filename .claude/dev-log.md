@@ -21,6 +21,111 @@
 
 ---
 
+## 2026-02-13 | S5 IDP 智能文档处理全栈实现
+
+**目标**：完成 S5 IDP 全部 8 个任务的全栈实现（PaddleOCR 微服务 + NestJS + Mastra + React + 3 场景）
+
+**完成**：
+1. **团队组建**：创建 s5-idp 团队，3 Engineer Agent 并行开发
+2. **T1 PaddleOCR 微服务**（python-engineer）：18 文件，FastAPI + Docker 多阶段构建 + 预下载模型
+3. **T2 NestJS IdpModule**（backend-engineer）：4 文件，10 REST API + BullMQ 批处理 + IdpJob 表
+4. **T3 Mastra IDP 工具**（backend-engineer）：idp-tools.ts 4 工具 + setIdpService() 注入
+5. **T4 前端 IDP 页面**（frontend-engineer）：8 文件，Idp.tsx + IdpJobDetail.tsx + OcrViewer + TableView + ElementView + ContractReview
+6. **T5 涂装清单**（python-engineer）：跨页表格合并 + FastAPI 端点
+7. **T6 检验报告**（python-engineer）：NDT 分类(RT/UT/MT/PT) + 字段提取
+8. **T7 合同审查**（backend-engineer）：要素提取 + 三级风险规则引擎 + Mastra 工具
+9. **T8 集成测试**（执行负责人）：tsc 0 errors + 安全审查 + 架构审查
+
+**修改的文件**：
+- 新建 36 文件（Python 18 + Server TS 10 + Web React 8）
+- 修改 10 文件（app.module + queue.module + chat.module + schema.prisma + mastra-agent.service + docker-compose + .env.example + package.json + App.tsx + Sidebar.tsx）
+
+**发现的问题**：
+- Prisma generate EPERM（server 进程占用 DLL）— 需停止 server 后运行 migration
+- IdpProcessor.process() 中批量处理 TODO：实际场景需从 MinIO 读取文件
+
+**下次继续**：
+1. 停止 server → 运行 `npx prisma migrate dev --name s5_idp_module`
+2. PM 业务验收（Chrome 12 项冒烟 + Playwright E2E）
+3. 根据 PM 反馈修复问题
+
+**重要决策**：
+- 表格检测使用 OCR 空间启发式方法（非 PP-StructureV3），因 API 可用性未确定
+- 合同要素提取使用 regex（非 LLM），确保离线可用和确定性
+- pdf2image (MIT) 替代 PyMuPDF (AGPL) 确保许可证合规
+
+---
+
+## 2026-02-13 | S5 IDP 智能文档处理全面技术调研
+
+**目标**：为大连中远川崎的 IDP 模块完成全面技术调研，输出决策级报告指导后续实施
+
+**完成**：
+1. **多轮 WebSearch 并行调研**（7 次搜索）
+   - PaddleOCR 最新版本（v3.0/v3.0.2/VL-1.5 详解）
+   - 国内外 OCR 技术生态对标（8+ 方案）
+   - 国内 IDP 厂商对比分析（5+ 商业方案）
+   - 船舶/海事行业特殊场景分析
+
+2. **核心内容章节**（16 章节）
+   - 第一章：PaddleOCR 最新进展（版本对标、部署优化）
+   - 第二章：其他 OCR 方案深度评测（Surya/GOT/Qwen3-VL/InternVL/MinerU/Marker）
+   - 第三章：文档 AI 前沿技术（版面分析/表格识别/Unstructured.io/RAG+OCR）
+   - 第四章：国内 IDP 厂商对比（TextIn/达观/百度/腾讯/华为）
+   - 第五章：开源 vs 商业 Trade-off 分析
+   - 第六章：船舶行业文档特殊挑战（大幅面/CAD-DWG/多语言/手写体/老旧文档）
+   - 第七章：性能和部署（CPU vs GPU 基准、批量处理、Docker 容器化、离线部署）
+   - 第八章：针对大连中远川崎的实施建议
+   - 第九章：关键结论（推荐 PaddleOCR 理由、升级路径）
+   - 第十至十六章：深度分析、船舶应用场景、4 周实施路线图、FAQ、代码骨架、成本分析
+
+3. **关键数据表格**（9+ 对比表）
+   - PP-OCRv5 vs PP-OCRv4 性能对比
+   - 多个 OCR 方案准确率对比（8 个场景 × 8 个方案）
+   - 推理速度对比（10+ 配置）
+   - 国内 IDP 厂商功能矩阵（6 个维度 × 5 个厂商）
+   - 硬件成本投资表
+   - 5 年总成本对比（PaddleOCR vs SaaS）
+
+4. **推荐方案确定**
+   - **首选**：PP-OCRv5 + PP-StructureV3 + FastAPI 微服务 + NestJS 集成
+   - **升级路径**：P1 OCR(1周) -> P2 表格(1周) -> P3 行业适配(2周) -> P4 生产优化(1周) -> 可选 VLM
+   - **成本分析**：¥38000 初期 + ¥50000/年 = ¥288000/5年（vs SaaS ¥250-1000万）
+
+5. **完整代码骨架**
+   - FastAPI IDP 微服务基础代码（4 个 API 端点）
+   - NestJS IDPService 集成示例（3 个方法）
+
+6. **船舶行业深度分析**（4 个核心场景）
+   - 船舶图纸识别（500+幅/月，A0 大幅面处理）
+   - 检验报告表格识别（嵌套表格、跨页合并）
+   - 焊接工艺手写体（87-94% 准确率预期）
+   - 国际检验多语言支持（日/韩/英/中混合）
+   - 合同采购单据关键字段抽取
+
+**修改的文件**：
+- 更新 `.claude/current-task.md` — 任务状态改为 S5 调研完成
+- 更新 `.claude/dev-log.md` — 添加本次会话日志（此条目）
+- 无代码变更（纯调研任务）
+
+**发现的问题**：无技术问题，调研过程顺利
+
+**下次继续**：
+1. 等待业务需求确认（内部评审 OCR 方案是否可行）
+2. 如果获批，启动 S5 实施阶段（Week 1: 环境搭建+OCR基础集成）
+3. 可并行启动：PP-ChatOCRv4 大模型融合方案调研（可选，Week 4 决策）
+4. 建立与达观/TextIn 的沟通渠道（备选方案评估）
+
+**重要决策**：
+- ✅ 确定采用 PaddleOCR 开源方案（vs 商业方案 TextIn/达观）
+- ✅ 确定分阶段交付（P1-P4 明确任务边界和交付物）
+- ✅ 确定成本模型（初期投资 3.8 万 + 年均 5 万，5 年投资回报期 3-4 个月）
+- ✅ 确定离线部署可行性（内网环境完全支持，无外网依赖）
+- ⏳ 待定：是否在 P4 阶段集成 PP-ChatOCRv4（成本 vs 收益需评估）
+- ⏳ 待定：是否提前启动行业专属模型微调（需收集 500+ 真实样本）
+
+---
+
 ## 2026-01-30 | 建立 Claude Code 持久记忆系统
 
 **目标**：为 Claude Code 建立持久记忆系统，解决长对话压缩导致的记忆丢失问题
@@ -1624,3 +1729,175 @@ PM 审查全部 5 个测试文件，签发正式验收报告：
 ### 下次继续
 - S5 IDP 智能文档处理规划
 - 或用户指定其他方向
+
+---
+
+## 2026-02-13 | S5 IDP 行业场景调研
+
+**目标**：全面调研 AI 和 IDP 在船舶制造/重工业中的应用场景，为 S5 开发提供行业知识支撑
+
+**完成**：
+1. 执行 12+ 次 WebSearch 调研（中英文资源），覆盖：
+   - 全球船舶 AI 应用趋势（2024-2026）
+   - IDP 市场规模与 ROI 数据
+   - 韩国三大船厂（HD 现代/三星/韩华海洋）AI 战略
+   - 中国船舶企业（中船集团/外高桥/沪东中华/江南造船/DACKS）数字化实践
+   - OCR/手写识别/合同审查/NDT 报告/设计变更等技术领域
+2. 梳理 8 个部门/业务线的 AI 应用场景，每个场景含技术、成熟度、IDP 相关度
+3. 5 大 IDP 核心场景深入分析：
+   - A: 出入涂清单 — 完整处理流程 + 下游系统对接设计
+   - B: 手写单据 OCR — 技术挑战分析 + 多模型方案
+   - C: 合同审查 — 30+ 要素清单 + 三级风险规则
+   - D: 检验报告 — NDT 四类报告 + 涂装 + 船级社报告
+   - E: 设计变更 — ECN 全流程 + 版本对比 + 影响分析
+4. 汇总 15+ 行业案例（国内外）
+5. ROI 量化分析：5 场景合计年节省 79-129 万元（@ 10 船）
+6. S5 开发优先级建议 + Sprint 拆分 + 技术栈复用分析
+
+**新建的文件**：
+- `.claude/s5-idp-industry-research.md` — 完整调研报告（~600 行）
+
+**修改的文件**：
+- `.claude/current-task.md` — 添加调研完成记录
+- `.claude/dev-log.md` — 本条日志
+
+**重要发现**：
+- 中国船舶集团已有"百舸"大模型（接入 DeepSeek），覆盖问答/研报/文档解读
+- 沪东中华的"数字员工"方案（RPA+AI Agent）与 LSC-AI 架构高度相似
+- DACKS 已获智能制造示范工厂称号，数字化基础良好，IDP 是下一步发力点
+- IDP 市场 CAGR 33.1%，制造业增速最快（24.5%）
+- 首年 ROI 通常 30-200%，回本周期 12-18 个月
+
+**下次继续**：
+- 提交报告给项目总负责人审阅
+- 获批后启动 S5 Sprint 规划（2 周 8 任务）
+- 优先实现 PaddleOCR 集成 + 涂装清单场景
+
+---
+
+## 2026-02-13 | S5 IDP 智能文档处理 UI/UX 设计全面调研
+
+**目标**：为 S5 Sprint（IDP 智能文档处理）进行全面的 UI/UX 设计调研，输出详细的设计规范报告，指导后续界面原型和交互设计工作
+
+**完成**：
+1. 6 次 WebSearch 全球覆盖工业软件 UI/UX 设计生态
+   - 工业/制造业用户特征与 UI 差异分析
+   - 中国工业互联网平台（树根、海尔卡奥斯、用友、工业富联）UI 设计风格研究
+   - 央企/国企软件的品牌合规与信创要求
+   - "数字中国"政策背景下的工业软件趋势
+
+2. 船舶行业专用 UI 模式研究
+   - AVEVA Marine、CATIA、3DEXPERIENCE 设计软件 UI 参考
+   - 中国造船 MES/ERP 系统（沪东中华 DMS 5.0）界面特征
+   - 船舶质量管理系统（QMS）、文档管理系统（DMS）交互模式
+
+3. IDP（智能文档处理）界面设计系统完整规范
+   - 文档上传/预览/标注的最佳实践
+   - OCR 结果展示：原图+识别文本对照布局（左右分栏同步滚动）
+   - 表格提取、合同审查、文档版本对比、批量处理的 UI 设计
+   - 置信度评分、风险标注（红/黄/绿三级）、Diff View 着色
+
+4. AI 对话与文档处理交互设计
+   - Claude Artifacts（分屏）和 ChatGPT Canvas 最新趋势分析
+   - LSC-AI Workbench 分屏交互方案（Chat 左30% + 内容右70%）
+   - "对话驱动"vs"功能驱动"的 IDP 交互模式混合方案
+   - 处理结果在 Workbench 中的多类型渲染（表格/图表/文本/代码/图片）
+
+5. 可用性和无障碍设计规范
+   - 重工业环境考虑：手套操作（≥48px 触控），强光环保（高对比度≥4.5:1），嘈杂环境（视觉反馈）
+   - 老龄化用户群：字号规范（≥14px 正文），提供字号调节，操作反馈明确
+   - 中文界面排版：中西文混排空格、数字表格规范、技术术语对照
+   - 四态完备模型：加载中/空/错误/正常状态均需设计
+
+6. 7 个竞品平台深度分析
+   - 合合信息 TextIn：左右对照展示模式
+   - 达观数据 IDPS：风险三级标注系统
+   - ABBYY Vantage：无代码技能设计器
+   - DocuSign CLM：合同生命周期可视化
+   - 泛微/蓝凌 OA：流程引擎图形化配置
+   - 钉钉"木兰"/飞书：AI 助手与工作流深度集成
+
+7. 详细附录支持
+   - Appendix A：Ant Design 5 组件清单（表格、树、上传、表单、反馈、布局）
+   - Appendix B：Workbench 分屏详细设计规范（响应式/内容块类型/Tab 管理）
+   - Appendix C：IDP 功能导航树（仪表盘→文档管理→处理流程→模板→质检→分析→设置）
+   - Appendix D：无代码工作流编辑器（基于 ReactFlow，支持 11 种节点类型）
+
+**修改的文件**：
+- 新建 `.claude/ui-ux-research-report.md` — 完整调研报告（18000+ 字，9 章节 + 4 附录，19 张表格）
+- 更新 `.claude/current-task.md` — 标记 S5 UI 调研完成
+
+**发现的问题**：无新的技术问题；全部为设计建议和最佳实践参考
+
+**下次继续**：
+
+1. 原型设计阶段
+   - 设计团队评审 UI/UX 报告，确认设计方向
+   - 绘制高保真 Figma 原型（5 个核心页面）
+   - 与 PM 确认交互细节
+
+2. 前端组件库准备
+   - 梳理需要定制的 Ant Design 5 组件
+   - 评估是否需要集成 PDF.js、react-diff-viewer 等库
+   - 准备文档标注库（Annotorious 或自研）
+
+3. 并行 API 设计
+   - IDP 后端 API 接口定义（上传、处理、结果查询）
+   - OCR/表格提取/合同审查 AI 工具接口设计
+   - 工作流执行引擎（无代码流程编排）
+
+**重要决策**：
+- 采用"专业蓝 + 深色模式 + 微光效"设计基调（符合央企审美 + AI 科技感）
+- 优先实现高频标准流程（发票/合同审查）的功能驱动 UI，低频需求通过 AI 对话入口
+- 文档对比采用 Diff View（绿+黄+红编码），合同审查采用风险三级标注（红/黄/绿）
+- Workbench Tab 管理：AI 自动追加新 Tab，用户手动关闭，新建会话时清空
+
+---
+
+## 2026-02-13 (第5次) — S5 IDP 全面行业调研（4 Agent 并行）
+
+**时间**：2026-02-13
+**角色**：执行负责人
+
+### 目标
+在启动 S5 IDP 开发前，按项目负责人要求进行全面行业调研。项目负责人强调：DACKS 要力争领航级智能工厂，需深入调研行业特性和 AI 需求场景，设计符合行业用户的 UI/UX。
+
+### 完成
+1. 组建 4 路 Agent 并行执行深度调研（全部 Opus 4.6）：
+   - **Agent-1**：DACKS 行业背景调研（公司概况/数字化现状/竞争格局/法规要求）
+   - **Agent-2**：AI/IDP 应用场景调研（8 部门 38+ 场景/5 核心 IDP 场景深度分析/ROI 量化）
+   - **Agent-3**：工业软件 UI/UX 设计调研（设计原则/品牌/竞品/无障碍/组件库）
+   - **Agent-4**：IDP 技术可行性+选型（PaddleOCR v5 对比/国内外竞品/成本/实施路线）
+
+2. 4 路 Agent 全部完成，产出 3 份独立调研报告 + 1 份综述决策报告：
+   - `.claude/s5-idp-industry-research.md` — AI 场景调研（~800 行，50+ 参考来源）
+   - `.claude/s5-idp-technology-research.md` — 技术可行性（~550 行，9 对比表）
+   - `.claude/ui-ux-research-report.md` — UI/UX 设计（~500 行，7 章节+附录）
+   - `.claude/s5-research-summary.md` — 综述报告（执行摘要+5 核心结论+Sprint 规划）
+
+3. 阅读已有 IDP 设计文档（10-IDP智能文档.html，769 行）和平台现状报告（lsc-ai平台现状.md，683 行），确保调研建立在现有架构之上
+
+### 核心结论
+
+| 维度 | 结论 |
+|------|------|
+| 行业定位 | DACKS 2023 智能制造示范工厂，IDP 是从"数字化"到"智能化"的关键缺环 |
+| 竞争对标 | HD 现代(AI Agent)、沪东中华("数字员工"+DeepSeek)、CSSC "百舸"大模型 |
+| 技术选型 | PaddleOCR v5 — 中文 99.2%、手写 94.7%、表格 96.5%、Apache 2.0、离线部署 |
+| 优先场景 | P0: 涂装清单 + 检验报告（年省 42-64 万）; P1: 合同审查 + 设计变更 |
+| ROI | 5 场景合计年省 79-129 万元（10 船规模），回本 12-15 个月 |
+| UI 设计 | 中远品牌蓝(PANTONE 2945) + 深色主题 + 高信息密度 + 14px 最小字号 |
+| Sprint 计划 | 2 周 8 任务（T1 PaddleOCR Docker → T8 闭环测试）已就绪 |
+
+### 新建的文件
+- `.claude/s5-idp-industry-research.md` — Agent-2 产出
+- `.claude/s5-idp-technology-research.md` — Agent-4 产出
+- `.claude/ui-ux-research-report.md` — Agent-3 产出
+- `.claude/s5-research-summary.md` — 综述决策报告
+
+### 下次继续
+- 项目负责人审阅综述报告
+- 获批后启动 S5 Sprint（2 周 8 任务）
+- 优先 T1: PaddleOCR Docker 微服务 + T2: NestJS IdpModule
+
+---

@@ -1,57 +1,86 @@
 # LSC-AI Platform - Backend Dockerfile
-# Multi-stage build for optimized production image
+# Build from parent directory: docker build -t lscai/server:latest -f lsc-ai-platform/packages/server/Dockerfile .
 
 # ============== Build Stage ==============
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-WORKDIR /app
+WORKDIR /workspace
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    openssl \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-# Copy workspace configuration
-COPY package.json pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml* ./
+# Configure pnpm to use hoisted node_modules (no symlinks)
+RUN pnpm config set node-linker hoisted
 
-# Copy package.json files
-COPY packages/server/package.json ./packages/server/
-COPY prisma ./prisma/
+# Copy @lsc-ai/core package first (workspace dependency)
+COPY localAI/packages/core /workspace/localAI/packages/core/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --ignore-scripts
+# Copy lsc-ai-platform workspace files
+COPY lsc-ai-platform/package.json lsc-ai-platform/pnpm-workspace.yaml /workspace/lsc-ai-platform/
+COPY lsc-ai-platform/pnpm-lock.yaml* /workspace/lsc-ai-platform/
+COPY lsc-ai-platform/packages/server/package.json /workspace/lsc-ai-platform/packages/server/
+COPY lsc-ai-platform/prisma /workspace/lsc-ai-platform/prisma/
 
-# Copy source code
-COPY packages/server ./packages/server/
-COPY tsconfig.base.json ./
+# Create combined workspace config
+WORKDIR /workspace/lsc-ai-platform
+RUN echo "packages:" > pnpm-workspace.yaml && \
+    echo "  - 'packages/*'" >> pnpm-workspace.yaml && \
+    echo "  - '../localAI/packages/*'" >> pnpm-workspace.yaml
 
-# Generate Prisma client
-RUN pnpm exec prisma generate --schema=prisma/schema.prisma
+# Install all dependencies
+RUN pnpm install || pnpm install --no-frozen-lockfile
 
-# Build the application
-WORKDIR /app/packages/server
+# Build @lsc-ai/core
+RUN npx tsc --project ../localAI/packages/core/tsconfig.json || true
+
+# Copy server source code and tsconfig files
+COPY lsc-ai-platform/packages/server/src /workspace/lsc-ai-platform/packages/server/src/
+COPY lsc-ai-platform/packages/server/tsconfig.json /workspace/lsc-ai-platform/packages/server/
+COPY lsc-ai-platform/packages/server/nest-cli.json /workspace/lsc-ai-platform/packages/server/
+COPY lsc-ai-platform/tsconfig.base.json /workspace/lsc-ai-platform/
+
+# Build server
+WORKDIR /workspace/lsc-ai-platform/packages/server
 RUN pnpm run build
 
 # ============== Production Stage ==============
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    openssl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs nestjs
 
-# Copy necessary files from builder
-COPY --from=builder /app/packages/server/dist ./dist
-COPY --from=builder /app/packages/server/package.json ./
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/.pnpm/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
+# Copy node_modules from builder
+COPY --from=builder /workspace/lsc-ai-platform/node_modules ./node_modules
 
-# Install production dependencies only
-RUN pnpm install --prod --ignore-scripts
+# Copy @lsc-ai/core into node_modules
+COPY --from=builder /workspace/localAI/packages/core ./node_modules/@lsc-ai/core
+
+# Copy server built code
+COPY --from=builder /workspace/lsc-ai-platform/packages/server/dist ./dist
+COPY --from=builder /workspace/lsc-ai-platform/packages/server/package.json ./package.json
+
+# Copy prisma schema
+COPY --from=builder /workspace/lsc-ai-platform/prisma ./prisma
+
+# Create data directory for LibSQL
+RUN mkdir -p /app/data
 
 # Set ownership
 RUN chown -R nestjs:nodejs /app

@@ -1,0 +1,10 @@
+paddlepaddle==3.0.0
+paddleocr==3.0.2
+fastapi==0.115.6
+uvicorn[standard]
+python-multipart
+pdf2image
+Pillow
+opencv-python-headless
+numpy
+pydantic>=2.0.0

@@ -1,0 +1,29 @@
+LSC-AI Platform 离线部署包
+生成时间: 2026-02-03 11:22:58
+
+包含的 Docker 镜像:
+- lscai/server:latest
+- lscai/web:latest
+- postgres:15-alpine
+- redis:7-alpine
+- minio/minio:latest
+
+文件清单:
+- docker-images.tar          Docker 镜像包
+- README.md                  部署说明
+- scripts/deploy.sh          一键部署脚本
+- scripts/start.sh           启动脚本
+- scripts/stop.sh            停止脚本
+- docker/docker-compose.yml  生产环境配置
+- config/.env.example        环境变量模板
+- downloads/                 离线安装包目录
+  - docker-*.rpm            Docker RPM 包（需手动下载）
+  - docker-compose          Docker Compose 二进制（需手动下载）
+  - client-agent/windows/   Client Agent 安装包
+
+部署步骤:
+1. 将整个 offline-deploy-openEuler 目录复制到目标服务器
+2. 运行: sudo bash scripts/deploy.sh
+3. 访问: http://<服务器IP>
+
+详细说明请参考 README.md
