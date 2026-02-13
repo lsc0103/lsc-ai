@@ -109,14 +109,14 @@
 <div class="section-page">
     <div class="section-header">
         <h2>14 - 开发总进度</h2>
-        <div class="meta">更新日期：2026-02-10 | 开发周期：进行中</div>
+        <div class="meta">更新日期：2026-02-13 | 开发周期：进行中</div>
     </div>
 
     <h3>一、进度总览</h3>
 
     <div class="summary-grid">
         <div class="summary-card done">
-            <div class="summary-number">112</div>
+            <div class="summary-number">134</div>
             <div class="summary-label">已完成</div>
         </div>
         <div class="summary-card testing">
@@ -124,17 +124,17 @@
             <div class="summary-label">可测试</div>
         </div>
         <div class="summary-card dev">
-            <div class="summary-number">1</div>
+            <div class="summary-number">0</div>
             <div class="summary-label">开发中</div>
         </div>
         <div class="summary-card pending">
-            <div class="summary-number">38</div>
+            <div class="summary-number">17</div>
             <div class="summary-label">未开始</div>
         </div>
     </div>
 
     <div class="progress-bar">
-        <div class="progress-fill" style="width: 74%;">74%</div>
+        <div class="progress-fill" style="width: 88%;">88%</div>
     </div>
 
     <div class="legend">
@@ -201,7 +201,7 @@
                 <tr><td>文件附件处理</td><td>多模态消息（文本 + 文件内容）</td><td><span class="status-badge status-done">已完成</span></td><td>MinIO 文件读取 + 内容注入</td></tr>
                 <tr><td colspan="4" style="background: #fafafa; font-weight: 600;">待实现的高级能力</td></tr>
                 <tr><td>语义记忆召回</td><td>Mastra Memory semanticRecall（对话级语义检索）</td><td><span class="status-badge status-done">已完成</span></td><td>LibSQLVector + fastembed，非企业知识库 RAG</td></tr>
-                <tr><td>企业知识库 RAG</td><td>文档上传/分块/关键词提取/全文检索/问答（见 11-RAG 设计）</td><td><span class="status-badge status-pending">未开始</span></td><td>PostgreSQL 全文检索方案，独立模块</td></tr>
+                <tr><td>企业知识库 RAG</td><td>文档上传/分块/关键词提取/全文检索/问答（见 11-RAG 设计）</td><td><span class="status-badge status-done">已完成</span></td><td>S2 完成：KnowledgeBase + Document Pipeline + RAG 检索 + 前端 UI</td></tr>
                 <tr><td>Observability</td><td>分布式追踪、Span、性能监控</td><td><span class="status-badge status-done">已完成</span></td><td>createLogger 集成</td></tr>
                 <tr><td>Evals / 评分</td><td>Agent 回复质量评估</td><td><span class="status-badge status-pending">未开始</span></td><td>P3</td></tr>
             </tbody>
@@ -224,9 +224,9 @@
                 <tr><td>登录页面</td><td>美观的登录界面</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>玻璃拟态主题，Phase H 验收通过</td></tr>
                 <tr><td>退出登录</td><td>清除 Token，跳转登录</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td></td></tr>
                 <tr><td>SSO 登录</td><td>对接公司统一认证</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>用户注册</td><td>管理员创建用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>用户列表</td><td>管理员查看所有用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>修改密码</td><td>用户修改自己密码</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>用户注册</td><td>管理员创建用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 管理员创建用户 CRUD</td></tr>
+                <tr><td>用户列表</td><td>管理员查看所有用户</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 Users.tsx 管理员页面</td></tr>
+                <tr><td>修改密码</td><td>用户修改自己密码</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 Settings.tsx 修改密码功能</td></tr>
             </tbody>
         </table>
     </div>
@@ -340,16 +340,16 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">项目管理</span>
-            <span class="status-badge status-dev">开发中</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>项目列表</td><td>展示用户所有项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-dev">开发中</span></td><td>页面框架已有</td></tr>
-                <tr><td>新建项目</td><td>创建新项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>后端 API 已有</td></tr>
-                <tr><td>项目详情</td><td>查看项目信息和关联对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>项目列表</td><td>展示用户所有项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 Projects.tsx 搜索/分页/统计</td></tr>
+                <tr><td>新建项目</td><td>创建新项目</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 创建表单 + 后端 API</td></tr>
+                <tr><td>项目详情</td><td>查看项目信息和关联对话</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 ProjectDetail.tsx</td></tr>
                 <tr><td>项目对话</td><td>项目内的多个对话共享文件上下文</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>删除项目</td><td>删除项目及关联数据</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>删除项目</td><td>删除项目及关联数据</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 owner 验证 + 关联数据清理</td></tr>
             </tbody>
         </table>
     </div>
@@ -359,9 +359,9 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">定时任务</span>
-            <span class="status-badge status-dev">开发中</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
-        <p style="margin-bottom: 12px; color: #666;">后端调度器 + REST API 已完成，前端管理界面未开始。</p>
+        <p style="margin-bottom: 12px; color: #666;">后端调度器 + REST API + 前端管理界面 + BullMQ 队列 + 执行监控 全部完成。S4.5 增强：确定性步骤执行（8种类型）、ReactFlow 可视化编辑器、ECharts 执行监控。</p>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
@@ -371,10 +371,10 @@
                 <tr><td>Mastra Workflow 引擎</td><td>流程步骤编排执行（5 种步骤类型）</td><td><span class="priority p0">P0</span></td><td><span class="status-badge status-done">已完成</span></td><td>mastra-workflow.service.ts</td></tr>
                 <tr><td>创建/启用/禁用/手动触发</td><td>定时任务全生命周期 API</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>后端 API 已完成</td></tr>
                 <tr><td>执行历史</td><td>TaskLog 执行记录查询</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>GET /workflow/tasks/:id/logs</td></tr>
-                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">前端（未开始）</td></tr>
-                <tr><td>任务列表页</td><td>展示所有定时任务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需调用后端 API</td></tr>
-                <tr><td>创建任务表单</td><td>Cron 编辑器 + 任务配置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>执行日志页</td><td>查看执行记录和输出</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">前端（已完成）</td></tr>
+                <tr><td>任务列表页</td><td>展示所有定时任务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 Tasks.tsx 完整 CRUD + 状态切换</td></tr>
+                <tr><td>创建任务表单</td><td>Cron 编辑器 + 任务配置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 Cron 选择器 + AI Prompt 模板</td></tr>
+                <tr><td>执行日志页</td><td>查看执行记录和输出</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 TaskLogDrawer + 展开详情</td></tr>
             </tbody>
         </table>
     </div>
@@ -382,17 +382,17 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">RPA 自动化</span>
-            <span class="status-badge status-pending">未开始</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
-        <p style="margin-bottom: 12px; color: #666;">Workflow 编排骨架已具备（mastra-workflow.service.ts 支持 5 种步骤类型），但核心的 Playwright 浏览器引擎尚未实现。</p>
+        <p style="margin-bottom: 12px; color: #666;">S4.5 完成：Mastra Workflow 引擎支持 8 种确定性步骤类型（shell_command/web_fetch/file_operation/sql_query/send_email/ai_chat/condition/loop）、ReactFlow 可视化流程编辑器、Monaco JSON 双模式编辑。Playwright 浏览器 RPA 引擎待后续实现。</p>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
                 <tr><td>Playwright 浏览器引擎</td><td>BrowserPool + RPAExecutor（架构设计核心）</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>见 06-RPA 设计</td></tr>
-                <tr><td>创建 RPA 流程</td><td>定义浏览器自动化操作流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>流程执行</td><td>手动触发执行 RPA 流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>创建 RPA 流程</td><td>定义浏览器自动化操作流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 Monaco Editor + ReactFlow 可视化编辑器</td></tr>
+                <tr><td>流程执行</td><td>手动触发执行 RPA 流程</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 手动触发 + BullMQ 队列执行</td></tr>
                 <tr><td>凭证管理</td><td>AES-256 加密凭证存储</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>数据库已设计</td></tr>
-                <tr><td>RPA 前端管理</td><td>流程编辑器、执行监控、截图查看</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>RPA 前端管理</td><td>流程编辑器、执行监控、截图查看</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 Tasks.tsx Tab2 + FlowEditor + 执行弹窗</td></tr>
             </tbody>
         </table>
     </div>
@@ -426,20 +426,20 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">RAG 知识库系统</span>
-            <span class="status-badge status-pending">未开始</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>知识库管理</td><td>创建/删除/配置知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>KnowledgeBaseModule</td></tr>
-                <tr><td>文档上传</td><td>上传文档到知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>支持批量</td></tr>
-                <tr><td>文档解析</td><td>调用 IDP 解析文档</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>文本分块</td><td>自定义 TextSplitter</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>500字/块</td></tr>
+                <tr><td>知识库管理</td><td>创建/删除/配置知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 KnowledgeBase CRUD + MinIO</td></tr>
+                <tr><td>文档上传</td><td>上传文档到知识库</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 Dragger 批量上传</td></tr>
+                <tr><td>文档解析</td><td>调用 IDP 解析文档</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 txt/md/pdf/docx/xlsx 五格式</td></tr>
+                <tr><td>文本分块</td><td>自定义 TextSplitter</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 段落→句子→字符三级分块 + overlap</td></tr>
                 <tr><td>LLM 关键词提取</td><td>DeepSeek Chat API 提取关键词</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>复用现有 API</td></tr>
-                <tr><td>全文检索索引</td><td>PostgreSQL tsvector + GIN</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>无需额外扩展</td></tr>
-                <tr><td>关键词检索</td><td>全文检索 + 关键词匹配</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>Top-K</td></tr>
-                <tr><td>知识问答</td><td>RAG 问答生成</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>QAModule</td></tr>
-                <tr><td>引用来源</td><td>回答展示引用来源</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>全文检索索引</td><td>PostgreSQL tsvector + GIN</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 LibSQLVector + fastembed 向量检索</td></tr>
+                <tr><td>关键词检索</td><td>全文检索 + 关键词匹配</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 语义搜索 API（单 KB / 全局）</td></tr>
+                <tr><td>知识问答</td><td>RAG 问答生成</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 searchKnowledge Mastra 工具 + AI 对话调用</td></tr>
+                <tr><td>引用来源</td><td>回答展示引用来源</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S2 关键词高亮 + 相似度分数</td></tr>
                 <tr><td>混合检索</td><td>全文检索 + 关键词数组混合</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td>提升召回率</td></tr>
                 <tr><td>检索缓存</td><td>Redis 缓存高频查询</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
             </tbody>
@@ -451,14 +451,14 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">权限管理</span>
-            <span class="status-badge status-pending">未开始</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>角色管理</td><td>创建、编辑角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>角色分配</td><td>为用户分配角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>权限配置</td><td>配置角色的功能权限</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>角色管理</td><td>创建、编辑角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 Roles.tsx CRUD + 系统角色保护</td></tr>
+                <tr><td>角色分配</td><td>为用户分配角色</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 Users.tsx 角色分配 + RolesGuard</td></tr>
+                <tr><td>权限配置</td><td>配置角色的功能权限</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S3 @Roles 装饰器 + AdminRoute 前端守卫</td></tr>
             </tbody>
         </table>
     </div>
@@ -466,13 +466,13 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">系统监管</span>
-            <span class="status-badge status-pending">未开始</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>服务器状态</td><td>查看各业务服务器运行状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>需 Sentinel Agent</td></tr>
-                <tr><td>服务状态</td><td>查看业务系统服务状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>服务器状态</td><td>查看各业务服务器运行状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 Sentinel Agent 注册 + 指标上报 + 前端仪表板</td></tr>
+                <tr><td>服务状态</td><td>查看业务系统服务状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 Sentinel 心跳检测 + 在线/离线状态</td></tr>
                 <tr><td>重启服务</td><td>远程重启业务服务</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
             </tbody>
         </table>
@@ -526,22 +526,22 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">Sentinel Agent（服务器感知器）</span>
-            <span class="status-badge status-pending">未开始</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
-        <p style="margin-bottom: 12px; color: #666;">部署在业务服务器，完整集成 @lsc-ai/core，用于服务器运维、状态监控、服务管理。</p>
+        <p style="margin-bottom: 12px; color: #666;">S4+S4.5 完成：服务端 Sentinel 模块（注册/心跳/指标/告警规则/告警历史）+ 前端仪表板（Agent 列表/ECharts 图表/告警中心/规则管理）。端侧 Agent 程序待开发。</p>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
                 <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">基础架构</td></tr>
-                <tr><td>项目初始化</td><td>Node.js 服务，集成 @lsc-ai/core</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>packages/sentinel-agent</td></tr>
-                <tr><td>@lsc-ai/core 集成</td><td>完整集成 Agent、Tools</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>配置管理</td><td>服务器信息、Platform 地址</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>项目初始化</td><td>Node.js 服务，集成 @lsc-ai/core</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 sentinel.module.ts</td></tr>
+                <tr><td>@lsc-ai/core 集成</td><td>完整集成 Agent、Tools</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 指标采集 + 规则引擎</td></tr>
+                <tr><td>配置管理</td><td>服务器信息、Platform 地址</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 sentinel.controller.ts 7 REST API</td></tr>
                 <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">通信机制</td></tr>
-                <tr><td>WebSocket 连接</td><td>主动连接 Platform 服务器</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
-                <tr><td>身份认证</td><td>服务器身份验证</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>API Key / 证书</td></tr>
-                <tr><td>心跳上报</td><td>定期上报服务器状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>CPU/内存/磁盘</td></tr>
+                <tr><td>WebSocket 连接</td><td>主动连接 Platform 服务器</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 REST API 注册/心跳</td></tr>
+                <tr><td>身份认证</td><td>服务器身份验证</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 Admin 权限守卫</td></tr>
+                <tr><td>心跳上报</td><td>定期上报服务器状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4 @Cron 离线检测 + 指标上报 API</td></tr>
                 <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">监控能力</td></tr>
-                <tr><td>系统状态</td><td>CPU、内存、磁盘使用率</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>系统状态</td><td>CPU、内存、磁盘使用率</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 SentinelMetric 表 + 指标历史查询</td></tr>
                 <tr><td>服务状态</td><td>检测业务服务运行状态</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td>pm2/docker/systemd</td></tr>
                 <tr><td>日志采集</td><td>采集业务日志</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
                 <tr><td colspan="5" style="background: #fafafa; font-weight: 600;">运维能力</td></tr>
@@ -561,13 +561,13 @@
     <div class="module-card">
         <div class="module-header">
             <span class="module-title">系统设置</span>
-            <span class="status-badge status-dev">开发中</span>
+            <span class="status-badge status-done">已完成</span>
         </div>
         <table>
             <thead><tr><th>功能项</th><th>描述</th><th>优先级</th><th>状态</th><th>备注</th></tr></thead>
             <tbody>
-                <tr><td>设置页面</td><td>用户设置界面</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-dev">开发中</span></td><td>页面框架已有</td></tr>
-                <tr><td>个人设置</td><td>用户个人偏好设置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
+                <tr><td>设置页面</td><td>用户设置界面</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 Settings.tsx 通知偏好 + 密码修改 + 数据源</td></tr>
+                <tr><td>个人设置</td><td>用户个人偏好设置</td><td><span class="priority p1">P1</span></td><td><span class="status-badge status-done">已完成</span></td><td>S4.5 通知邮箱 + 6 项通知开关</td></tr>
                 <tr><td>主题设置</td><td>明暗主题切换</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
                 <tr><td>API 密钥</td><td>管理 API 访问密钥</td><td><span class="priority p2">P2</span></td><td><span class="status-badge status-pending">未开始</span></td><td></td></tr>
             </tbody>
@@ -655,21 +655,29 @@
             <li><strong>Workbench 持久化重构</strong> - useSessionWorkbench 统一管理，防抖自动保存，新对话自动清空</li>
             <li><strong>Office 文档预览</strong> - Word/Excel 文件预览（mammoth + xlsx），本地模式可用</li>
             <li><strong>多媒体预览</strong> - 图片/PDF/视频/音频/代码文件预览，支持拖放</li>
+                <li><strong style="color: #52c41a;">S2 RAG 知识库</strong> - 文档上传/分块/向量检索/语义搜索/AI 问答，前端 Knowledge.tsx 完整 UI</li>
+                <li><strong style="color: #52c41a;">S3 项目管理+用户管理</strong> - 用户/角色 CRUD、项目 CRUD、AdminRoute、修改密码、owner 权限验证</li>
+                <li><strong style="color: #52c41a;">S4 定时任务+RPA 管理</strong> - Tasks.tsx 全功能 CRUD、Monaco/ReactFlow 双模式流程编辑器、TaskLogDrawer</li>
+                <li><strong style="color: #52c41a;">S4 Sentinel Agent MVP</strong> - 注册/心跳/离线检测、7 REST API、Admin 权限守卫</li>
+                <li><strong style="color: #52c41a;">S4.5 核心引擎增强</strong> - 邮件通知(MailerModule)、BullMQ 队列(3队列)、审计日志(全局 Interceptor)、确定性 RPA 执行(8步骤类型)</li>
+                <li><strong style="color: #52c41a;">S4.5 Sentinel 实质化</strong> - 指标采集+规则引擎+告警通知、前端仪表板(ECharts图表/告警中心/规则管理)</li>
+                <li><strong style="color: #52c41a;">S4.5 执行监控</strong> - 队列状态卡片+ECharts 趋势图+运行健康度+最近执行日志</li>
+                <li><strong style="color: #52c41a;">S4.5 数据库连接器</strong> - MySQL/PostgreSQL 只读查询 + queryDatabase AI 工具</li>
         </ul>
     </div>
 
     <div class="tip-box warning">
         <h5 style="margin-bottom: 12px;">下一阶段优先级开发项</h5>
-        <p style="margin-bottom: 8px; color: #52c41a; font-weight: 600;">✅ 2026-02-10 新增完成：Phase H 深度产品验收 43/43 通过、10 个 P0 Bug 全部修复、Workbench 全面重写、LLM 多模型架构调研</p>
+        <p style="margin-bottom: 8px; color: #52c41a; font-weight: 600;">✅ 2026-02-13 更新：S1-S4.5 全部完成，Phase H 深度验收 43/43 通过，S4.5 Playwright E2E 42/42 PM 验收通过</p>
         <ol>
-            <li><strong style="color: #ff4d4f;">[P0] LLM 多模型 Provider 抽象层</strong> - 公司内网 7 个模型接入（DeepSeek V3/R1 + Qwen2.5-72B/VL-32B + Embedding + Rerank），调研报告已完成，PoC 待执行</li>
-            <li><strong style="color: #ff4d4f;">[P0] 企业知识库 RAG</strong> - 公司已有 Embedding + Rerank API 可直接使用，文档上传/分块/向量检索/问答</li>
-            <li><strong style="color: #ff4d4f;">[P0] 定时任务前端管理</strong> - 调度器后端已完成，需前端任务列表、Cron 编辑器、日志查看</li>
-            <li><strong style="color: #fa8c16;">[P1] Playwright RPA 引擎</strong> - 浏览器自动化核心能力（BrowserPool + RPAExecutor），Workflow 编排骨架已有</li>
-            <li><strong style="color: #fa8c16;">[P1] Sentinel Agent 开发</strong> - 服务器感知器，远程运维监控</li>
-            <li><strong style="color: #fa8c16;">[P1] 图片理解能力</strong> - 接入 Qwen2.5-VL-32B 视觉模型，解决 DeepSeek 不支持图片的限制</li>
+            <li><strong style="color: #ff4d4f;">[P0] IDP 智能文档处理 (S5)</strong> - PaddleOCR + FastAPI 微服务，OCR/表格提取/合同审核/版面分析，NestJS 集成 + Workbench 展示</li>
+            <li><strong style="color: #ff4d4f;">[P0] LLM 多模型 Provider 切换</strong> - 生产部署时切换公司内网模型（DeepSeek V3/R1 + Qwen2.5），ModelFactory 已实现</li>
+            <li><strong style="color: #fa8c16;">[P1] Playwright 浏览器 RPA 引擎</strong> - BrowserPool + RPAExecutor，浏览器自动化核心能力</li>
+            <li><strong style="color: #fa8c16;">[P1] 图片理解能力</strong> - 接入 Qwen2.5-VL-32B 视觉模型</li>
             <li><strong>[P1] Client Agent 分发打包</strong> - exe/dmg/AppImage 可执行文件打包</li>
-            <li><strong>[P2] 运维监控模块</strong> - 服务器状态、服务状态、远程重启</li>
+            <li><strong>[P1] Sentinel Agent 端侧程序</strong> - 部署到业务服务器的实际监控 Agent</li>
+            <li><strong>[P2] 运维监控增强</strong> - 服务重启、日志采集、AI 日志分析</li>
+            <li><strong>[P2] RAG 增强</strong> - LLM 关键词提取、混合检索、Redis 缓存</li>
         </ol>
     </div>
 
