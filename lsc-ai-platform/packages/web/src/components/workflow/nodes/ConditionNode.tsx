@@ -71,8 +71,8 @@ function ConditionNode({ data, selected }: NodeProps) {
           fontWeight: 600,
         }}
       >
-        <span style={{ color: '#4ade80' }}>True</span>
-        <span style={{ color: '#f87171' }}>False</span>
+        <span style={{ color: '#4ade80' }}>是</span>
+        <span style={{ color: '#f87171' }}>否</span>
       </div>
 
       <Handle

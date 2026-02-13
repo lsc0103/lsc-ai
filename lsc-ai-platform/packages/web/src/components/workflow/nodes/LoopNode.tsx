@@ -10,7 +10,7 @@ import type { FlowNodeData } from '../FlowConverter';
 function LoopNode({ data, selected }: NodeProps) {
   const nodeData = data as unknown as FlowNodeData;
   const iterInfo = nodeData.config.iteratorField
-    ? `over: ${nodeData.config.iteratorField}${nodeData.config.maxIterations ? ` (max ${nodeData.config.maxIterations})` : ''}`
+    ? `遍历: ${nodeData.config.iteratorField}${nodeData.config.maxIterations ? ` (最多 ${nodeData.config.maxIterations} 次)` : ''}`
     : '';
 
   return (

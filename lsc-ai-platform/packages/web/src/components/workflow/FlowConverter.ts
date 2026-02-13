@@ -35,14 +35,14 @@ export const STEP_COLORS: Record<RpaStepType, string> = {
 
 /** Display names for step types */
 export const STEP_LABELS: Record<RpaStepType, string> = {
-  ai_chat: 'AI Dialog',
-  shell_command: 'Shell Command',
-  web_fetch: 'HTTP Request',
-  file_operation: 'File Operation',
-  sql_query: 'SQL Query',
-  send_email: 'Send Email',
-  condition: 'Condition',
-  loop: 'Loop',
+  ai_chat: 'AI 对话',
+  shell_command: '命令行',
+  web_fetch: 'HTTP 请求',
+  file_operation: '文件操作',
+  sql_query: 'SQL 查询',
+  send_email: '发送邮件',
+  condition: '条件判断',
+  loop: '循环',
 };
 
 /** All available step types (palette items) */
@@ -78,7 +78,7 @@ export function rpaFlowDefToFlow(
     type: 'triggerNode',
     position: { x: 300, y: 0 },
     data: {
-      label: 'Flow Start',
+      label: '流程开始',
       stepType: 'ai_chat' as RpaStepType,
       config: {},
       isTrigger: true,
@@ -135,7 +135,7 @@ export function rpaFlowDefToFlow(
           sourceHandle: 'true',
           target: trueBranch,
           animated: true,
-          label: 'True',
+          label: '是',
           style: { stroke: '#4ade80' },
         });
       }
@@ -146,7 +146,7 @@ export function rpaFlowDefToFlow(
           sourceHandle: 'false',
           target: falseBranch,
           animated: true,
-          label: 'False',
+          label: '否',
           style: { stroke: '#f87171' },
         });
       }

@@ -174,6 +174,12 @@ export class MastraWorkflowService implements OnModuleInit {
 
     this.emitTaskExecution({ taskId, logId: log.id, status: 'running', startedAt: new Date().toISOString() });
 
+    // 立即更新 lastRunAt，防止调度器在任务执行期间重复触发
+    await this.prisma.scheduledTask.update({
+      where: { id: taskId },
+      data: { lastRunAt: new Date() },
+    });
+
     // 异步执行，不阻塞 HTTP 响应；前端通过轮询/WebSocket 获取结果
     this.runTaskAsync(task, taskConfig, log.id).catch((err) => {
       this.logger.error(`[Workflow] Background task execution error: ${err.message}`);
@@ -202,10 +208,6 @@ export class MastraWorkflowService implements OnModuleInit {
       await this.prisma.taskLog.update({
         where: { id: logId },
         data: { status: 'success', endedAt, result: result || {} },
-      });
-      await this.prisma.scheduledTask.update({
-        where: { id: task.id },
-        data: { lastRunAt: new Date() },
       });
 
       this.emitTaskExecution({ taskId: task.id, logId, status: 'success', endedAt: endedAt.toISOString(), result });

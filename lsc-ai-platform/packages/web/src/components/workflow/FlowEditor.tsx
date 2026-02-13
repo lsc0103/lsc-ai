@@ -111,7 +111,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
             id: '__trigger__',
             type: 'triggerNode',
             position: { x: 300, y: 0 },
-            data: { label: 'Flow Start', stepType: 'ai_chat', config: {}, isTrigger: true } satisfies FlowNodeData,
+            data: { label: '流程开始', stepType: 'ai_chat', config: {}, isTrigger: true } satisfies FlowNodeData,
           },
         ]);
         setEdges([]);
@@ -195,7 +195,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
     if (!selectedNode) return;
     const d = selectedNode.data as FlowNodeData;
     if (d.isTrigger) {
-      message.warning('Cannot delete the trigger node');
+      message.warning('不能删除触发节点');
       return;
     }
     setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
@@ -243,7 +243,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
     a.download = 'rpa-flow.json';
     a.click();
     URL.revokeObjectURL(url);
-    message.success('Flow exported');
+    message.success('流程已导出');
   }, [nodes, edges, value?.variables]);
 
   // ---- Import JSON ----
@@ -254,16 +254,16 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
         try {
           const flowDef = JSON.parse(e.target?.result as string) as RpaFlowDef;
           if (!flowDef.steps || !Array.isArray(flowDef.steps)) {
-            message.error('Invalid flow definition: missing steps array');
+            message.error('无效的流程定义：缺少 steps 数组');
             return;
           }
           const { nodes: n, edges: ed } = rpaFlowDefToFlow(flowDef);
           setNodes(n);
           setEdges(ed);
           onChange(flowDef);
-          message.success('Flow imported');
+          message.success('流程已导入');
         } catch {
-          message.error('Failed to parse JSON file');
+          message.error('JSON 文件解析失败');
         }
       };
       reader.readAsText(file);
@@ -307,13 +307,13 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
           background: 'rgba(255,255,255,0.03)',
         }}
       >
-        <Tooltip title="Export JSON">
+        <Tooltip title="导出 JSON">
           <Button
             size="small"
             icon={<DownloadOutlined />}
             onClick={handleExport}
           >
-            Export
+            导出
           </Button>
         </Tooltip>
         <Upload
@@ -321,15 +321,15 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
           showUploadList={false}
           beforeUpload={handleImport}
         >
-          <Tooltip title="Import JSON">
+          <Tooltip title="导入 JSON">
             <Button size="small" icon={<UploadOutlined />}>
-              Import
+              导入
             </Button>
           </Tooltip>
         </Upload>
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-          Drag steps from the left panel onto the canvas
+          从左侧面板拖拽步骤到画布
         </span>
       </div>
 
@@ -355,7 +355,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
               letterSpacing: 1,
             }}
           >
-            Steps
+            步骤
           </div>
           {PALETTE_ITEMS.map(({ type, icon }) => (
             <div
@@ -455,13 +455,13 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
                   letterSpacing: 1,
                 }}
               >
-                Properties
+                属性
               </div>
 
               {/* Label */}
               {!isTriggerSelected && (
                 <>
-                  <FieldRow label="Label">
+                  <FieldRow label="名称">
                     <Input
                       size="small"
                       value={selectedNodeData.label}
@@ -470,7 +470,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
                   </FieldRow>
 
                   {/* Type */}
-                  <FieldRow label="Type">
+                  <FieldRow label="类型">
                     <Select
                       size="small"
                       style={{ width: '100%' }}
@@ -491,7 +491,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
                   />
 
                   {/* Common fields */}
-                  <FieldRow label="Timeout (ms)">
+                  <FieldRow label="超时(毫秒)">
                     <InputNumber
                       size="small"
                       style={{ width: '100%' }}
@@ -504,7 +504,7 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
                     />
                   </FieldRow>
 
-                  <FieldRow label="Retries">
+                  <FieldRow label="重试次数">
                     <InputNumber
                       size="small"
                       style={{ width: '100%' }}
@@ -515,16 +515,16 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
                     />
                   </FieldRow>
 
-                  <FieldRow label="On Error">
+                  <FieldRow label="错误处理">
                     <Select
                       size="small"
                       style={{ width: '100%' }}
                       value={(selectedNodeData.onError as string) || 'stop'}
                       onChange={(val) => updateNodeData('onError', val)}
                       options={[
-                        { label: 'Stop', value: 'stop' },
-                        { label: 'Continue', value: 'continue' },
-                        { label: 'Fallback', value: 'fallback' },
+                        { label: '停止', value: 'stop' },
+                        { label: '继续', value: 'continue' },
+                        { label: '降级处理', value: 'fallback' },
                       ]}
                     />
                   </FieldRow>
@@ -533,23 +533,23 @@ function FlowEditorInner({ value, onChange }: FlowEditorProps) {
 
               {isTriggerSelected && (
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 20 }}>
-                  This is the flow start node.
+                  这是流程起始节点。
                   <br />
-                  Connect it to the first step.
+                  将它连接到第一个步骤。
                 </div>
               )}
 
               {/* Delete button */}
               {!isTriggerSelected && (
                 <Space style={{ marginTop: 12 }}>
-                  <Tooltip title="Delete node">
+                  <Tooltip title="删除节点">
                     <Button
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
                       onClick={deleteSelectedNode}
                     >
-                      Delete
+                      删除
                     </Button>
                   </Tooltip>
                 </Space>
@@ -610,19 +610,19 @@ function ConfigFields({
 
   switch (stepType) {
     case 'ai_chat':
-      return <>{field('prompt', 'Prompt', 'Enter AI prompt...', true)}</>;
+      return <>{field('prompt', 'AI 对话内容', '输入 AI 对话内容...', true)}</>;
     case 'shell_command':
       return (
         <>
-          {field('command', 'Command', 'ls -la')}
-          {field('cwd', 'Working Dir', '/path/to/dir')}
+          {field('command', '命令', 'ls -la')}
+          {field('cwd', '工作目录', '/path/to/dir')}
         </>
       );
     case 'web_fetch':
       return (
         <>
           {field('url', 'URL', 'https://api.example.com')}
-          <FieldRow label="Method">
+          <FieldRow label="请求方式">
             <Select
               size="small"
               style={{ width: '100%' }}
@@ -636,55 +636,55 @@ function ConfigFields({
               ]}
             />
           </FieldRow>
-          {field('headers', 'Headers (JSON)', '{"Authorization": "..."}', true)}
-          {config.method !== 'GET' && field('body', 'Body', '{"key": "value"}', true)}
+          {field('headers', '请求头(JSON)', '{"Authorization": "..."}', true)}
+          {config.method !== 'GET' && field('body', '请求体', '{"key": "value"}', true)}
         </>
       );
     case 'file_operation':
       return (
         <>
-          <FieldRow label="Operation">
+          <FieldRow label="操作">
             <Select
               size="small"
               style={{ width: '100%' }}
               value={config.action || 'read'}
               onChange={(val) => onConfigChange('action', val)}
               options={[
-                { label: 'Read', value: 'read' },
-                { label: 'Write', value: 'write' },
-                { label: 'Copy', value: 'copy' },
-                { label: 'Delete', value: 'delete' },
-                { label: 'Mkdir', value: 'mkdir' },
+                { label: '读取', value: 'read' },
+                { label: '写入', value: 'write' },
+                { label: '复制', value: 'copy' },
+                { label: '删除', value: 'delete' },
+                { label: '创建目录', value: 'mkdir' },
               ]}
             />
           </FieldRow>
-          {field('path', 'Path', '/path/to/file')}
-          {config.action === 'copy' && field('destPath', 'Dest Path', '/path/to/dest')}
-          {config.action === 'write' && field('content', 'Content', 'file content...', true)}
+          {field('path', '路径', '/path/to/file')}
+          {config.action === 'copy' && field('destPath', '目标路径', '/path/to/dest')}
+          {config.action === 'write' && field('content', '内容', 'file content...', true)}
         </>
       );
     case 'sql_query':
       return (
         <>
-          {field('connectionId', 'Connection', 'connection-name')}
+          {field('connectionId', '数据源', 'connection-name')}
           {field('sql', 'SQL', 'SELECT * FROM ...', true)}
-          {field('params', 'Params (JSON)', '[]', true)}
+          {field('params', '参数(JSON)', '[]', true)}
         </>
       );
     case 'send_email':
       return (
         <>
-          {field('to', 'To', 'user@example.com')}
-          {field('subject', 'Subject', 'Email subject')}
-          {field('template', 'Template', 'task-result')}
-          {field('context', 'Context (JSON)', '{}', true)}
+          {field('to', '收件人', 'user@example.com')}
+          {field('subject', '主题', 'Email subject')}
+          {field('template', '模板', 'task-result')}
+          {field('context', '上下文(JSON)', '{}', true)}
         </>
       );
     case 'condition':
       return (
         <>
-          {field('field', 'Variable', 'variableName')}
-          <FieldRow label="Operator">
+          {field('field', '变量名', 'variableName')}
+          <FieldRow label="运算符">
             <Select
               size="small"
               style={{ width: '100%' }}
@@ -697,20 +697,20 @@ function ConfigFields({
                 { label: '>=', value: 'gte' },
                 { label: '<', value: 'lt' },
                 { label: '<=', value: 'lte' },
-                { label: 'contains', value: 'contains' },
-                { label: 'exists', value: 'exists' },
+                { label: '包含', value: 'contains' },
+                { label: '存在', value: 'exists' },
               ]}
             />
           </FieldRow>
-          {field('value', 'Value', 'expected value')}
-          {field('expression', 'Expression', 'item.status === "done"')}
+          {field('value', '比较值', 'expected value')}
+          {field('expression', '表达式', 'item.status === "done"')}
         </>
       );
     case 'loop':
       return (
         <>
-          {field('iteratorField', 'Items Variable', 'items')}
-          <FieldRow label="Max Iterations">
+          {field('iteratorField', '遍历变量', 'items')}
+          <FieldRow label="最大循环次数">
             <InputNumber
               size="small"
               style={{ width: '100%' }}

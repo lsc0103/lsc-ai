@@ -26,7 +26,7 @@ function TriggerNode({ selected }: NodeProps) {
     >
       <div style={{ fontSize: 18, marginBottom: 2 }}>&#9654;</div>
       <div style={{ fontSize: 13, fontWeight: 600, color: '#93c5fd' }}>
-        Flow Start
+        流程开始
       </div>
       <Handle
         type="source"

@@ -1413,3 +1413,145 @@ PM（远程 Claude.ai Opus）在我提交 f699077 之后，私自提交了 3 个
 - PM Chrome 浏览器验收 S4.5 (12 项冒烟测试)
 - Prisma migrate (需要数据库在线): `npx prisma migrate dev --name s4_5_sentinel_notification`
 - S5 IDP 智能文档处理规划
+
+---
+
+## 2026-02-12 (第3次) | S4.5 浏览器冒烟测试 + 路由修复
+
+**目标**：执行 S4.5 全部功能冒烟测试（Chrome 浏览器验证）
+
+**完成**：
+
+### 冒烟测试结果 (7/7 通过)
+
+| # | 场景 | 结果 | 验证点 |
+|---|------|------|--------|
+| ST-1 | 审计日志页面 | ✅ | 4条记录 + 筛选 + 详情展开 + 敏感字段脱敏 |
+| ST-2 | Sentinel 监控中心 | ✅ | 概览卡片 + Agent列表 + 告警规则CRUD + 3个Tab |
+| ST-3a | RPA 流程 + ReactFlow | ✅ | ReactFlow画布 + 8种节点 + 拖拽连线 + MiniMap |
+| ST-3b | JSON 双模式切换 | ✅ | Visual Editor ↔ JSON 双向切换 + Monaco Editor |
+| ST-3c | Execution Monitor | ✅ | 4队列卡片 + ECharts趋势图 + 健康环形图 + 执行列表 |
+| ST-4 | Settings 通知偏好 | ✅ | 邮箱输入 + 6个通知开关 + 数据源连接表 |
+| ST-5 | Sentinel API 全链路 | ✅ | Agent注册(201) → 指标上报(201) → 告警自动触发(2条critical) |
+| ST-6 | Sentinel 前端数据展示 | ✅ | Agent列表(online) + 指标图表(ECharts) + 告警中心(Acknowledge/Resolve) |
+| ST-7 | 审计日志完整记录 | ✅ | 24条记录(sentinel+auth) + 成功/失败状态 + Export |
+
+### Bug 修复
+
+| Bug | 根因 | 修复 | Commit |
+|-----|------|------|--------|
+| Sentinel 路由优先级冲突 | NestJS `@Get(':id')` 在 `@Get('alert-rules')` 前定义，`:id` 捕获 "alert-rules" | 将 Alert Rules/Alerts 路由移至 `:id` 前 | b0e4df6 |
+
+**修改的文件**：
+- `sentinel.controller.ts` — 路由顺序重构（123 insertions + 123 deletions）
+
+**发现的问题**：
+- 路由优先级冲突已修复（P0 级，已提交 b0e4df6）
+- 无其他新问题
+
+**下次继续**：
+- 向用户汇报 S4.5 冒烟测试结论
+- S5 IDP 智能文档处理规划
+
+---
+
+## 2026-02-13 (第2次) — 任务执行 Bug 修复 + 全平台深度复测
+
+**时间**：2026-02-13
+**角色**：执行负责人
+
+### Bug 修复
+
+| Bug | 根因 | 修复 | Commit |
+|-----|------|------|--------|
+| 任务执行状态不更新 | `executeScheduledTask()` 同步等待 AI 调用(30-120s)，HTTP 超时显示"执行失败"，但后台仍在运行 | 拆分为 fire-and-forget 异步模式 + 前端自动打开日志 Drawer 轮询 | 38cf441 |
+
+**修改的文件**：
+- `mastra-workflow.service.ts` — 新增 `runTaskAsync()` 私有方法，`executeScheduledTask()` 立即返回 `{logId, status: 'running'}`
+- `Tasks.tsx` — `handleExecute` 成功后自动调用 `handleShowLogs(record)` 打开日志 Drawer
+
+### 全平台深度复测（重启后）
+
+**测试方法**：逐页导航 → 截图 → 检查 API 请求（/api/ 过滤）→ 检查控制台错误 → 点击交互元素
+
+| 页面 | API 状态 | 控制台错误 | 红色提示框 | 结果 |
+|------|---------|----------|---------|------|
+| /chat（空+会话加载） | 全部 200 | 0 | 0 | ✅ |
+| /knowledge | 全部 200 | 0 | 0 | ✅ |
+| /projects | 全部 200 | 0 | 0 | ✅ |
+| /admin/users | 全部 200 | 0 | 0 | ✅ |
+| /admin/roles | 全部 200 | 0 | 0 | ✅ |
+| /audit-log | 全部 200 | 0 | 0 | ✅ |
+| /sentinel（Agent List） | 全部 200 | 0 | 0 | ✅ |
+| /sentinel（Alert Center） | 全部 200 | 0 | 0 | ✅ |
+| /sentinel（Alert Rules） | 全部 200 | 0 | 0 | ✅ |
+| /tasks（定时任务） | 全部 200 | 0 | 0 | ✅ |
+| /tasks（RPA 流程） | 全部 200 | 0 | 0 | ✅ |
+| /tasks（Execution Monitor） | 全部 200 | 0 | 0 | ✅ |
+| /settings | 全部 200 | 0 | 0 | ✅ |
+
+**结论**：全平台 13 个页面/Tab，0 个 API 错误、0 个控制台错误、0 个红色提示框。
+
+**下次继续**：
+- S4.5 PM 正式验收
+- S5 IDP 智能文档处理规划
+
+---
+
+## 2026-02-13 (第3次) — Tasks 页面中文本地化 + E2E 手动闭环测试
+
+**时间**：2026-02-13
+**角色**：执行负责人
+
+### 中文本地化修复
+
+用户要求全平台中文化（大连中远川崎企业用户，不能有英文开发者术语）。
+
+| 修改 | 文件 | 变更 |
+|------|------|------|
+| TriggerNode 中文化 | `nodes/TriggerNode.tsx:29` | "Flow Start" → "流程开始" |
+| ConditionNode 分支标签 | `nodes/ConditionNode.tsx:74-75` | "True"/"False" → "是"/"否" |
+| LoopNode 迭代信息 | `nodes/LoopNode.tsx:13` | "over:"/"max" → "遍历:"/"最多 X 次" |
+| Sidebar 导航名称 | `Sidebar.tsx` | "RPA/定时任务" → "自动化任务"（上次会话已改） |
+| FlowEditor 全量中文 | `FlowEditor.tsx` + `FlowConverter.ts` | 步骤类型/工具栏/面板/提示全部中文（上次会话已改） |
+
+### 其他修复（上次会话）
+
+| Bug | 根因 | 修复 |
+|-----|------|------|
+| Scheduler 重复执行 | lastRunAt 比较逻辑错误 | task-scheduler.service.ts 时间窗口判断 |
+| Alert 横幅卡住 | 遗留任务 Alert 永远显示 | 添加 10 分钟阈值自动消失 |
+
+### E2E 手动闭环测试（Chrome 浏览器）
+
+完整测试流程：新建定时任务 → 填写表单 → 执行 → 查看结果 → 删除
+
+| 步骤 | 操作 | 结果 |
+|------|------|------|
+| 1. 导航到 /tasks | 点击侧边栏"自动化任务" | ✅ 中文标签正确 |
+| 2. 确认无卡住 Alert | 检查页面顶部 | ✅ 无遗留 Alert 横幅 |
+| 3. 新建任务 | 点击"+ 新建定时任务"→ 填写"E2E测试任务" | ✅ Modal 弹出 |
+| 4. 设置执行周期 | CronSchedulePicker 选择 08 时 | ✅ 需显式交互才触发表单更新 |
+| 5. 填写执行内容 | "请用一句话回答：1+1等于几？" | ✅ |
+| 6. 提交创建 | 点击"创建"按钮 | ✅ 任务出现在列表 |
+| 7. 手动执行 | 点击"立即执行" | ✅ 11.7s 完成 |
+| 8. 查看结果 | 展开日志行 → ResultDisplay | ✅ 显示"1+1等于2。" |
+| 9. 查看原始数据 | 点击"查看原始数据" | ✅ JSON 完整 |
+| 10. 删除任务 | ⋮ → 删除 → 确认 | ✅ 任务移除 |
+| 11. FlowEditor 验证 | 切换"自动化流程"Tab → 编辑流程 | ✅ 全中文渲染 |
+
+### 发现的 UX 问题（非 Bug，低优先级）
+
+- CronSchedulePicker 默认值不写入 Form State，需用户显式点击选择器才触发 onChange
+- AntD `destroyOnClose` 弃用警告（应改为 `destroyOnHidden`）
+- AntD `useForm` 未连接 Form 元素警告
+
+**修改的文件**：
+- `packages/web/src/components/workflow/nodes/TriggerNode.tsx` — "Flow Start" → "流程开始"
+- `packages/web/src/components/workflow/nodes/ConditionNode.tsx` — "True"/"False" → "是"/"否"
+- `packages/web/src/components/workflow/nodes/LoopNode.tsx` — 迭代文本中文化
+
+**下次继续**：
+- S4.5 PM 正式验收（所有修复+本地化已完成）
+- 提交本次修改（commit）
+- S5 IDP 智能文档处理规划

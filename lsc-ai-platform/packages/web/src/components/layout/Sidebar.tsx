@@ -32,7 +32,7 @@ const navItems = [
   { key: 'search', icon: SearchOutlined, label: '搜索', action: true },
   { key: 'knowledge', icon: BookOutlined, label: '知识库', path: '/knowledge' },
   { key: 'projects', icon: FolderOutlined, label: '我的项目', path: '/projects' },
-  { key: 'tasks', icon: ClockCircleOutlined, label: 'RPA/定时任务', path: '/tasks' },
+  { key: 'tasks', icon: ClockCircleOutlined, label: '自动化任务', path: '/tasks' },
   { key: 'apps', icon: AppstoreOutlined, label: '其他应用', path: '/apps' },
   { key: 'admin-users', icon: TeamOutlined, label: '用户管理', path: '/admin/users', adminOnly: true },
   { key: 'admin-roles', icon: SafetyCertificateOutlined, label: '角色管理', path: '/admin/roles', adminOnly: true },

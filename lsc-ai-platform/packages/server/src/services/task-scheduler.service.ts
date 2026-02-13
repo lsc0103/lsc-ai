@@ -88,10 +88,10 @@ export class TaskSchedulerService implements OnModuleInit {
       // The previous occurrence should be within the last 60 seconds
       if (diffMs > 60000) return false;
 
-      // Prevent duplicate execution within the same minute
+      // Prevent duplicate execution within the same minute (inclusive boundary)
       if (lastRunAt) {
         const sinceLastRun = now.getTime() - lastRunAt.getTime();
-        if (sinceLastRun < 60000) return false;
+        if (sinceLastRun <= 60000) return false;
       }
 
       return true;
