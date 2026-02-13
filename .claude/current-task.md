@@ -7,8 +7,8 @@
 
 ## 当前任务
 
-**阶段**：Phase I 功能扩展 — S4.5 冒烟测试通过 (7/7)，路由 Bug 已修复
-**状态**：S4.5 全部 12 个任务开发完成 + 浏览器冒烟测试 7/7 通过 + 路由修复已提交 (b0e4df6)
+**阶段**：Phase I 功能扩展 — S4.5 PM 验收通过 (42/42 Playwright E2E)
+**状态**：S4.5 全部完成 — 12 任务开发 + 冒烟测试 7/7 + Playwright 42/42 PM 验收通过，S5 待启动
 **角色转变**：从「总工程师」升级为「执行负责人」，负责项目规划、代码审查、团队协调、记忆管理、代码入库
 
 ### Phase I Sprint 计划概览
@@ -19,7 +19,7 @@
 | **S2** | RAG 知识库 MVP | 2 周 | ✅ PM 二审通过，正式关闭 |
 | **S3** | 项目管理 + 用户管理前端 | 2 周 | ✅ 二审 P0 + 遗留 bug 全部修复 |
 | **S4** | 任务/RPA + Sentinel Agent | 2 周 | ✅ PM 验收通过 (28/28) |
-| **S4.5** | 核心引擎增强+通知+审计+Sentinel | 2 周 | ✅ 开发完成 (12/12)，待 PM 验收 |
+| **S4.5** | 核心引擎增强+通知+审计+Sentinel | 2 周 | ✅ PM 验收通过 (42/42 Playwright) |
 | **S5** | IDP 智能文档处理 | 2 周 | 独立，可与 S3-S4 并行 |
 
 ### 关键约束
@@ -100,12 +100,18 @@ e2e/
 │   ├── ai-retry.helper.ts                  # 新增：AI回复重试机制
 │   ├── selectors.ts                         # 增强：Agent/模式切换选择器
 │   └── cleanup.ts
+├── s45/                                    # S4.5 Playwright E2E 测试（新增）
+│   ├── audit-log.spec.ts                   # 9 tests — 审计日志页面
+│   ├── scheduled-tasks.spec.ts             # 13 tests — 定时任务 CRUD + RPA + ReactFlow
+│   ├── sentinel.spec.ts                    # 8 tests — Sentinel 监控中心
+│   ├── execution-monitor.spec.ts           # 5 tests — 执行监控 Tab
+│   └── s45-regression.spec.ts              # 7 tests — S4.5 回归测试
 └── fixtures/
     ├── auth.setup.ts
     └── test-base.ts                         # 增强：afterEach截图+error收集
 ```
 
-**总计：169 个测试用例（原102 + 新增67），分组运行全部通过**
+**总计：211 个测试用例（原169 + S4.5 新增42），分组运行全部通过**
 
 ### 注意事项
 
